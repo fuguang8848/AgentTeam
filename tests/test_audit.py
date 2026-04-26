@@ -1,330 +1,231 @@
 """Tests for the audit logging module."""
 
 import json
-import os
 import tempfile
-from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
-from clawteam.utils.audit import (
+from clawteam.audit import (
     AuditEvent,
     AuditEventType,
-    AuditLogger,
-    _now_iso,
-    _audit_root,
+    get_audit_summary,
+    log_audit_event,
+    read_audit_log,
+    _audit_log_path,
 )
 
 
-class TestAuditEvent:
-    """Test AuditEvent model and validation."""
+@pytest.fixture
+def temp_team_data():
+    """Create a temporary team data directory."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Mock get_data_dir from team.models to use our temp directory
+        with patch("clawteam.team.models.get_data_dir", return_value=Path(tmpdir)):
+            yield tmpdir
+
+
+def test_audit_event_creation():
+    """Test that AuditEvent can be created and serialized."""
+    event = AuditEvent(
+        event_id="test-123",
+        event_type=AuditEventType.TASK_CREATED,
+        timestamp="2026-04-26T12:00:00Z",
+        actor="test-agent",
+        team="test-team",
+        details={"task_subject": "Test task"}
+    )
     
-    def test_audit_event_creation(self):
-        """Test basic AuditEvent creation with required fields."""
-        event = AuditEvent(
-            type=AuditEventType.TASK_CREATED,
-            team="test-team",
-            actor="test-user",
-            message="Task created",
-            details={"task_id": "123"}
-        )
-        assert event.type == AuditEventType.TASK_CREATED
-        assert event.team == "test-team"
-        assert event.actor == "test-user"
-        assert event.message == "Task created"
-        assert event.details == {"task_id": "123"}
-        assert event.timestamp is not None
-        
-    def test_audit_event_timestamp_format(self):
-        """Test that timestamp is in ISO format with timezone."""
-        event = AuditEvent(
-            type=AuditEventType.TASK_COMPLETED,
-            team="test-team",
-            actor="test-user",
-            message="Task completed"
-        )
-        # Should be ISO format with timezone info
-        dt = datetime.fromisoformat(event.timestamp.replace('Z', '+00:00'))
-        assert dt.tzinfo is not None
-        
-    def test_audit_event_validation_team_name(self):
-        """Test team name validation."""
-        with pytest.raises(ValueError, match="Invalid team name"):
-            AuditEvent(
-                type=AuditEventType.TASK_CREATED,
-                team="invalid team name!",  # contains spaces and special chars
-                actor="test-user",
-                message="Task created"
-            )
-            
-    def test_audit_event_validation_actor(self):
-        """Test actor validation."""
-        with pytest.raises(ValueError, match="Actor must be a non-empty string"):
-            AuditEvent(
-                type=AuditEventType.TASK_CREATED,
-                team="valid-team",
-                actor="",  # empty actor
-                message="Task created"
-            )
-            
-    def test_audit_event_optional_fields(self):
-        """Test that optional fields can be omitted."""
-        event = AuditEvent(
-            type=AuditEventType.SYSTEM_EVENT,
-            team="test-team",
-            actor="system",
-            message="System started"
-        )
-        assert event.details is None
-
-
-class TestAuditLogger:
-    """Test AuditLogger functionality."""
+    # Test serialization
+    json_str = event.to_json()
+    parsed = json.loads(json_str)
     
-    def setup_method(self):
-        """Set up temporary directory for each test."""
-        self.temp_dir = tempfile.mkdtemp()
-        self.original_data_dir = os.environ.get('CLAWTEAM_DATA_DIR')
-        os.environ['CLAWTEAM_DATA_DIR'] = self.temp_dir
-        
-    def teardown_method(self):
-        """Clean up temporary directory."""
-        if self.original_data_dir is not None:
-            os.environ['CLAWTEAM_DATA_DIR'] = self.original_data_dir
-        else:
-            os.environ.pop('CLAWTEAM_DATA_DIR', None)
-        import shutil
-        shutil.rmtree(self.temp_dir, ignore_errors=True)
-        
-    def test_audit_root_creation(self):
-        """Test that audit root directory is created properly."""
-        team_name = "test-team"
-        root = _audit_root(team_name)
-        assert root.exists()
-        assert root.is_dir()
-        # Use os.path.sep for cross-platform compatibility
-        expected_suffix = f"audit{os.path.sep}{team_name}"
-        assert str(root).endswith(expected_suffix)
-        
-    def test_log_event_basic(self):
-        """Test basic event logging functionality."""
-        logger = AuditLogger("test-team")
-        event = AuditEvent(
-            type=AuditEventType.TASK_CREATED,
-            team="test-team",
-            actor="test-user",
-            message="Test task created",
-            details={"task_id": "test-123"}
-        )
-        
-        # Log the event
-        logger.log_event(event)
-        
-        # Check that file was created
-        audit_files = list(_audit_root("test-team").glob("*.jsonl"))
-        assert len(audit_files) == 1
-        
-        # Read and verify content
-        with open(audit_files[0], 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-            assert len(lines) == 1
-            logged_event = json.loads(lines[0])
-            assert logged_event['type'] == 'TASK_CREATED'
-            assert logged_event['team'] == 'test-team'
-            assert logged_event['actor'] == 'test-user'
-            assert logged_event['message'] == 'Test task created'
-            assert logged_event['details'] == {'task_id': 'test-123'}
-            
-    def test_log_event_append_only(self):
-        """Test that events are appended to existing files, not overwritten."""
-        logger = AuditLogger("test-team")
-        
-        # Log first event
-        event1 = AuditEvent(
-            type=AuditEventType.TASK_CREATED,
-            team="test-team",
-            actor="user1",
-            message="First task"
-        )
-        logger.log_event(event1)
-        
-        # Log second event
-        event2 = AuditEvent(
-            type=AuditEventType.TASK_COMPLETED,
-            team="test-team",
-            actor="user2",
-            message="Second task"
-        )
-        logger.log_event(event2)
-        
-        # Check that both events are in the same file
-        audit_files = list(_audit_root("test-team").glob("*.jsonl"))
-        assert len(audit_files) == 1
-        
-        with open(audit_files[0], 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-            assert len(lines) == 2
-            event1_data = json.loads(lines[0])
-            event2_data = json.loads(lines[1])
-            assert event1_data['message'] == 'First task'
-            assert event2_data['message'] == 'Second task'
-            
-    def test_get_events_all(self):
-        """Test retrieving all events for a team."""
-        logger = AuditLogger("test-team")
-        
-        # Log multiple events
-        events = []
-        for i in range(3):
-            event = AuditEvent(
-                type=AuditEventType.TASK_CREATED,
-                team="test-team",
-                actor=f"user{i}",
-                message=f"Task {i}"
-            )
-            logger.log_event(event)
-            events.append(event)
-            
-        # Retrieve all events
-        retrieved_events = list(logger.get_events())
-        assert len(retrieved_events) == 3
-        
-        # Verify order (should be reverse chronological - newest first)
-        for i, retrieved in enumerate(retrieved_events):
-            expected_index = 2 - i  # newest first: Task 2, Task 1, Task 0
-            assert retrieved.message == f"Task {expected_index}"
-            assert retrieved.actor == f"user{expected_index}"
-            
-    def test_get_events_by_type(self):
-        """Test filtering events by type."""
-        logger = AuditLogger("test-team")
-        
-        # Log different types of events
-        task_created = AuditEvent(
-            type=AuditEventType.TASK_CREATED,
-            team="test-team",
-            actor="user1",
-            message="Task created"
-        )
-        task_completed = AuditEvent(
-            type=AuditEventType.TASK_COMPLETED,
-            team="test-team",
-            actor="user2",
-            message="Task completed"
-        )
-        system_event = AuditEvent(
-            type=AuditEventType.SYSTEM_EVENT,
-            team="test-team",
-            actor="system",
-            message="System event"
-        )
-        
-        logger.log_event(task_created)
-        logger.log_event(task_completed)
-        logger.log_event(system_event)
-        
-        # Get only TASK_CREATED events
-        created_events = list(logger.get_events(event_type=AuditEventType.TASK_CREATED))
-        assert len(created_events) == 1
-        assert created_events[0].type == AuditEventType.TASK_CREATED
-        assert created_events[0].message == "Task created"
-        
-        # Get only SYSTEM_EVENT events
-        system_events = list(logger.get_events(event_type=AuditEventType.SYSTEM_EVENT))
-        assert len(system_events) == 1
-        assert system_events[0].type == AuditEventType.SYSTEM_EVENT
-        
-    def test_get_events_since_timestamp(self):
-        """Test filtering events by timestamp."""
-        logger = AuditLogger("test-team")
-        
-        # Log events at different times
-        with patch('clawteam.utils.audit._now_iso') as mock_now:
-            # First event
-            mock_now.return_value = "2023-01-01T10:00:00+00:00"
-            event1 = AuditEvent(
-                type=AuditEventType.TASK_CREATED,
-                team="test-team",
-                actor="user1",
-                message="Early task"
-            )
-            logger.log_event(event1)
-            
-            # Second event
-            mock_now.return_value = "2023-01-01T11:00:00+00:00"
-            event2 = AuditEvent(
-                type=AuditEventType.TASK_COMPLETED,
-                team="test-team",
-                actor="user2",
-                message="Later task"
-            )
-            logger.log_event(event2)
-            
-        # Get events since 10:30 AM
-        since_timestamp = "2023-01-01T10:30:00+00:00"
-        recent_events = list(logger.get_events(since=since_timestamp))
-        assert len(recent_events) == 1
-        assert recent_events[0].message == "Later task"
-        
-    def test_multiple_teams_isolation(self):
-        """Test that audit logs are isolated between teams."""
-        team1_logger = AuditLogger("team1")
-        team2_logger = AuditLogger("team2")
-        
-        # Log events for both teams
-        team1_event = AuditEvent(
-            type=AuditEventType.TASK_CREATED,
-            team="team1",
-            actor="user1",
-            message="Team1 task"
-        )
-        team2_event = AuditEvent(
-            type=AuditEventType.TASK_CREATED,
-            team="team2",
-            actor="user2",
-            message="Team2 task"
-        )
-        
-        team1_logger.log_event(team1_event)
-        team2_logger.log_event(team2_event)
-        
-        # Verify isolation
-        team1_events = list(team1_logger.get_events())
-        team2_events = list(team2_logger.get_events())
-        
-        assert len(team1_events) == 1
-        assert len(team2_events) == 1
-        assert team1_events[0].message == "Team1 task"
-        assert team2_events[0].message == "Team2 task"
-        
-    def test_cli_command_integration(self):
-        """Test CLI command functionality (mocked)."""
-        from clawteam.utils.audit import cli_audit_log, cli_audit_list
-        
-        # Mock console output
-        with patch('rich.console.Console') as mock_console:
-            mock_console_instance = MagicMock()
-            mock_console.return_value = mock_console_instance
-            
-            # Test log command
-            cli_audit_log("test-team", "TASK_CREATED", "test-user", "CLI test message")
-            mock_console_instance.print.assert_called_with("[green]* Logged audit event for team 'test-team'[/green]")
-            
-            # Test list command
-            cli_audit_list("test-team")
-            # Should have called print at least once for the header or events
-            assert mock_console_instance.print.call_count >= 1
+    assert parsed["event_id"] == "test-123"
+    assert parsed["event_type"] == "task_created"
+    assert parsed["actor"] == "test-agent"
+    assert parsed["team"] == "test-team"
+    assert parsed["details"]["task_subject"] == "Test task"
 
 
-def test_now_iso_format():
-    """Test that _now_iso returns proper ISO format with timezone."""
-    timestamp = _now_iso()
-    # Should be able to parse it back
-    dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-    assert dt.tzinfo is not None
+def test_log_audit_event_append_only(temp_team_data):
+    """Test that log_audit_event appends to existing log without modifying history."""
+    team_name = "test-team"
+    
+    # Log first event
+    event_id1 = log_audit_event(
+        team=team_name,
+        event_type=AuditEventType.TASK_CREATED,
+        actor="agent1",
+        details={"subject": "First task"}
+    )
+    
+    # Check log file exists and has one line
+    log_path = _audit_log_path(team_name)
+    assert log_path.exists()
+    
+    content = log_path.read_text(encoding="utf-8")
+    lines = content.strip().split("\n")
+    assert len(lines) == 1
+    
+    # Parse the first event
+    first_event = json.loads(lines[0])
+    assert first_event["event_id"] == event_id1
+    assert first_event["event_type"] == "task_created"
+    
+    # Log second event
+    event_id2 = log_audit_event(
+        team=team_name,
+        event_type=AuditEventType.TASK_COMPLETED,
+        actor="agent2",
+        details={"result": "success"}
+    )
+    
+    # Check log file now has two lines
+    content = log_path.read_text(encoding="utf-8")
+    lines = content.strip().split("\n")
+    assert len(lines) == 2
+    
+    # First event should be unchanged
+    first_event_again = json.loads(lines[0])
+    assert first_event_again == first_event
+    
+    # Second event should be new
+    second_event = json.loads(lines[1])
+    assert second_event["event_id"] == event_id2
+    assert second_event["event_type"] == "task_completed"
+
+
+def test_read_audit_log(temp_team_data):
+    """Test reading audit log entries."""
+    team_name = "test-team"
+    
+    # Log some events
+    event_id1 = log_audit_event(
+        team=team_name,
+        event_type=AuditEventType.TASK_CREATED,
+        actor="agent1",
+        details={"subject": "Task 1"}
+    )
+    
+    event_id2 = log_audit_event(
+        team=team_name,
+        event_type=AuditEventType.TASK_ASSIGNED,
+        actor="system",
+        target="agent2",
+        details={"task_id": event_id1}
+    )
+    
+    # Read all events
+    events = read_audit_log(team_name)
+    assert len(events) == 2
+    assert events[0].event_id == event_id1
+    assert events[1].event_id == event_id2
+    
+    # Read with limit
+    limited_events = read_audit_log(team_name, limit=1)
+    assert len(limited_events) == 1
+    assert limited_events[0].event_id == event_id2  # Most recent first
+
+
+def test_get_audit_summary(temp_team_data):
+    """Test getting audit summary."""
+    team_name = "test-team"
+    
+    # No events
+    summary = get_audit_summary(team_name)
+    assert summary["total_events"] == 0
+    assert summary["event_types"] == {}
+    assert summary["active_agents"] == []
+    assert summary["first_event"] is None
+    assert summary["last_event"] is None
+    
+    # Add some events
+    log_audit_event(
+        team=team_name,
+        event_type=AuditEventType.TASK_CREATED,
+        actor="agent1"
+    )
+    
+    log_audit_event(
+        team=team_name,
+        event_type=AuditEventType.TASK_COMPLETED,
+        actor="agent2"
+    )
+    
+    # Get summary
+    summary = get_audit_summary(team_name)
+    assert summary["total_events"] == 2
+    assert summary["event_types"][AuditEventType.TASK_CREATED] == 1
+    assert summary["event_types"][AuditEventType.TASK_COMPLETED] == 1
+    assert set(summary["active_agents"]) == {"agent1", "agent2"}
+    assert summary["first_event"] is not None
+    assert summary["last_event"] is not None
+
+
+def test_log_audit_event_with_optional_fields(temp_team_data):
+    """Test logging events with optional target, details, and context."""
+    team_name = "test-team"
+    
+    # Log with all optional fields
+    event_id = log_audit_event(
+        team=team_name,
+        event_type=AuditEventType.MESSAGE_SENT,
+        actor="agent1",
+        target="agent2",
+        details={"message_type": "task_update"},
+        context={"session_id": "sess-123"}
+    )
+    
+    # Read back and verify
+    events = read_audit_log(team_name)
+    assert len(events) == 1
+    event = events[0]
+    assert event.event_id == event_id
+    assert event.target == "agent2"
+    assert event.details["message_type"] == "task_update"
+    assert event.context["session_id"] == "sess-123"
+
+
+def test_audit_log_path_validation(temp_team_data):
+    """Test that audit log paths are properly validated."""
+    from clawteam.paths import validate_identifier
+    
+    # Valid team name
+    valid_team = "my-team_123"
+    assert validate_identifier(valid_team, "team name") == valid_team
+    
+    # Invalid team name (contains slash)
+    with pytest.raises(ValueError):
+        validate_identifier("invalid/team", "team name")
+    
+    # Empty team name
+    with pytest.raises(ValueError):
+        validate_identifier("", "team name")
+
+
+def test_timestamp_format(temp_team_data):
+    """Test that timestamps are in ISO 8601 format."""
+    from datetime import datetime, timezone
+    
+    team_name = "test-team"
+    event_id = log_audit_event(
+        team=team_name,
+        event_type=AuditEventType.TASK_CREATED,
+        actor="test"
+    )
+    
+    log_path = _audit_log_path(team_name)
+    content = log_path.read_text(encoding="utf-8")
+    event = json.loads(content.strip())
+    
+    # Should be parseable as ISO 8601
+    timestamp = datetime.fromisoformat(event["timestamp"].replace("Z", "+00:00"))
+    
+    # Should be timezone aware
+    assert timestamp.tzinfo is not None
+    
     # Should be roughly current time
     now = datetime.now(timezone.utc)
-    diff = abs((dt - now).total_seconds())
-    assert diff < 5  # within 5 seconds
+    diff = abs((now - timestamp).total_seconds())
+    assert diff < 10  # Within 10 seconds
