@@ -3463,5 +3463,275 @@ def audit_log(
     _output({"event_id": event_id, "event_type": event_type, "team": team}, _human)
 
 
+# ============================================================================
+# DAG Commands
+# ============================================================================
+
+dag_app = typer.Typer(help="DAG dependency management for tasks")
+app.add_typer(dag_app, name="dag")
+
+
+@dag_app.command("sort")
+def dag_sort(
+    team: str = typer.Argument(..., help="Team name"),
+):
+    """Show tasks in topological (dependency-respecting) order."""
+    from clawteam.team.dag import CycleDetectedError, topological_sort
+    from clawteam.team.tasks import TaskStore
+
+    store = TaskStore(team)
+    tasks = store.list_tasks()
+
+    if not tasks:
+        _output({"team": team, "tasks": []}, lambda d: console.print("[dim]No tasks found.[/dim]"))
+        return
+
+    try:
+        ordered = topological_sort(tasks)
+    except CycleDetectedError as e:
+        _output({"error": str(e)}, lambda d: console.print(f"[red]Cycle detected: {d['error']}[/red]"))
+        raise typer.Exit(1)
+
+    def _human(_data):
+        table = Table(title=f"Topological Order — {team}")
+        table.add_column("#", style="dim", justify="right")
+        table.add_column("ID", style="cyan")
+        table.add_column("Subject")
+        table.add_column("Status")
+        table.add_column("Depends On", style="dim")
+        for i, t in enumerate(ordered, 1):
+            status_style = {
+                "pending": "white", "in_progress": "yellow",
+                "completed": "green", "blocked": "red",
+            }.get(t.status.value, "")
+            status_text = f"[{status_style}]{t.status.value}[/{status_style}]" if status_style else t.status.value
+            deps = ", ".join(t.depends_on) if t.depends_on else "—"
+            table.add_row(str(i), t.id, t.subject[:40], status_text, deps)
+        console.print(table)
+
+    _output(
+        {"team": team, "order": [{"id": t.id, "subject": t.subject, "status": t.status.value, "depends_on": t.depends_on} for t in ordered]},
+        _human,
+    )
+
+
+@dag_app.command("check")
+def dag_check(
+    team: str = typer.Argument(..., help="Team name"),
+):
+    """Check for circular dependencies in tasks."""
+    from clawteam.team.dag import detect_cycle
+    from clawteam.team.tasks import TaskStore
+
+    store = TaskStore(team)
+    tasks = store.list_tasks()
+
+    if not tasks:
+        _output({"team": team, "has_cycle": False}, lambda d: console.print("[dim]No tasks to check.[/dim]"))
+        return
+
+    has_cycle = detect_cycle(tasks)
+
+    def _human(_data):
+        if has_cycle:
+            console.print("[red]⚠ Cycle detected in task dependencies![/red]")
+            console.print("  Tasks involved in the cycle cannot be executed.")
+        else:
+            console.print("[green]✓ No cycles detected. Dependency graph is valid.[/green]")
+        console.print(f"  Total tasks: {len(tasks)}")
+        with_deps = [t for t in tasks if t.depends_on]
+        if with_deps:
+            console.print(f"  Tasks with dependencies: {len(with_deps)}")
+
+    _output({"team": team, "has_cycle": has_cycle, "total_tasks": len(tasks)}, _human)
+    if has_cycle:
+        raise typer.Exit(1)
+
+
+@dag_app.command("ready")
+def dag_ready(
+    team: str = typer.Argument(..., help="Team name"),
+):
+    """Show tasks that are ready to execute (all dependencies met)."""
+    from clawteam.team.dag import get_ready_tasks
+    from clawteam.team.tasks import TaskStore
+
+    store = TaskStore(team)
+    tasks = store.list_tasks()
+
+    if not tasks:
+        _output({"team": team, "ready_tasks": []}, lambda d: console.print("[dim]No tasks found.[/dim]"))
+        return
+
+    ready = get_ready_tasks(tasks)
+
+    def _human(_data):
+        if not ready:
+            console.print("[dim]No tasks ready to execute.[/dim]")
+            # Show what's blocking
+            from clawteam.team.dag import get_blocking_tasks
+            pending = [t for t in tasks if t.status.value == "pending"]
+            if pending:
+                console.print("\nPending tasks and their blockers:")
+                for t in pending:
+                    blockers = get_blocking_tasks(t, tasks)
+                    if blockers:
+                        blocker_names = ", ".join(f"{b.id} ({b.subject[:20]})" for b in blockers)
+                        console.print(f"  [{t.id}] {t.subject[:30]} — blocked by: {blocker_names}")
+                    else:
+                        console.print(f"  [{t.id}] {t.subject[:30]} — no blockers (should be ready?)")
+            return
+
+        table = Table(title=f"Ready Tasks — {team}")
+        table.add_column("ID", style="cyan")
+        table.add_column("Subject")
+        table.add_column("Owner")
+        table.add_column("Priority")
+        for t in ready:
+            priority_style = {"urgent": "red bold", "high": "red", "medium": "yellow", "low": "dim"}.get(t.priority.value, "")
+            priority_text = f"[{priority_style}]{t.priority.value}[/{priority_style}]" if priority_style else t.priority.value
+            table.add_row(t.id, t.subject[:40], t.owner or "—", priority_text)
+        console.print(table)
+
+    _output(
+        {"team": team, "ready_tasks": [{"id": t.id, "subject": t.subject, "owner": t.owner, "priority": t.priority.value} for t in ready]},
+        _human,
+    )
+
+
+# ============================================================================
+# Role Commands
+# ============================================================================
+
+role_app = typer.Typer(help="Dynamic role assignment for agents")
+app.add_typer(role_app, name="role")
+
+
+@role_app.command("assign")
+def role_assign(
+    team: str = typer.Argument(..., help="Team name"),
+    agent: str = typer.Argument(..., help="Agent name"),
+    role: str = typer.Argument(..., help="Role: developer, reviewer, tester, architect, coordinator"),
+    expires_at: str = typer.Option(None, "--expires-at", "-e", help="Expiration timestamp (ISO format)"),
+):
+    """Assign a role to an agent."""
+    from clawteam.team.roles import AgentRole, assign_role
+
+    try:
+        role_enum = AgentRole(role)
+    except ValueError:
+        valid = ", ".join(r.value for r in AgentRole)
+        console.print(f"[red]Invalid role '{role}'. Valid roles: {valid}[/red]")
+        raise typer.Exit(1)
+
+    assignment = assign_role(team, agent, role_enum, expires_at=expires_at)
+
+    def _human(_data):
+        console.print(f"[green]✓[/green] Assigned [cyan]{role_enum.value}[/cyan] to [bold]{agent}[/bold] in team '{team}'")
+        if expires_at:
+            console.print(f"  Expires: {expires_at}")
+
+    _output(
+        {"team": team, "agent": agent, "role": role_enum.value, "assigned_at": assignment.assigned_at, "expires_at": assignment.expires_at},
+        _human,
+    )
+
+
+@role_app.command("unassign")
+def role_unassign(
+    team: str = typer.Argument(..., help="Team name"),
+    agent: str = typer.Argument(..., help="Agent name"),
+    role: str = typer.Argument(..., help="Role to remove"),
+):
+    """Remove a role from an agent."""
+    from clawteam.team.roles import AgentRole, unassign_role
+
+    try:
+        role_enum = AgentRole(role)
+    except ValueError:
+        valid = ", ".join(r.value for r in AgentRole)
+        console.print(f"[red]Invalid role '{role}'. Valid roles: {valid}[/red]")
+        raise typer.Exit(1)
+
+    removed = unassign_role(team, agent, role_enum)
+
+    def _human(_data):
+        if removed:
+            console.print(f"[green]✓[/green] Removed [cyan]{role_enum.value}[/cyan] from [bold]{agent}[/bold]")
+        else:
+            console.print(f"[yellow]Agent '{agent}' did not have role '{role_enum.value}'.[/yellow]")
+
+    _output({"team": team, "agent": agent, "role": role_enum.value, "removed": removed}, _human)
+
+
+@role_app.command("list")
+def role_list(
+    team: str = typer.Argument(..., help="Team name"),
+):
+    """List all role assignments for a team."""
+    from clawteam.team.roles import get_all_assignments
+
+    assignments = get_all_assignments(team)
+
+    def _human(_data):
+        if not assignments:
+            console.print(f"[dim]No role assignments for team '{team}'.[/dim]")
+            return
+
+        table = Table(title=f"Role Assignments — {team}")
+        table.add_column("Agent", style="cyan")
+        table.add_column("Role")
+        table.add_column("Assigned At", style="dim")
+        table.add_column("Expires", style="dim")
+        for agent_name, assigns in sorted(assignments.items()):
+            for a in assigns:
+                expires = a.expires_at or "—"
+                if len(expires) > 19:
+                    expires = expires[:19]
+                table.add_row(agent_name, a.role.value, (a.assigned_at or "")[:19], expires)
+        console.print(table)
+
+    data = {
+        agent: [a.model_dump() for a in assigns]
+        for agent, assigns in assignments.items()
+    }
+    _output({"team": team, "assignments": data}, _human)
+
+
+@role_app.command("suggest")
+def role_suggest(
+    team: str = typer.Argument(..., help="Team name"),
+    task_id: str = typer.Argument(..., help="Task ID to suggest role for"),
+):
+    """Suggest the best role for a task based on its content."""
+    from clawteam.team.roles import suggest_role
+    from clawteam.team.tasks import TaskStore
+
+    store = TaskStore(team)
+    task = store.get(task_id)
+    if not task:
+        _output({"error": f"Task '{task_id}' not found"}, lambda d: console.print(f"[red]{d['error']}[/red]"))
+        raise typer.Exit(1)
+
+    # Try to use router for history-based suggestion
+    router = None
+    try:
+        from clawteam.team.router import get_router
+        router = get_router(team)
+    except Exception:
+        pass
+
+    suggested = suggest_role(task, task.owner or "unknown", router)
+
+    def _human(_data):
+        console.print(f"[bold]Role Suggestion for task '{task_id}'[/bold]")
+        console.print(f"  Subject: {task.subject}")
+        console.print(f"  Suggested role: [green bold]{suggested.value}[/green bold]")
+        if task.owner:
+            console.print(f"  For agent: {task.owner}")
+
+    _output({"task_id": task_id, "subject": task.subject, "suggested_role": suggested.value, "owner": task.owner}, _human)
+
+
 if __name__ == "__main__":
     app()

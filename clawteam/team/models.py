@@ -161,11 +161,11 @@ class QualityScore(BaseModel):
             "innovation": 0.10,
         }
         return round(
-            self.completeness * weights["completeness"]
+            (self.completeness * weights["completeness"]
             + self.accuracy * weights["accuracy"]
             + self.quality * weights["quality"]
             + self.规范性 * weights["规范性"]
-            + self.innovation * weights["innovation"],
+            + self.innovation * weights["innovation"]) * 10,
             1,
         )
 
@@ -213,3 +213,6 @@ class TaskItem(BaseModel):
     scores: list[QualityScore] = Field(default_factory=list)
     # Drift detection (P1 enhancement)
     drift_alerts: list[DriftAlert] = Field(default_factory=list, alias="driftAlerts")
+    # DAG dependencies (P2 enhancement)
+    depends_on: list[str] = Field(default_factory=list, alias="dependsOn")
+    """Task IDs this task depends on (must be completed before this task can start)."""
