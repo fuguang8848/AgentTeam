@@ -1,6 +1,12 @@
 """Tests for clawteam.team.snapshot — team state checkpoint/restore."""
 
-import fcntl
+import sys
+
+if sys.platform == "win32":
+    import msvcrt
+else:
+    import fcntl
+
 import json
 
 import pytest
@@ -147,7 +153,10 @@ class TestSnapshotCreate:
         )
 
         with consumed.open("rb") as locked_file:
-            fcntl.flock(locked_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            if sys.platform == "win32":
+                msvcrt.locking(locked_file.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                fcntl.flock(locked_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
 
             meta = SnapshotManager(team_with_data).create()
             path = _snapshots_root(team_with_data) / f"snap-{meta.id}.json"

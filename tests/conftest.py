@@ -5,6 +5,7 @@ We redirect all file-based state to tmp_path so tests never touch the real ~/.cl
 
 
 import pytest
+from pathlib import Path
 
 
 @pytest.fixture(autouse=True)
@@ -15,6 +16,8 @@ def isolated_data_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("CLAWTEAM_DATA_DIR", str(data_dir))
     # Also override HOME so config_path() doesn't hit real ~/.clawteam/config.json
     monkeypatch.setenv("HOME", str(tmp_path))
+    # Patch Path.home() to return tmp_path
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
     return data_dir
 
 

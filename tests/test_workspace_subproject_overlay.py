@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from clawteam.workspace.manager import WorkspaceManager
@@ -22,6 +23,8 @@ def test_workspace_overlays_subproject_files_into_worktree(monkeypatch, tmp_path
     info = ws.create_workspace("demo", "worker", "id123")
 
     overlaid = Path(info.worktree_path) / "projects" / "openclaw-bet" / "scripts" / "collect_team_context.ts"
-    assert info.repo_subpath == "projects/openclaw-bet"
+    # Use platform-independent path comparison
+    expected_subpath = "projects/openclaw-bet" if sys.platform != "win32" else "projects\\openclaw-bet"
+    assert info.repo_subpath == expected_subpath
     assert overlaid.exists()
     assert overlaid.read_text(encoding="utf-8") == "export const ok = true\n"

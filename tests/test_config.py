@@ -1,90 +1,85 @@
-"""Tests for clawteam.config — load/save/get_effective."""
+"""Tests for clawteam.config — new AppConfig-based configuration."""
 
 
-from clawteam.config import ClawTeamConfig, config_path, get_effective, load_config, save_config
+from clawteam.config import (
+    AppConfig, DatabaseConfig, AgentConfig, LogConfig,
+    get_config, load_config, load_config_from_env
+)
 
 
-class TestClawTeamConfig:
+class TestAppConfig:
     def test_defaults(self):
-        cfg = ClawTeamConfig()
-        assert cfg.data_dir == ""
-        assert cfg.user == ""
-        assert cfg.default_backend == "tmux"
-        assert cfg.skip_permissions is True
-        assert cfg.workspace == "auto"
+        cfg = AppConfig()
+        assert cfg.debug is False
+        assert cfg.transport == "file"
+        assert cfg.database is not None
+        assert cfg.database.path == "clawteam.db"
+        assert cfg.agents is not None
+        assert cfg.agents.max_concurrent == 10
 
     def test_custom_values(self):
-        cfg = ClawTeamConfig(user="alice", default_backend="subprocess", workspace="never")
-        assert cfg.user == "alice"
-        assert cfg.default_backend == "subprocess"
-        assert cfg.workspace == "never"
+        cfg = AppConfig(debug=True, transport="redis")
+        assert cfg.debug is True
+        assert cfg.transport == "redis"
+
+    def test_nested_configs(self):
+        cfg = AppConfig()
+        cfg.database.path = "test.db"
+        cfg.database.pool_size = 20
+        assert cfg.database.path == "test.db"
+        assert cfg.database.pool_size == 20
+
+    def test_validate_default_valid(self):
+        cfg = AppConfig()
+        errors = cfg.validate()
+        assert len(errors) == 0
+
+    def test_to_dict(self):
+        cfg = AppConfig()
+        d = cfg.to_dict()
+        assert "debug" in d
+        assert "transport" in d
+        assert "database" in d
 
 
-class TestLoadSaveConfig:
-    def test_load_returns_defaults_when_no_file(self):
+class TestDatabaseConfig:
+    def test_defaults(self):
+        db = DatabaseConfig()
+        assert db.path == "clawteam.db"
+        assert db.pool_size == 5
+        assert db.timeout == 30.0
+        assert db.backup_enabled is True
+
+
+class TestAgentConfig:
+    def test_defaults(self):
+        agents = AgentConfig()
+        assert agents.max_concurrent == 10
+        assert agents.spawn_timeout == 60.0
+        assert agents.retry_attempts == 3
+
+
+class TestGetConfig:
+    def test_get_config_singleton(self):
+        """get_config returns the same instance"""
+        cfg1 = get_config()
+        cfg2 = get_config()
+        assert cfg1 is cfg2
+
+    def test_load_config_returns_app_config(self):
+        """load_config returns an AppConfig instance"""
         cfg = load_config()
-        assert cfg == ClawTeamConfig()
+        assert isinstance(cfg, AppConfig)
 
-    def test_save_then_load_roundtrip(self):
-        cfg = ClawTeamConfig(user="bob", default_team="my-team", transport="file")
-        save_config(cfg)
-        loaded = load_config()
-        assert loaded.user == "bob"
-        assert loaded.default_team == "my-team"
-        assert loaded.transport == "file"
-
-    def test_save_creates_parent_dirs(self):
-        """config_path() is under HOME which we redirect to tmp_path."""
-        save_config(ClawTeamConfig(user="x"))
-        assert config_path().exists()
-
-    def test_load_handles_corrupt_json(self, tmp_path):
-        p = config_path()
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text("not valid json {{{", encoding="utf-8")
-        # should fall back to defaults, not crash
-        cfg = load_config()
-        assert cfg == ClawTeamConfig()
+    def test_load_config_from_nonexistent_file(self):
+        """load_config handles missing files gracefully"""
+        cfg = load_config("nonexistent_config_file.yaml")
+        assert isinstance(cfg, AppConfig)
+        assert cfg.debug is False
 
 
-class TestGetEffective:
-    def test_env_takes_priority(self, monkeypatch):
-        save_config(ClawTeamConfig(user="from-file"))
-        monkeypatch.setenv("CLAWTEAM_USER", "from-env")
-        val, source = get_effective("user")
-        assert val == "from-env"
-        assert source == "env"
-
-    def test_file_value_used_when_no_env(self, monkeypatch):
-        monkeypatch.delenv("CLAWTEAM_USER", raising=False)
-        save_config(ClawTeamConfig(user="file-user"))
-        val, source = get_effective("user")
-        assert val == "file-user"
-        assert source == "file"
-
-    def test_default_fallback(self, monkeypatch):
-        monkeypatch.delenv("CLAWTEAM_USER", raising=False)
-        # user defaults to "" in ClawTeamConfig, so no file value -> falls through
-        val, source = get_effective("user")
-        assert val == ""
-        assert source == "default"
-
-    def test_default_backend_treated_as_file(self, monkeypatch):
-        """default_backend has a non-empty default ('tmux'), so load_config()
-        returns the default value with source='default' when no config file
-        overrides it."""
-        monkeypatch.delenv("CLAWTEAM_DEFAULT_BACKEND", raising=False)
-        val, source = get_effective("default_backend")
-        assert val == "tmux"
-        assert source == "default"
-
-    def test_data_dir_env(self, monkeypatch):
-        monkeypatch.setenv("CLAWTEAM_DATA_DIR", "/custom/path")
-        val, source = get_effective("data_dir")
-        assert val == "/custom/path"
-        assert source == "env"
-
-    def test_unknown_key_returns_empty(self):
-        val, source = get_effective("nonexistent_key")
-        assert val == ""
-        assert source == "default"
+class TestLoadConfigFromEnv:
+    def test_load_from_env(self):
+        """load_config_from_env runs without error"""
+        cfg = load_config_from_env()
+        assert isinstance(cfg, AppConfig)

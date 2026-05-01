@@ -21,6 +21,7 @@ from clawteam.team.models import get_data_dir
 from clawteam.transport.base import Transport
 from clawteam.transport.claimed import ClaimedMessage
 from clawteam.utils.retry import retry, RetryConfig
+from clawteam.utils.ttl import get_message_ttl, is_ttl_enabled, is_message_expired
 
 # Default retry config for transport operations
 _TRANSPORT_RETRY_CONFIG = RetryConfig(
@@ -128,14 +129,25 @@ class FileTransport(Transport):
         data: bytes,
     ) -> ClaimedMessage:
         def _ack() -> None:
+            # On Windows, must close file handle before unlinking
+            # Unlock first, then close, then unlink
             unlock(file_handle)
+            file_handle.close()
             try:
                 consumed_path.unlink(missing_ok=True)
-            finally:
-                file_handle.close()
+            except PermissionError:
+                # Windows may still hold the file briefly after close
+                # Retry once after a short delay
+                import time
+                time.sleep(0.05)
+                try:
+                    consumed_path.unlink(missing_ok=True)
+                except PermissionError:
+                    pass  # File will be cleaned up later
 
         def _quarantine(error: str) -> None:
             unlock(file_handle)
+            file_handle.close()
             self._quarantine_bytes(
                 agent_name,
                 data,
@@ -143,7 +155,6 @@ class FileTransport(Transport):
                 source_name=original_path.name,
                 consumed_path=consumed_path,
             )
-            file_handle.close()
 
         return ClaimedMessage(data=data, ack=_ack, quarantine=_quarantine)
 
@@ -270,3 +281,88 @@ class FileTransport(Transport):
             d.name for d in inboxes_dir.iterdir()
             if d.is_dir() and not d.name.startswith("_pending_")
         ]
+    
+    def cleanup_expired_messages(self, agent_name: str) -> int:
+        """Clean up expired messages from an agent's inbox.
+        
+        Scans the inbox directory and removes messages that have exceeded
+        the TTL duration (CLAWTEAM_MESSAGE_TTL).
+        
+        Args:
+            agent_name: Agent whose inbox to clean up.
+            
+        Returns:
+            Number of expired messages removed.
+        """
+        ttl = get_message_ttl()
+        if ttl <= 0:
+            return 0  # TTL disabled
+        
+        inbox = _inbox_dir(self.team_name, agent_name)
+        expired_count = 0
+        
+        for path in inbox.glob("msg-*.json"):
+            # Extract timestamp from filename: msg-{ts}-{uid}.json
+            try:
+                filename = path.name
+                # Parse timestamp from filename
+                parts = filename.split("-")
+                if len(parts) >= 3:
+                    ts_str = parts[1]
+                    timestamp_ms = int(ts_str)
+                    if is_message_expired(timestamp_ms, ttl):
+                        path.unlink(missing_ok=True)
+                        expired_count += 1
+            except (ValueError, OSError):
+                continue
+        
+        # Also clean up consumed files
+        for path in inbox.glob("msg-*.consumed"):
+            try:
+                filename = path.name
+                parts = filename.split("-")
+                if len(parts) >= 3:
+                    ts_str = parts[1]
+                    timestamp_ms = int(ts_str)
+                    if is_message_expired(timestamp_ms, ttl):
+                        path.unlink(missing_ok=True)
+                        expired_count += 1
+            except (ValueError, OSError):
+                continue
+        
+        return expired_count
+    
+    def cleanup_all_expired(self) -> int:
+        """Clean up expired messages for all agents in the team.
+        
+        Returns:
+            Total number of expired messages removed.
+        """
+        total_expired = 0
+        for agent_name in self.list_recipients():
+            total_expired += self.cleanup_expired_messages(agent_name)
+        return total_expired
+    
+    def get_message_age_seconds(self, agent_name: str) -> dict[str, float]:
+        """Get the age of each message in an agent's inbox.
+        
+        Returns:
+            Dict mapping message filename to age in seconds.
+        """
+        inbox = _inbox_dir(self.team_name, agent_name)
+        ages: dict[str, float] = {}
+        current_ms = int(time.time() * 1000)
+        
+        for path in inbox.glob("msg-*.json"):
+            try:
+                filename = path.name
+                parts = filename.split("-")
+                if len(parts) >= 3:
+                    ts_str = parts[1]
+                    timestamp_ms = int(ts_str)
+                    age_seconds = (current_ms - timestamp_ms) / 1000
+                    ages[filename] = age_seconds
+            except ValueError:
+                continue
+        
+        return ages

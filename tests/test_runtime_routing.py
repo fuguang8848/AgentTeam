@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from clawteam.team.models import MessageType, TeamMessage
-from clawteam.team.router import RuntimeRouter
+from clawteam.team.runtime_router import RuntimeRouter
 from clawteam.team.routing_policy import DefaultRoutingPolicy, RuntimeEnvelope
 from clawteam.team.watcher import InboxWatcher
 

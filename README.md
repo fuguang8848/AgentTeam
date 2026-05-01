@@ -27,7 +27,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-≥3.10-blue?logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/agents-OpenClaw_%7C_Claude_Code_%7C_Codex_%7C_nanobot-blueviolet" alt="Agents">
-  <img src="https://img.shields.io/badge/transport-File_%7C_ZeroMQ_P2P-orange" alt="Transport">
+  <img src="https://img.shields.io/badge/transport-File_%7C_Redis_%7C_ZeroMQ_P2P-orange" alt="Transport">
   <img src="https://img.shields.io/badge/version-0.3.0-teal" alt="Version">
 </p>
 
@@ -179,6 +179,21 @@ Optional — P2P transport (ZeroMQ):
 
 ```bash
 pip install -e ".[p2p]"
+```
+
+Optional — Redis transport (for distributed teams):
+
+```bash
+pip install -e ".[redis]"
+```
+
+Set environment variables for Redis:
+
+```bash
+export CLAWTEAM_TRANSPORT=redis
+export CLAWTEAM_REDIS_URL=redis://your-redis-host:6379
+export CLAWTEAM_REDIS_DB=0
+export CLAWTEAM_REDIS_PASSWORD=your-password  # if needed
 ```
 
 ### Step 3: Create the `~/bin/clawteam` symlink
@@ -358,7 +373,67 @@ Templates are TOML files — **create your own** for any domain.
 - `board show` — terminal kanban
 - `board live` — auto-refreshing dashboard
 - `board attach` — tiled tmux view of all agents
-- `board serve` — Web UI with real-time updates
+- `board serve` — Web UI with real-time updates (see [Web UI Features](#web-ui-features-p5))
+
+#### Web UI Features (P5)
+
+The `board serve` command launches a real-time Web dashboard with the following features:
+
+```bash
+# Start the Web UI server
+clawteam board serve --port 8080 --team my-team
+
+# Or serve all teams (switchable from UI)
+clawteam board serve --port 8080
+
+# With authentication (optional)
+export CLAWTEAM_API_KEY="your-secret-key"
+clawteam board serve --port 8080
+```
+
+**Key Features:**
+
+| Feature | Description |
+|---------|-------------|
+| **WebSocket Real-time** | WebSocket push with automatic SSE fallback for older browsers |
+| **Real-time Kanban** | Live updates, drag-and-drop task status changes |
+| **Task Details** | Click any task card to view full details (ID, owner, description, timestamps) |
+| **Theme Toggle** | Dark/Light mode with preference persistence |
+| **Message Filtering** | Filter by broadcast/direct messages, or by agent |
+| **Team Overview** | View all teams at a glance, click to switch |
+| **Responsive Design** | Works on desktop, tablet, and mobile devices |
+| **Cost Dashboard** | Real-time token/cost tracking per agent and task |
+| **User Authentication** | JWT/API Key authentication for secure access (optional) |
+
+**API Endpoints:**
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Serve the Web UI HTML page |
+| `/api/overview` | GET | List all teams with summary stats |
+| `/api/team/{name}` | GET | Get full team data (members, tasks, messages) |
+| `/api/team/{name}/task` | POST | Create a new task |
+| `/api/team/{name}/task/{id}` | PATCH | Update task status (pending→in_progress→completed→blocked) |
+| `/api/events/{name}` | GET | SSE stream for real-time updates (fallback) |
+| `/ws/{name}` | WebSocket | WebSocket endpoint for real-time push |
+| `/api/proxy?url=...` | GET | Proxy for fetching external context (GitHub only) |
+| `/auth/login` | POST | Login with API key, returns JWT token |
+
+**Authentication (Optional):**
+
+Set `CLAWTEAM_API_KEY` environment variable to enable authentication:
+
+```bash
+export CLAWTEAM_API_KEY="your-secret-key"
+clawteam board serve --port 8080
+```
+
+Clients must include `X-API-Key` header or `Authorization: Bearer <token>` header.
+
+**Security:** 
+- Proxy endpoint only allows GitHub-hosted content and blocks private IPs/localhost (SSRF protection)
+- XSS protection via HTML escaping
+- JWT tokens with configurable expiry (default 24h)
 
 ### Team Templates
 - TOML files define team archetypes (roles, tasks, prompts)
@@ -463,6 +538,9 @@ All state lives in `~/.clawteam/` as JSON files. No database, no server. Atomic 
 | Transport | `CLAWTEAM_TRANSPORT` | `file` |
 | Workspace mode | `CLAWTEAM_WORKSPACE` | `auto` |
 | Spawn backend | `CLAWTEAM_DEFAULT_BACKEND` | `tmux` |
+| Redis URL | `CLAWTEAM_REDIS_URL` | `redis://localhost:6379` |
+| Redis DB | `CLAWTEAM_REDIS_DB` | `0` |
+| Redis Password | `CLAWTEAM_REDIS_PASSWORD` | (none) |
 
 ---
 
@@ -563,6 +641,99 @@ model_tier = "cheap"              # cost tiers: strong / balanced / cheap
 clawteam spawn --model opus                          # single agent
 clawteam launch my-template --model gpt-5.4          # override all agents
 clawteam launch my-template --model-strategy auto     # auto-assign by role
+```
+
+---
+
+## Redis Transport API
+
+When using `CLAWTEAM_TRANSPORT=redis`, messages are delivered through Redis lists instead of filesystem files. This enables:
+
+- **Distributed teams** — agents on different machines can communicate
+- **Higher throughput** — Redis is faster than file-based messaging
+- **Built-in dead letter queue** — malformed messages are quarantined for inspection
+- **Peer discovery** — agents can register and discover each other
+
+### Key Methods
+
+```python
+from clawteam.transport import get_transport
+
+transport = get_transport("redis", team_name="my-team")
+
+# Send a message
+transport.deliver("agent1", b'{"type": "message", "content": "Hello"}')
+
+# Receive messages (FIFO, consumes from list)
+messages = transport.fetch("agent1", limit=10, consume=True)
+
+# List all recipients
+recipients = transport.list_recipients()
+
+# Register a peer (for P2P discovery)
+transport.register_peer("agent1", {"host": "192.168.1.100", "port": 8080})
+
+# Send heartbeat
+transport.send_heartbeat("agent1")
+
+# Quarantine malformed message
+transport.quarantine("agent1", b"bad data", "Invalid JSON format")
+
+# Get dead letters
+dead_letters = transport.get_dead_letters("agent1", limit=10)
+```
+
+### Mixed Mode
+
+Redis transport handles **messages only**. Team config, tasks, and roles remain file-based:
+
+```bash
+# Messages via Redis
+export CLAWTEAM_TRANSPORT=redis
+
+# Tasks and config still use files in ~/.clawteam/teams/<team>/
+clawteam task create my-team "Implement feature"
+clawteam role assign my-team worker1 engineer
+```
+
+---
+
+## 🔒 Privacy & Security
+
+Before uploading to GitHub or sharing:
+
+### Sensitive Data Handling
+
+| Type | Location | Protection |
+|------|----------|------------|
+| API Keys | `.env` (not committed) | Environment variables |
+| Gateway Tokens | `OPENCLAW_GATEWAY_TOKEN` env var | Never hardcode |
+| Database URLs | `DATABASE_URL` env var | Environment variables |
+| User Credentials | OpenClaw secure storage | Never in code |
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and fill in your values:
+
+```bash
+cp .env.example .env
+# Edit .env with your actual API keys
+```
+
+### GitHub Upload Checklist
+
+- [ ] `.env` is in `.gitignore`
+- [ ] No hardcoded API keys or tokens in code
+- [ ] All secrets use `os.environ.get()` or `os.getenv()`
+- [ ] `.env.example` contains only placeholder values (`xxx` or `sk-xxx...`)
+
+### Code Review
+
+```bash
+# Search for potential hardcoded secrets before committing
+grep -r "sk-" --include="*.py" .
+grep -r "ghp_" --include="*.py" .
+grep -r "password\s*=" --include="*.py" .
 ```
 
 ---

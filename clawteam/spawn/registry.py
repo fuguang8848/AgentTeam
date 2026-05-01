@@ -278,15 +278,37 @@ def _pid_alive(pid: int) -> bool:
     """Check if a process with the given PID is still running."""
     if pid <= 0:
         return False
-    try:
-        import os
-        os.kill(pid, 0)
-        return True
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        # Process exists but we can't signal it
-        return True
+    import sys
+    import os
+    if sys.platform == "win32":
+        # Windows doesn't support os.kill(pid, 0) for process checking
+        # Use psutil or tasklist instead
+        try:
+            import psutil
+            return psutil.pid_exists(pid)
+        except ImportError:
+            # Fallback: use tasklist command
+            import subprocess
+            result = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}", "/NH"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            # If PID exists, output will contain the PID number
+            return str(pid) in result.stdout
+    else:
+        try:
+            os.kill(pid, 0)
+            return True
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            # Process exists but we can't signal it
+            return True
+        except OSError:
+            # On some systems, OSError can be raised for non-existent processes
+            return False
 
 
 def _load(path: Path) -> dict:

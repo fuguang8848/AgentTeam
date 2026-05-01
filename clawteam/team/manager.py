@@ -215,6 +215,27 @@ class TeamManager:
         return cleaned
 
     @staticmethod
+    def delete_team(team_name: str) -> bool:
+        """Delete a team completely (config + all directories)."""
+        validate_identifier(team_name, "team name")
+        config_path = _config_path(team_name)
+        if not config_path.exists():
+            raise ValueError(f"Team '{team_name}' not found")
+
+        # Cleanup all team directories
+        TeamManager.cleanup(team_name)
+
+        # Remove the config file
+        config_path.unlink(missing_ok=True)
+
+        # Also remove the team directory if it exists
+        team_dir = _team_dir(team_name)
+        if team_dir.exists():
+            shutil.rmtree(team_dir)
+
+        return True
+
+    @staticmethod
     def list_members(team_name: str) -> list[TeamMember]:
         config = _load_config(team_name)
         return config.members if config else []

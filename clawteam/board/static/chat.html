@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClawTeam 聊天</title>
+    <style>
+        /* Material Design SVG Icons */
+        .material-icon { display: inline-flex; align-items: center; justify-content: center; }
+        .material-icon svg { width: 18px; height: 18px; fill: currentColor; }
+
+        :root {
+            color-scheme: dark;
+            --bg-color: #050505;
+            --surface-color: rgba(20, 20, 20, 0.6);
+            --surface-hover: rgba(35, 35, 35, 0.7);
+            --surface-active: rgba(45, 45, 45, 0.8);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.15);
+            --text-primary: #ffffff;
+            --text-secondary: #9ca3af;
+            --text-tertiary: #6b7280;
+            --accent-glow: rgba(99, 102, 241, 0.4);
+            --color-user: #3b82f6;
+            --color-assistant: #10b981;
+            --color-system: #f59e0b;
+            --color-error: #ef4444;
+            --color-success: #10b981;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --blur: blur(20px);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Chat Layout */
+        .chat-container {
+            display: flex;
+            height: 100vh;
+            max-width: 100vw;
+        }
+
+        /* Sidebar */
+        .chat-sidebar {
+            width: 280px;
+            background: rgba(10, 10, 10, 0.5);
+            backdrop-filter: var(--blur);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            z-index: 10;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .sidebar-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .back-button {
+            padding: 8px;
+            border-radius: var(--radius-md);
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .back-button:hover {
+            border-color: var(--border-hover);
+            background: var(--surface-hover);
+        }
+
+        .team-status-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .team-status-card:hover {
+            border-color: var(--border-hover);
+        }
+
+        .team-status-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .team-status-value {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-success);
+        }
+
+        .status-indicator.online { background: var(--color-success); }
+        .status-indicator.idle { background: var(--color-system); }
+        .status-indicator.offline { background: var(--color-error); }
+
+        .quick-commands {
+            margin-top: 24px;
+        }
+
+        .commands-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .command-item {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .command-item:hover {
+            border-color: var(--border-hover);
+            background: var(--surface-hover);
+        }
+
+        .command-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Main Chat Area */
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+
+        .chat-title {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .chat-button {
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .chat-button:hover {
+            border-color: var(--border-hover);
+            background: var(--surface-hover);
+        }
+
+        .chat-button.primary {
+            background: var(--color-user);
+            border-color: var(--color-user);
+        }
+
+        .chat-button.primary:hover {
+            background: var(--color-user);
+            opacity: 0.9;
+        }
+
+        /* Messages Container */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 8px;
+            margin-bottom: 24px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            background: var(--surface-color);
+            border: 1px solid transparent;
+            transition: border-color 0.2s ease;
+        }
+
+        .message:hover {
+            border-color: var(--border-hover);
+        }
+
+        .message-user {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid var(--color-user);
+        }
+
+        .message-assistant {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--color-assistant);
+        }
+
+        .message-system {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid var(--color-system);
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .message-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .message-user .message-avatar {
+            background: var(--color-user);
+        }
+
+        .message-assistant .message-avatar {
+            background: var(--color-assistant);
+        }
+
+        .message-system .message-avatar {
+            background: var(--color-system);
+        }
+
+        .message-author {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .message-timestamp {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-left: auto;
+        }
+
+        .message-content {
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .message-task {
+            background: rgba(168, 85, 247, 0.1);
+            border-left: 4px solid #a855f7;
+            margin-top: 8px;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+        }
+
+        .message-task-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #a855f7;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .message-task-content {
+            font-size: 13px;
+            margin-top: 4px;
+            color: var(--text-secondary);
+        }
+
+        /* Input Area */
+        .input-container {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            transition: border-color 0.2s ease;
+        }
+
+        .input-container:focus-within {
+            border-color: var(--border-hover);
+        }
+
+        .chat-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            min-height: 60px;
+            max-height: 200px;
+            outline: none;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .input-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .input-hint {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .send-button {
+            padding: 8px 20px;
+            border-radius: var(--radius-md);
+            background: var(--color-user);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: opacity 0.2s ease;
+        }
+
+        .send-button:hover {
+            opacity: 0.9;
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 1000;
+            backdrop-filter: var(--blur);
+        }
+
+        .connection-status.connected {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--color-success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .connection-status.connecting {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--color-system);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .connection-status.disconnected {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--color-error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* Scrollbar */
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: var(--border-hover);
+        }
+
+        /* Responsive */
+        /* SPAI-inspired Light Theme */
+        [data-theme="light"] {
+            --bg-color: #f2f4f7;
+            --surface-color: #ffffff;
+            --surface-hover: #f5f6f8;
+            --surface-active: #eef0f3;
+            --border-color: #e5e7eb;
+            --border-hover: #d1d5db;
+            --text-primary: #1a1a2e;
+            --text-secondary: #5a6170;
+            --text-tertiary: #9ca3af;
+            --accent-glow: rgba(99, 102, 241, 0.12);
+            --color-user: #6366f1;
+            --color-assistant: #10b981;
+            --color-system: #f59e0b;
+            --color-error: #ef4444;
+            --color-success: #10b981;
+        }
+        [data-theme="light"] body {
+            background-color: var(--bg-color);
+        }
+        [data-theme="light"] .chat-sidebar {
+            background: #ffffff;
+            border-right: 1px solid var(--border-color);
+        }
+        [data-theme="light"] .team-status-card {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        [data-theme="light"] .command-item {
+            background: var(--surface-color);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        [data-theme="light"] .message {
+            background: var(--surface-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        [data-theme="light"] .input-container {
+            background: var(--surface-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                flex-direction: column;
+            }
+            
+            .chat-sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            .back-button span {
+                display: none;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-dots {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .loading-dots span {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--surface-color);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            margin-bottom: 12px;
+            width: fit-content;
+        }
+
+        .typing-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Sidebar with team status and quick commands -->
+        <div class="chat-sidebar">
+            <div class="sidebar-header">
+                <button class="back-button" onclick="goBackToBoard()">
+                    ← <span>返回看板</span>
+                </button>
+                <h1>团队聊天</h1>
+            </div>
+
+            <div class="team-status-card">
+                <div class="team-status-title">团队状态</div>
+                <div class="team-status-value">
+                    <div class="status-indicator online"></div>
+                    <span id="team-status-text">活跃</span>
+                </div>
+            </div>
+
+            <div class="quick-commands">
+                <div class="commands-title">快捷命令</div>
+                <div class="command-item" onclick="sendCommand('/status')">
+                    <div class="command-icon">📊</div>
+                    <span>查看团队状态</span>
+                </div>
+                <div class="command-item" onclick="sendCommand('/tasks list')">
+                    <div class="command-icon">📋</div>
+                    <span>活跃任务列表</span>
+                </div>
+                <div class="command-item" onclick="sendCommand('/create task')">
+                    <div class="command-icon">➕</div>
+                    <span>创建新任务</span>
+                </div>
+                <div class="command-item" onclick="sendCommand('/help')">
+                    <div class="command-icon">❓</div>
+                    <span>显示帮助</span>
+                </div>
+            </div>
+
+            <div class="quick-commands" style="margin-top: auto;">
+                <div class="commands-title">在线成员</div>
+                <div id="active-members-list"></div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="chat-main">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <span>与团队聊天</span>
+                    <span id="chat-subtitle" style="font-size: 14px; color: var(--text-secondary);">控制任务并监控进度</span>
+                </div>
+                <div class="chat-actions">
+                    <button class="chat-button" onclick="clearChatHistory()">
+                        🗑️ Clear History
+                    </button>
+                    <button class="chat-button" onclick="exportChatHistory()">
+                        💾 Export
+                    </button>
+                    <button class="chat-button primary" onclick="showTaskModal()">
+                        📝 New Task
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages Container -->
+            <div class="messages-container" id="messages-container">
+                <!-- Messages will be inserted here -->
+                <div class="message message-system">
+                    <div class="message-header">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-author">系统</div>
+                        <div class="message-timestamp" id="welcome-time">刚刚</div>
+                    </div>
+                    <div class="message-content">
+                        欢迎来到 ClawTeam 聊天！你可以与团队成员交流、创建任务并监控进度。输入 /help 查看可用命令。
+                    </div>
+                </div>
+            </div>
+
+            <!-- Typing Indicator (hidden by default) -->
+            <div class="typing-indicator" id="typing-indicator" style="display: none;">
+                <div class="typing-text">团队正在输入</div>
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-container">
+                <textarea 
+                    class="chat-input" 
+                    id="chat-input" 
+                    placeholder="输入消息或命令（使用 / 输入命令，如 /create task）..." 
+                    rows="3"
+                    onkeydown="handleKeyDown(event)"
+                ></textarea>
+                <div class="input-footer">
+                    <div class="input-hint">
+                        按 Ctrl+Enter 发送 • <span id="connection-status-text">连接中...</span>
+                    </div>
+                    <button class="send-button" id="send-button" onclick="sendMessage()" disabled>
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connection Status Indicator -->
+        <div class="connection-status connecting" id="connection-status">
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <span>连接中...</span>
+        </div>
+    </div>
+
+    <!-- Task Creation Modal (hidden by default) -->
+    <div id="task-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 2000; align-items: center; justify-content: center;">
+        <div style="background: var(--surface-color); border-radius: var(--radius-lg); padding: 32px; width: 500px; max-width: 90%; backdrop-filter: var(--blur); border: 1px solid var(--border-color);">
+            <h2 style="margin-bottom: 20px; font-size: 20px;">创建新任务</h2>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-size: 14px; color: var(--text-secondary);">标题</label>
+                    <input type="text" id="task-title" placeholder="Task title..." style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-size: 14px; color: var(--text-secondary);">描述</label>
+                    <textarea id="task-description" placeholder="Task description..." rows="4" style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px; resize: vertical;"></textarea>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-size: 14px; color: var(--text-secondary);">负责人</label>
+                    <select id="task-assignee" style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px;">
+                        <option value="">自动分配</option>
+                        <option value="leader">负责人</option>
+                        <option value="architect">架构师</option>
+                        <option value="backend">后端工程师</option>
+                        <option value="backend2">后端工程师 2</option>
+                        <option value="frontend">前端工程师</option>
+                        <option value="qa">测试工程师</option>
+                        <option value="qa2">测试工程师 2</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 12px;">
+                    <button onclick="createTask()" style="padding: 12px 24px; background: var(--color-user); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-weight: 600; flex: 1;">创建任务</button>
+                    <button onclick="hideTaskModal()" style="padding: 12px 24px; background: var(--surface-color); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; flex: 1;">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let chatHistory = [];
+        let eventSource = null;
+        let isConnected = false;
+        let typingTimeout = null;
+        let lastMessageId = 0;
+
+        // Initialize chat
+        function initChat() {
+            // Set welcome timestamp
+            document.getElementById('welcome-time').textContent = formatTime(new Date());
+            
+            // Load chat history
+            loadChatHistory();
+            
+            // Connect to SSE
+            connectSSE();
+            
+            // Focus input
+            document.getElementById('chat-input').focus();
+            
+            // Update team status
+            updateTeamStatus();
+            
+            // Update active members
+            updateActiveMembers();
+        }
+
+        // Connect to Server-Sent Events
+        function connectSSE() {
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            const statusElement = document.getElementById('connection-status');
+            const statusText = document.getElementById('connection-status-text');
+            
+            statusElement.className = 'connection-status connecting';
+            statusText.textContent = '连接中...';
+            
+            try {
+                eventSource = new EventSource('/api/chat/events');
+                
+                eventSource.onopen = () => {
+                    isConnected = true;
+                    statusElement.className = 'connection-status connected';
+                    statusElement.innerHTML = '✓ <span>已连接</span>';
+                    statusText.textContent = '已连接';
+                    document.getElementById('send-button').disabled = false;
+                    console.log('SSE 已连接');
+                };
+                
+                eventSource.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleChatEvent(data);
+                    } catch (e) {
+                        console.error('Error parsing SSE message:', e);
+                    }
+                };
+                
+                eventSource.onerror = (error) => {
+                    isConnected = false;
+                    statusElement.className = 'connection-status disconnected';
+                    statusElement.innerHTML = '✗ <span>未连接</span>';
+                    statusText.textContent = '未连接';
+                    document.getElementById('send-button').disabled = true;
+                    console.error('SSE error:', error);
+                    
+                    // Attempt reconnect after 3 seconds
+                    setTimeout(connectSSE, 3000);
+                };
+                
+            } catch (e) {
+                console.error('Error creating EventSource:', e);
+                statusElement.className = 'connection-status disconnected';
+                statusText.textContent = '连接失败';
+            }
+        }
+
+        // Handle incoming chat events
+        function handleChatEvent(data) {
+            switch (data.type) {
+                case 'message':
+                    addMessage(data.message);
+                    break;
+                case 'typing':
+                    showTypingIndicator(data.user, data.isTyping);
+                    break;
+                case 'team_update':
+                    updateTeamStatus();
+                    break;
+                case 'task_created':
+                    showTaskNotification(data.task);
+                    break;
+                case 'task_updated':
+                    updateTaskNotification(data.task);
+                    break;
+                case 'member_joined':
+                    updateActiveMembers();
+                    break;
+                case 'member_left':
+                    updateActiveMembers();
+                    break;
+            }
+        }
+
+        // Load chat history from server
+        function loadChatHistory() {
+            fetch('/api/chat/history')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.messages && Array.isArray(data.messages)) {
+                        chatHistory = data.messages;
+                        renderChatHistory();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading chat history:', error);
+                });
+        }
+
+        // Render chat history
+        function renderChatHistory() {
+            const container = document.getElementById('messages-container');
+            
+            // Clear existing messages except welcome message
+            const welcomeMsg = container.querySelector('.message-system');
+            container.innerHTML = '';
+            if (welcomeMsg) {
+                container.appendChild(welcomeMsg);
+            }
+            
+            // Add history messages
+            chatHistory.forEach(message => {
+                addMessage(message, false);
+            });
+            
+            // Scroll to bottom
+            scrollToBottom();
+        }
+
+        // Add a message to the chat
+        function addMessage(message, saveToHistory = true) {
+            if (!message || !message.content) return;
+            
+            const container = document.getElementById('messages-container');
+            
+            // Generate message ID if not provided
+            const messageId = message.id || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            lastMessageId = messageId;
+            
+            // Create message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${message.role || 'system'}`;
+            messageDiv.id = messageId;
+            
+            // Format timestamp
+            const timestamp = message.timestamp || new Date().toISOString();
+            const timeText = formatTime(new Date(timestamp));
+            
+            // Determine author and avatar
+            const role = message.role || 'system';
+            let author = '系统';
+            let avatar = '🤖';
+            
+            if (role === 'user') {
+                author = message.user || '你';
+                avatar = '👤';
+            } else if (role === 'assistant') {
+                author = message.assistant || '团队';
+                avatar = '🤖';
+            } else if (role === 'system') {
+                author = '系统';
+                avatar = '⚙️';
+            }
+            
+            // Build message HTML
+            let messageHTML = `
+                <div class="message-header">
+                    <div class="message-avatar">${avatar}</div>
+                    <div class="message-author">${escapeHtml(author)}</div>
+                    <div class="message-timestamp">${timeText}</div>
+                </div>
+                <div class="message-content">${escapeHtml(message.content)}</div>
+            `;
+            
+            // Add task info if present
+            if (message.task) {
+                messageHTML += `
+                    <div class="message-task">
+                        <div class="message-task-title">📝 Task: ${escapeHtml(message.task.title || 'Untitled')}</div>
+                        <div class="message-task-content">${escapeHtml(message.task.description || '')}</div>
+                    </div>
+                `;
+            }
+            
+            messageDiv.innerHTML = messageHTML;
+            container.appendChild(messageDiv);
+            
+            // Add to history if needed
+            if (saveToHistory) {
+                const messageCopy = {
+                    id: messageId,
+                    role: role,
+                    content: message.content,
+                    timestamp: timestamp,
+                    user: message.user,
+                    assistant: message.assistant,
+                    task: message.task
+                };
+                chatHistory.push(messageCopy);
+                
+                // Keep history limited to last 100 messages
+                if (chatHistory.length > 100) {
+                    chatHistory = chatHistory.slice(-100);
+                }
+            }
+            
+            // Scroll to bottom
+            scrollToBottom();
+        }
+
+        // Send a message
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (!message || !isConnected) return;
+            
+            // Clear input
+            input.value = '';
+            adjustInputHeight();
+            
+            // Add user message to chat
+            const userMessage = {
+                id: `user_${Date.now()}`,
+                role: 'user',
+                content: message,
+                timestamp: new Date().toISOString(),
+                user: 'User'
+            };
+            addMessage(userMessage);
+            
+            // Show typing indicator
+            showTypingIndicator('Team', true);
+            
+            // Send to server
+            fetch('/api/chat/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    timestamp: new Date().toISOString()
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide typing indicator
+                showTypingIndicator('Team', false);
+                
+                if (data.success) {
+                    // Server will send response via SSE
+                    console.log('消息发送成功');
+                } else {
+                    // Show error message
+                    const errorMessage = {
+                        role: 'system',
+                        content: `错误：${data.error || '发送失败'}`,
+                        timestamp: new Date().toISOString()
+                    };
+                    addMessage(errorMessage);
+                }
+            })
+            .catch(error => {
+                // Hide typing indicator
+                showTypingIndicator('Team', false);
+                
+                // Show error message
+                const errorMessage = {
+                    role: 'system',
+                    content: `错误：${error.message}`,
+                    timestamp: new Date().toISOString()
+                };
+                addMessage(errorMessage);
+            });
+        }
+
+        // Send a predefined command
+        function sendCommand(command) {
+            const input = document.getElementById('chat-input');
+            input.value = command;
+            sendMessage();
+        }
+
+        // Show/hide typing indicator
+        function showTypingIndicator(user, isTyping) {
+            const indicator = document.getElementById('typing-indicator');
+            
+            if (typingTimeout) {
+                clearTimeout(typingTimeout);
+                typingTimeout = null;
+            }
+            
+            if (isTyping) {
+                indicator.style.display = 'flex';
+                
+                // Auto-hide after 10 seconds if no response
+                typingTimeout = setTimeout(() => {
+                    indicator.style.display = 'none';
+                }, 10000);
+            } else {
+                indicator.style.display = 'none';
+            }
+        }
+
+        // Update team status
+        function updateTeamStatus() {
+            fetch('/api/overview')
+                .then(response => response.json())
+                .then(data => {
+                    const statusText = document.getElementById('team-status-text');
+                    const indicator = document.querySelector('.status-indicator');
+                    
+                    if (data.status === 'healthy') {
+                        statusText.textContent = '活跃';
+                        indicator.className = 'status-indicator online';
+                    } else if (data.status === 'degraded') {
+                        statusText.textContent = '降级';
+                        indicator.className = 'status-indicator idle';
+                    } else {
+                        statusText.textContent = '不活跃';
+                        indicator.className = 'status-indicator offline';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating team status:', error);
+                });
+        }
+
+        // Update active members list
+        function updateActiveMembers() {
+            fetch('/api/sessions')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('active-members-list');
+                    
+                    if (data.sessions && data.sessions.length > 0) {
+                        let html = '';
+                        data.sessions.forEach(session => {
+                            if (session.status === 'active') {
+                                const role = session.role || 'unknown';
+                                const name = session.name || role;
+                                html += `
+                                    <div class="command-item" style="margin-bottom: 4px; padding: 8px;">
+                                        <div class="command-icon">👤</div>
+                                        <span>${escapeHtml(name)} (${escapeHtml(role)})</span>
+                                    </div>
+                                `;
+                            }
+                        });
+                        container.innerHTML = html || '<div style="color: var(--text-tertiary); font-size: 13px;">暂无在线成员</div>';
+                    } else {
+                        container.innerHTML = '<div style="color: var(--text-tertiary); font-size: 13px;">暂无在线成员</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating active members:', error);
+                });
+        }
+
+        // Show task creation modal
+        function showTaskModal() {
+            document.getElementById('task-modal').style.display = 'flex';
+        }
+
+        // Hide task creation modal
+        function hideTaskModal() {
+            document.getElementById('task-modal').style.display = 'none';
+        }
+
+        // Create a new task
+        function createTask() {
+            const title = document.getElementById('task-title').value.trim();
+            const description = document.getElementById('task-description').value.trim();
+            const assignee = document.getElementById('task-assignee').value;
+            
+            if (!title) {
+                alert('请输入任务标题');
+                return;
+            }
+            
+            // Send task creation request
+            fetch('/api/chat/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: `/create task "${title}" - ${description}`,
+                    timestamp: new Date().toISOString(),
+                    isTask: true,
+                    taskData: {
+                        title: title,
+                        description: description,
+                        assignee: assignee
+                    }
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Clear form and hide modal
+                    document.getElementById('task-title').value = '';
+                    document.getElementById('task-description').value = '';
+                    document.getElementById('task-assignee').value = '';
+                    hideTaskModal();
+                    
+                    // Show success message
+                    const successMessage = {
+                        role: 'system',
+                        content: `任务"${title}"创建成功！`,
+                        timestamp: new Date().toISOString()
+                    };
+                    addMessage(successMessage);
+                } else {
+                    alert(`创建任务失败：${data.error || '未知错误'}`);
+                }
+            })
+            .catch(error => {
+                alert(`创建任务失败：${error.message}`);
+            });
+        }
+
+        // Show task notification
+        function showTaskNotification(task) {
+            const notification = {
+                role: 'system',
+                content: `New task created: ${task.title}`,
+                timestamp: new Date().toISOString(),
+                task: task
+            };
+            addMessage(notification);
+        }
+
+        // Update task notification
+        function updateTaskNotification(task) {
+            const notification = {
+                role: 'system',
+                content: `Task updated: ${task.title} (${task.status})`,
+                timestamp: new Date().toISOString(),
+                task: task
+            };
+            addMessage(notification);
+        }
+
+        // Clear chat history
+        function clearChatHistory() {
+            if (confirm('确定要清空所有聊天历史吗？')) {
+                chatHistory = [];
+                renderChatHistory();
+                
+                // Notify server
+                fetch('/api/chat/history', {
+                    method: 'DELETE'
+                })
+                .catch(error => console.error('Error clearing server history:', error));
+            }
+        }
+
+        // Export chat history
+        function exportChatHistory() {
+            const exportData = {
+                exportDate: new Date().toISOString(),
+                messages: chatHistory
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `clawteam-chat-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Go back to main board
+        function goBackToBoard() {
+            window.location.href = '/';
+        }
+
+        // Handle keyboard shortcuts
+        function handleKeyDown(event) {
+            const input = document.getElementById('chat-input');
+            
+            // Ctrl+Enter or Cmd+Enter to send
+            if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+            
+            // Auto-resize textarea
+            setTimeout(() => {
+                adjustInputHeight();
+            }, 0);
+        }
+
+        // Adjust input height based on content
+        function adjustInputHeight() {
+            const input = document.getElementById('chat-input');
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+        }
+
+        // Scroll to bottom of messages
+        function scrollToBottom() {
+            const container = document.getElementById('messages-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Format time as "HH:MM" or "Yesterday HH:MM" etc.
+        function formatTime(date) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            if (date >= today) {
+                return timeStr;
+            } else if (date >= yesterday) {
+                return `昨天 ${timeStr}`;
+            } else {
+                return `${date.toLocaleDateString()} ${timeStr}`;
+            }
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initChat);
+    </script>
+</body>
+</html>

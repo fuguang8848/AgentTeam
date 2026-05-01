@@ -232,6 +232,83 @@ def config_health():
 
 
 # ============================================================================
+# Template Commands
+# ============================================================================
+
+template_app = typer.Typer(help="Team template management")
+app.add_typer(template_app, name="template")
+
+
+@template_app.command("list")
+def template_list():
+    """List all available team templates."""
+    from clawteam.templates import list_templates
+
+    templates = list_templates()
+
+    def _human(data):
+        table = Table(title="Available Templates")
+        table.add_column("Name", style="cyan")
+        table.add_column("Description")
+        table.add_column("Source", style="dim")
+        for t in data:
+            table.add_row(t["name"], t["description"], t["source"])
+        console.print(table)
+        console.print(f"\n[dim]Run `clawteam template show <name>` for details.[/dim]")
+
+    _output(templates, _human)
+
+
+@template_app.command("show")
+def template_show(
+    name: str = typer.Argument(..., help="Template name"),
+):
+    """Show detailed information about a template."""
+    from clawteam.templates import load_template
+
+    try:
+        tmpl = load_template(name)
+    except FileNotFoundError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+    def _human(t):
+        console.print(f"\n[bold cyan]{t.name}[/bold cyan]")
+        console.print(f"{t.description}\n")
+
+        # Leader
+        console.print(f"[bold]Leader:[/bold] {t.leader.name} ({t.leader.type})")
+        if t.leader.model:
+            console.print(f"  Model: {t.leader.model}")
+        console.print(f"  [dim]{t.leader.task[:80]}...[/dim]" if len(t.leader.task) > 80 else f"  [dim]{t.leader.task}[/dim]")
+        console.print()
+
+        # Agents
+        console.print(f"[bold]Agents ({len(t.agents)}):[/bold]")
+        for i, agent in enumerate(t.agents, 1):
+            console.print(f"  {i}. {agent.name} ({agent.type})")
+            if agent.model:
+                console.print(f"     Model: {agent.model}")
+            if hasattr(agent, 'task_type') and agent.task_type:
+                console.print(f"     Task Type: {agent.task_type}")
+            task_preview = agent.task[:60] + "..." if len(agent.task) > 60 else agent.task
+            console.print(f"     [dim]{task_preview}[/dim]")
+        console.print()
+
+        # Tasks
+        if t.tasks:
+            console.print(f"[bold]Tasks ({len(t.tasks)}):[/bold]")
+            for i, task in enumerate(t.tasks, 1):
+                console.print(f"  {i}. {task.subject} - {task.description}")
+        console.print()
+
+        # Meta
+        console.print(f"[dim]Backend: {t.backend} | Command: {' '.join(t.command)} | Max Agents: {t.max_agents}[/dim]")
+
+    _output(_dump(tmpl), _human)
+
+
+# ============================================================================
 # Team Commands
 # ============================================================================
 
@@ -274,6 +351,84 @@ def team_spawn_team(
             console.print(f"[green]OK[/green] Team '{name}' created"),
             console.print(f"  Leader: {leader_name} (id: {leader_id})"),
         ))
+    except ValueError as e:
+        if _json_output:
+            print(json.dumps({"error": str(e)}))
+        else:
+            console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@team_app.command("create")
+def team_create(
+    name: str = typer.Argument(..., help="Team name"),
+    template: str = typer.Option("", "--template", "-t", help="Template name to use"),
+    description: str = typer.Option("", "--description", "-d", help="Team description"),
+):
+    """Create a new team, optionally from a template (createTeam)."""
+    from clawteam.identity import AgentIdentity
+    from clawteam.team.manager import TeamManager
+    from clawteam.templates import load_template
+
+    identity = AgentIdentity.from_env()
+    leader_id = identity.agent_id
+
+    # Load template if specified
+    tmpl = None
+    if template:
+        try:
+            tmpl = load_template(template)
+        except FileNotFoundError as e:
+            console.print(f"[red]Error:[/red] {e}")
+            raise typer.Exit(1)
+
+    # Determine leader name and description
+    if tmpl:
+        leader_name = tmpl.leader.name
+        desc = description or tmpl.description
+        backend = tmpl.backend
+        command = tmpl.command
+    else:
+        leader_name = identity.agent_name or "leader"
+        desc = description
+        backend = "tmux"
+        command = ["openclaw"]
+
+    try:
+        TeamManager.create_team(
+            name=name,
+            leader_name=leader_name,
+            leader_id=leader_id,
+            description=desc,
+            user=identity.user,
+        )
+
+        result = {
+            "status": "created",
+            "team": name,
+            "leaderName": leader_name,
+            "leadAgentId": leader_id,
+            "backend": backend,
+            "command": command,
+        }
+        if tmpl:
+            result["template"] = template
+            result["agents"] = [{"name": a.name, "type": a.type} for a in tmpl.agents]
+            result["tasks"] = [{"subject": t.subject, "owner": t.owner} for t in tmpl.tasks]
+
+        def _human(d):
+            console.print(f"[green]OK[/green] Team '{name}' created")
+            console.print(f"  Leader: {d['leaderName']} (id: {d['leadAgentId']})")
+            console.print(f"  Backend: {d['backend']}")
+            if d.get("template"):
+                console.print(f"  Template: {d['template']}")
+            if d.get("agents"):
+                console.print(f"  Agents: {', '.join(a['name'] for a in d['agents'])}")
+            if d.get("tasks"):
+                console.print(f"  Tasks: {len(d['tasks'])} defined")
+
+        _output(result, _human)
+
     except ValueError as e:
         if _json_output:
             print(json.dumps({"error": str(e)}))
@@ -854,7 +1009,7 @@ def runtime_watch(
     from clawteam.identity import AgentIdentity
     from clawteam.team.mailbox import MailboxManager
     from clawteam.team.manager import TeamManager
-    from clawteam.team.router import RuntimeRouter
+    from clawteam.team.runtime_router import RuntimeRouter
     from clawteam.team.watcher import InboxWatcher
 
     identity = AgentIdentity.from_env()
@@ -1911,7 +2066,7 @@ def lifecycle_check_zombies(
 
 @app.command("spawn")
 def spawn_agent(
-    backend: Optional[str] = typer.Argument(None, help="Backend: tmux (default) or subprocess"),
+    backend: Optional[str] = typer.Argument(None, help="Backend: auto (default), tmux, or subprocess"),
     command: list[str] = typer.Argument(None, help="Command and arguments to run (default: openclaw)"),
     team: Optional[str] = typer.Option(None, "--team", "-t", help="Team name"),
     agent_name: Optional[str] = typer.Option(None, "--agent-name", "-n", help="Agent name"),
@@ -1935,7 +2090,7 @@ def spawn_agent(
     # Resolve defaults from config
     if backend is None:
         backend, _ = get_effective("default_backend")
-        backend = backend or "tmux"
+        backend = backend or "auto"
     if not command:
         command = ["openclaw"]
 
@@ -3733,5 +3888,176 @@ def role_suggest(
     _output({"task_id": task_id, "subject": task.subject, "suggested_role": suggested.value, "owner": task.owner}, _human)
 
 
+# ============================================================================
+# Session Commands (Cross-Session Awareness)
+# ============================================================================
+
+from clawteam.cli.session import session_app
+app.add_typer(session_app, name="session", help="Session awareness commands")
+
+
+# ============================================================================
+# Insights Commands
+# ============================================================================
+
+insights_app = typer.Typer(help="Usage insights and statistics")
+app.add_typer(insights_app, name="insights")
+
+
+@insights_app.command("show")
+def insights_show(
+    days: int = typer.Option(30, "--days", "-d", help="Number of days to analyze"),
+    team_id: Optional[str] = typer.Option(None, "--team", "-t", help="Filter by team ID"),
+):
+    """Show overall usage statistics."""
+    from clawteam.insights import InsightsEngine
+
+    engine = InsightsEngine()
+    report = engine.generate_report(days=days, team_id=team_id, format="json")
+    engine.close()
+
+    def _human(d):
+        console.print(f"\n[bold cyan]Insights Report[/cyan] — Last {d['time_range_days']} days")
+        console.print(f"Generated: {d['generated_at'][:19]}")
+        console.print()
+
+        # Token usage summary
+        tu = d.get("token_usage", {})
+        console.print("[bold]Token Usage[/bold]")
+        console.print(f"  Total:        {tu.get('total_tokens', 0):,}")
+        console.print(f"  Input:        {tu.get('total_input_tokens', 0):,}")
+        console.print(f"  Output:       {tu.get('total_output_tokens', 0):,}")
+        console.print(f"  Est. Cost:    ${tu.get('estimated_cost', 0):.4f}")
+        console.print()
+
+        # Tool usage
+        tool_u = d.get("tool_usage", {})
+        console.print(f"[bold]Tool Usage[/bold] — {tool_u.get('total_tool_calls', 0)} total calls")
+        top_tools = tool_u.get("top_tools", {})
+        if top_tools:
+            for tool, count in list(top_tools.items())[:5]:
+                console.print(f"  {tool}: {count}")
+        console.print()
+
+        # Skill usage
+        skill_u = d.get("skill_usage", {})
+        console.print(f"[bold]Skill Usage[/bold] — {skill_u.get('total_skill_invocations', 0)} total invocations")
+        top_skills = skill_u.get("top_skills", {})
+        if top_skills:
+            for skill, count in list(top_skills.items())[:5]:
+                console.print(f"  {skill}: {count}")
+        console.print()
+
+        # Activity patterns
+        ap = d.get("activity_patterns", {})
+        console.print(f"[bold]Activity Patterns[/bold]")
+        console.print(f"  Active days:  {ap.get('active_days', 0)}")
+        console.print(f"  Total sessions: {ap.get('total_sessions', 0)}")
+        summary = d.get("summary_metrics", {})
+        console.print(f"  Most active hour: {summary.get('most_active_hour', 'N/A')}")
+        console.print(f"  Most used tool:  {summary.get('most_used_tool', 'N/A')}")
+        console.print(f"  Most used skill: {summary.get('most_used_skill', 'N/A')}")
+
+    _output(report, _human)
+
+
+@insights_app.command("tools")
+def insights_tools(
+    days: int = typer.Option(30, "--days", "-d", help="Number of days to analyze"),
+    team_id: Optional[str] = typer.Option(None, "--team", "-t", help="Filter by team ID"),
+):
+    """Show tool usage ranking."""
+    from clawteam.insights import InsightsEngine
+
+    engine = InsightsEngine()
+    stats = engine.get_tool_usage_stats(days=days, team_id=team_id)
+    engine.close()
+
+    def _human(d):
+        console.print(f"\n[bold cyan]Tool Usage[/cyan] — Last {days} days")
+        console.print(f"Total calls: {d.total_tool_calls}\n")
+
+        table = Table(title="Tool Ranking")
+        table.add_column("Rank", style="dim", justify="right")
+        table.add_column("Tool", style="cyan")
+        table.add_column("Calls", justify="right")
+
+        sorted_tools = sorted(d.by_tool.items(), key=lambda x: x[1], reverse=True)
+        for i, (tool, count) in enumerate(sorted_tools, 1):
+            table.add_row(str(i), tool, str(count))
+
+        console.print(table)
+
+        if d.by_hour:
+            console.print("\n[bold]Hourly Distribution[/bold]")
+            for hour in sorted(d.by_hour.keys()):
+                bar = "█" * min(d.by_hour[hour], 20)
+                console.print(f"  {hour:02d}:00  {bar}  {d.by_hour[hour]}")
+
+    _output(stats, _human)
+
+
+@insights_app.command("skills")
+def insights_skills(
+    days: int = typer.Option(30, "--days", "-d", help="Number of days to analyze"),
+    team_id: Optional[str] = typer.Option(None, "--team", "-t", help="Filter by team ID"),
+):
+    """Show skill usage ranking."""
+    from clawteam.insights import InsightsEngine
+
+    engine = InsightsEngine()
+    stats = engine.get_skill_usage_stats(days=days, team_id=team_id)
+    engine.close()
+
+    def _human(d):
+        console.print(f"\n[bold cyan]Skill Usage[/cyan] — Last {days} days")
+        console.print(f"Total invocations: {d.total_skill_invocations}\n")
+
+        table = Table(title="Skill Ranking")
+        table.add_column("Rank", style="dim", justify="right")
+        table.add_column("Skill", style="cyan")
+        table.add_column("Invocations", justify="right")
+
+        sorted_skills = sorted(d.by_skill.items(), key=lambda x: x[1], reverse=True)
+        for i, (skill, count) in enumerate(sorted_skills, 1):
+            table.add_row(str(i), skill, str(count))
+
+        console.print(table)
+
+    _output(stats, _human)
+
+
+@insights_app.command("memory")
+def insights_memory(
+    days: int = typer.Option(30, "--days", "-d", help="Number of days to analyze"),
+    team_id: Optional[str] = typer.Option(None, "--team", "-t", help="Filter by team ID"),
+):
+    """Show memory usage statistics."""
+    from clawteam.insights import InsightsEngine
+
+    engine = InsightsEngine()
+
+    # Memory stats are tracked via session activity
+    activity_stats = engine.get_activity_stats(days=days, team_id=team_id)
+    engine.close()
+
+    def _human(d):
+        console.print(f"\n[bold cyan]Memory Usage[/cyan] — Last {days} days")
+        console.print(f"Active days: {d.active_days}")
+        console.print(f"Total sessions: {d.total_sessions}")
+        console.print(f"Avg session duration: {d.avg_session_duration_minutes:.1f} min")
+
+        if d.by_weekday:
+            console.print("\n[bold]Weekly Distribution[/bold]")
+            weekday_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+            for day, count in sorted(d.by_weekday.items()):
+                bar = "█" * min(count, 20)
+                name = weekday_names[int(day)] if int(day) < 7 else day
+                console.print(f"  {name}:  {bar}  {count}")
+
+    _output(activity_stats, _human)
+
+
 if __name__ == "__main__":
+    app()
     app()

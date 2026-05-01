@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import sys
 import threading
 from pathlib import Path
+
+import pytest
 
 from clawteam.fileutil import atomic_write_text, file_locked
 
@@ -50,6 +53,7 @@ class TestAtomicWriteText:
         assert tmp_files == []
         assert not target.exists()
 
+    @pytest.mark.skipif(sys.platform == "win32", reason="Windows file locking differs from Unix")
     def test_concurrent_writes_no_collision(self, tmp_path: Path):
         """Multiple threads writing to the same path never produce a corrupt file."""
         target = tmp_path / "shared.json"

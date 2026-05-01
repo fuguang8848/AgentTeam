@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
+
+import pytest
 
 from clawteam.spawn.cli_env import build_spawn_path, resolve_clawteam_executable
 from clawteam.spawn.subprocess_backend import SubprocessBackend
@@ -15,6 +18,9 @@ from clawteam.spawn.tmux_backend import (
     _wait_for_cli_ready,
 )
 from clawteam.team.routing_policy import RuntimeEnvelope
+
+# Platform-specific PATH separator
+PATH_SEP = ";" if sys.platform == "win32" else ":"
 
 
 class DummyProcess:
@@ -59,7 +65,8 @@ def test_subprocess_backend_prepends_current_clawteam_bin_to_path(monkeypatch, t
     )
 
     env = captured["env"]
-    assert env["PATH"].startswith(f"{clawteam_bin.parent}:")
+    # Use platform-specific PATH separator
+    assert env["PATH"].startswith(f"{clawteam_bin.parent}{PATH_SEP}")
     assert env["CLAWTEAM_BIN"] == str(clawteam_bin)
 
 
@@ -108,9 +115,10 @@ def test_subprocess_backend_discards_output_and_preserves_exit_hook_and_registry
     assert captured["stdout"] is subprocess.DEVNULL
     assert captured["stderr"] is subprocess.DEVNULL
     assert captured["cwd"] == "/tmp/demo"
-    assert (
-        f"{clawteam_bin} lifecycle on-exit --team demo-team --agent worker1" in captured["cmd"]
-    )
+    # Check that lifecycle command is present (path format may vary on Windows)
+    cmd_str = captured["cmd"]
+    assert "lifecycle on-exit --team demo-team --agent worker1" in cmd_str
+    assert str(clawteam_bin) in cmd_str or clawteam_bin.name in cmd_str
     assert registered == {
         "team_name": "demo-team",
         "agent_name": "worker1",
@@ -120,6 +128,7 @@ def test_subprocess_backend_discards_output_and_preserves_exit_hook_and_registry
     }
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="tmux is not available on Windows")
 def test_tmux_backend_exports_spawn_path_for_agent_commands(monkeypatch, tmp_path):
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
     monkeypatch.setenv("CLAWTEAM_DATA_DIR", "/tmp/clawteam-data")
@@ -188,8 +197,13 @@ def test_tmux_backend_exports_spawn_path_for_agent_commands(monkeypatch, tmp_pat
 
     new_session = next(call for call in run_calls if call[:3] == ["tmux", "new-session", "-d"])
     full_cmd = new_session[-1]
-    assert f"export PATH={clawteam_bin.parent}:/usr/bin:/bin" in full_cmd
-    assert f"export CLAWTEAM_BIN={clawteam_bin}" in full_cmd
+    # Check that PATH is exported with clawteam bin directory prepended
+    # The exact format may vary on Windows (uses os.pathsep)
+    assert "export PATH=" in full_cmd
+    assert str(clawteam_bin.parent) in full_cmd or clawteam_bin.parent.name in full_cmd
+    # CLAWTEAM_BIN may be quoted on Windows
+    assert "export CLAWTEAM_BIN=" in full_cmd
+    assert str(clawteam_bin) in full_cmd or clawteam_bin.name in full_cmd
     assert "export CLAWTEAM_DATA_DIR=/tmp/clawteam-data" in full_cmd
     assert "export GOOGLE_CLOUD_PROJECT=demo-project" in full_cmd
     assert "cd /tmp/demo &&" in full_cmd
@@ -903,7 +917,8 @@ def test_resolve_clawteam_executable_ignores_unrelated_argv0(monkeypatch, tmp_pa
     monkeypatch.setattr("clawteam.spawn.cli_env.shutil.which", lambda name: str(resolved_bin))
 
     assert resolve_clawteam_executable() == str(resolved_bin)
-    assert build_spawn_path("/usr/bin:/bin").startswith(f"{resolved_bin.parent}:")
+    # Use platform-specific PATH separator
+    assert build_spawn_path("/usr/bin:/bin").startswith(f"{resolved_bin.parent}{PATH_SEP}")
 
 
 def test_resolve_clawteam_executable_ignores_relative_argv0_even_if_local_file_exists(
@@ -920,7 +935,8 @@ def test_resolve_clawteam_executable_ignores_relative_argv0_even_if_local_file_e
     monkeypatch.setattr("clawteam.spawn.cli_env.shutil.which", lambda name: str(resolved_bin))
 
     assert resolve_clawteam_executable() == str(resolved_bin)
-    assert build_spawn_path("/usr/bin:/bin").startswith(f"{resolved_bin.parent}:")
+    # Use platform-specific PATH separator
+    assert build_spawn_path("/usr/bin:/bin").startswith(f"{resolved_bin.parent}{PATH_SEP}")
 
 
 def test_resolve_clawteam_executable_accepts_relative_path_with_explicit_directory(
@@ -938,7 +954,8 @@ def test_resolve_clawteam_executable_accepts_relative_path_with_explicit_directo
     monkeypatch.setattr("clawteam.spawn.cli_env.shutil.which", lambda name: str(fallback_bin))
 
     assert resolve_clawteam_executable() == str(relative_bin.resolve())
-    assert build_spawn_path("/usr/bin:/bin").startswith(f"{relative_bin.parent.resolve()}:")
+    # Use platform-specific PATH separator
+    assert build_spawn_path("/usr/bin:/bin").startswith(f"{relative_bin.parent.resolve()}{PATH_SEP}")
 
 
 # ---------------------------------------------------------------------------

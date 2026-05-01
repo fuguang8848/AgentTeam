@@ -8,6 +8,7 @@ from clawteam.spawn.registry import is_agent_alive
 from clawteam.team.mailbox import MailboxManager
 from clawteam.team.manager import TeamManager
 from clawteam.team.tasks import TaskStore
+from clawteam.profiler import get_profiler
 
 
 class BoardCollector:
@@ -124,6 +125,7 @@ class BoardCollector:
                 data = self.collect_team(name)
                 total_inbox = sum(m["inboxCount"] for m in data["members"])
                 leader = data["team"].get("leaderName", "")
+                alive_count = sum(1 for m in data["members"] if m.get("alive"))
                 result.append({
                     "name": name,
                     "description": meta.get("description", ""),
@@ -131,6 +133,8 @@ class BoardCollector:
                     "members": len(data["members"]),
                     "tasks": data["taskSummary"]["total"],
                     "pendingMessages": total_inbox,
+                    "session_count": len(data["members"]),
+                    "active_sessions": alive_count,
                 })
             except Exception:
                 result.append({
@@ -140,5 +144,67 @@ class BoardCollector:
                     "members": meta.get("memberCount", 0),
                     "tasks": 0,
                     "pendingMessages": 0,
+                    "session_count": meta.get("memberCount", 0),
+                    "active_sessions": 0,
                 })
         return result
+
+    def collect_profiler_stats(self) -> dict:
+        """Collect performance profiling statistics.
+
+        Returns a dict with keys: profiles (list of recent profiles),
+        latency_stats (list of latency statistics), system_metrics (current usage).
+        """
+        profiler = get_profiler()
+
+        # Get profile results
+        profiles = profiler.get_all_profiles()
+        profile_list = []
+        for p in profiles[-10:]:  # Last 10 profiles
+            profile_list.append({
+                "name": p.name,
+                "duration_ms": round(p.duration_ms, 2),
+                "cpu_percent": round(p.cpu_percent, 1),
+                "memory_mb": round(p.memory_mb, 1),
+                "memory_percent": round(p.memory_percent, 2),
+                "start_time": p.start_time,
+            })
+
+        # Get latency statistics
+        latency_stats = profiler.get_all_latency_stats()
+        latency_list = []
+        for ls in latency_stats:
+            latency_list.append({
+                "operation": ls.operation,
+                "count": ls.count,
+                "total_ms": round(ls.total_ms, 2),
+                "avg_ms": round(ls.avg_ms, 2),
+                "min_ms": round(ls.min_ms, 2),
+                "max_ms": round(ls.max_ms, 2),
+                "p50_ms": round(ls.p50_ms, 2),
+                "p95_ms": round(ls.p95_ms, 2),
+                "p99_ms": round(ls.p99_ms, 2),
+            })
+
+        # Get system metrics
+        try:
+            from clawteam.profiler import ResourceMonitor
+            monitor = ResourceMonitor(interval=0.01)
+            current = monitor.get_current_usage()
+            system_metrics = {
+                "cpu_percent": round(current["cpu_percent"], 1),
+                "memory_mb": round(current["memory_mb"], 1),
+                "memory_percent": round(current["memory_percent"], 2),
+                "threads": current["threads"],
+                "open_files": current["open_files"],
+            }
+        except Exception:
+            system_metrics = {}
+
+        return {
+            "profiles": profile_list,
+            "latency_stats": latency_list,
+            "system_metrics": system_metrics,
+            "total_profiles": len(profiles),
+            "total_operations": sum(ls.count for ls in latency_stats),
+        }

@@ -212,6 +212,16 @@ class FileTaskStore(BaseTaskStore):
             # Trigger when task transitions to completed
             if status == TaskStatus.completed and prev_status != TaskStatus.completed:
                 self._run_drift_detection_unlocked(task)
+            
+            # ── P1 Intelligent Routing ───────────────────────────────
+            # Update routing profiles when task transitions to completed
+            if status == TaskStatus.completed and prev_status != TaskStatus.completed:
+                try:
+                    from clawteam.team.router import get_router
+                    router = get_router(self.team_name)
+                    router.update_profile(task)
+                except Exception:
+                    pass  # Don't fail task completion if routing update fails
 
             if task.status == TaskStatus.completed:
                 self._resolve_dependents_unlocked(task_id)

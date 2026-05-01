@@ -10,8 +10,25 @@ from clawteam.spawn.base import SpawnBackend
 logger = logging.getLogger(__name__)
 
 
-def get_backend(name: str = "tmux") -> SpawnBackend:
-    """Factory function to get a spawn backend by name."""
+def get_backend(name: str = "auto") -> SpawnBackend:
+    """Factory function to get a spawn backend by name.
+
+    Args:
+        name: Backend name. "auto" (default) detects the best available backend.
+              On Windows or if tmux is not installed, uses subprocess backend.
+    """
+    if name == "auto":
+        # Auto-detect best available backend
+        import shutil
+        import sys
+
+        if sys.platform == "win32" or not shutil.which("tmux"):
+            # Windows or tmux not available - use subprocess backend
+            name = "subprocess"
+        else:
+            # Unix with tmux available - prefer tmux for better observability
+            name = "tmux"
+
     if name == "subprocess":
         from clawteam.spawn.subprocess_backend import SubprocessBackend
         return SubprocessBackend()
@@ -19,7 +36,7 @@ def get_backend(name: str = "tmux") -> SpawnBackend:
         from clawteam.spawn.tmux_backend import TmuxBackend
         return TmuxBackend()
     else:
-        raise ValueError(f"Unknown spawn backend: {name}. Available: subprocess, tmux")
+        raise ValueError(f"Unknown spawn backend: {name}. Available: auto, subprocess, tmux")
 
 
 def spawn_with_retry(
