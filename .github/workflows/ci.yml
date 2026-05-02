@@ -28,6 +28,10 @@ jobs:
           pip install poetry
           poetry install
 
+      - name: Install ruff
+        run: |
+          pip install ruff
+
       - name: Run linter
         run: |
           poetry run ruff check clawteam/
@@ -58,6 +62,10 @@ jobs:
         run: |
           pip install poetry
           poetry install
+
+      - name: Install ruff
+        run: |
+          pip install ruff
 
       - name: Check code format
         run: |
