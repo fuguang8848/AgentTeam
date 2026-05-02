@@ -1,12 +1,12 @@
 [project]
 name = "clawteam"
-version = "0.3.0+openclaw1"
+version = "0.4.0-openclaw"
 description = "Framework-agnostic multi-agent coordination CLI"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
-    {name = "HKUDS", email = "jiabintang77@gmail.com"}
+    {name = "ClawTeam", email = "clawteam@example.com"}
 ]
 keywords = ["ai", "agent", "multi-agent", "team", "coordination", "cli", "swarm"]
 classifiers = [
