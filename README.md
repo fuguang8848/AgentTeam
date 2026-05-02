@@ -236,9 +236,18 @@ MIT License - 详见 [LICENSE](LICENSE)
 
 ## 🙏 致谢
 
-- [HKUDS/ClawTeam](https://github.com/HKUDS/ClawTeam) — 原始框架
-- [OpenClaw](https://openclaw.ai) — 默认 Agent 引擎
-- 所有贡献者
+**上游项目：**
+
+- [HKUDS/ClawTeam](https://github.com/HKUDS/ClawTeam) — 原始框架，多智能体协调理论奠基
+- [win4r/ClawTeam-OpenClaw](https://github.com/win4r/ClawTeam-OpenClaw) — 直接上游分支，OpenClaw 集成先行者（v0.3.0）
+- [OpenClaw](https://openclaw.ai) — 默认 Agent 引擎，深度集成支持
+
+**核心技术参考：**
+
+- [VCP System](https://github.com/lioensky/VCPToolBox) — 认知架构启发
+- [EverMind MSA](https://github.com/EverMind-AI/MSA) — 记忆系统架构参考
+
+**所有贡献者，欢迎提交 PR！**
 
 ---
 
