@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from clawteam.paths import get_data_dir
+from clawteam.team.models import get_data_dir
 
 
 class EventTracker:
