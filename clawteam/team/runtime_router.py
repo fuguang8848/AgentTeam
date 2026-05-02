@@ -62,7 +62,8 @@ class RuntimeRouter:
             evidence=evidence,
             recommended_next_action=self._recommended_next_action(message),
             payload=payload,
-            dedupe_key=message.request_id or f"{source}:{target}:{message.type.value}:{message.timestamp}",
+            dedupe_key=message.request_id
+            or f"{source}:{target}:{message.type.value}:{message.timestamp}",
             created_at=message.timestamp,
         )
 
@@ -111,9 +112,17 @@ class RuntimeRouter:
 
     @staticmethod
     def _priority_for_message(message: TeamMessage) -> str:
-        if message.type in {MessageType.shutdown_request, MessageType.shutdown_approved, MessageType.shutdown_rejected}:
+        if message.type in {
+            MessageType.shutdown_request,
+            MessageType.shutdown_approved,
+            MessageType.shutdown_rejected,
+        }:
             return "high"
-        if message.type in {MessageType.idle, MessageType.plan_approval_request, MessageType.plan_rejected}:
+        if message.type in {
+            MessageType.idle,
+            MessageType.plan_approval_request,
+            MessageType.plan_rejected,
+        }:
             return "high"
         return "medium"
 

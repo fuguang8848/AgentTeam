@@ -20,13 +20,17 @@ def _default_transport(team_name: str) -> Transport:
     name = os.environ.get("CLAWTEAM_TRANSPORT", "")
     if not name:
         from clawteam.config import load_config
+
         name = load_config().transport or "file"
     if name == "p2p":
         from clawteam.identity import AgentIdentity
+
         agent = AgentIdentity.from_env().agent_name
         from clawteam.transport import get_transport
+
         return get_transport("p2p", team_name=team_name, bind_agent=agent)
     from clawteam.transport import get_transport
+
     return get_transport("file", team_name=team_name)
 
 
@@ -156,9 +160,9 @@ class MailboxManager:
                     content=content,
                     key=key,
                 )
-                data = msg.model_dump_json(
-                    indent=2, by_alias=True, exclude_none=True
-                ).encode("utf-8")
+                data = msg.model_dump_json(indent=2, by_alias=True, exclude_none=True).encode(
+                    "utf-8"
+                )
                 self._transport.deliver(recipient, data)
                 self._log_event(msg)
                 messages.append(msg)

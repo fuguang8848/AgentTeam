@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ProviderAvailability:
     """可用性检测结果"""
+
     id: str
     name: str
     command: str
@@ -32,7 +33,7 @@ class ProviderAvailability:
     version: str = ""
     last_checked: str = ""
     error: str = ""
-    
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,
@@ -48,12 +49,13 @@ class ProviderAvailability:
 @dataclass
 class ProviderConfig:
     """Provider 配置"""
+
     id: str
     name: str
     command: str
     node_version: str = ""  # 用于 PATH 检测的 Node 版本
     check_args: list[str] = field(default_factory=list)  # 检测命令参数
-    
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,
@@ -130,14 +132,16 @@ def _get_cache_key(command: str, node_version: str = "") -> str:
     return command
 
 
-def _check_command_available(command: str, node_version: str = "") -> tuple[bool, str, str, float | None]:
+def _check_command_available(
+    command: str, node_version: str = ""
+) -> tuple[bool, str, str, float | None]:
     """检测单个命令是否在 PATH 中可用
-    
+
     Returns:
         (available, version, error, checked_at) - checked_at is None if not from cache
     """
     cache_key = _get_cache_key(command, node_version)
-    
+
     # 先查缓存
     with _cache_lock:
         cached = _cache.get(cache_key)
@@ -150,12 +154,12 @@ def _check_command_available(command: str, node_version: str = "") -> tuple[bool
                     cached.get("error", ""),
                     cached.get("checked_at"),
                 )
-    
+
     # 检测命令是否可用
     available = False
     version = ""
     error = ""
-    
+
     try:
         # 如果是绝对路径，直接检查文件是否存在
         if os.path.isabs(command):
@@ -175,7 +179,7 @@ def _check_command_available(command: str, node_version: str = "") -> tuple[bool
                 windowsHide=True,
             )
             available = result.returncode == 0
-        
+
         # 如果可用，尝试获取版本
         if available:
             config = PROVIDER_CONFIGS.get(command, None)
@@ -192,7 +196,7 @@ def _check_command_available(command: str, node_version: str = "") -> tuple[bool
                         version = result.stdout.strip().split("\n")[0]
                 except Exception as e:
                     logger.debug(f"Failed to get version for {command}: {e}")
-    
+
     except subprocess.TimeoutExpired:
         error = "Timeout"
         available = False
@@ -202,7 +206,7 @@ def _check_command_available(command: str, node_version: str = "") -> tuple[bool
     except Exception as e:
         error = str(e)
         available = False
-    
+
     # 更新缓存
     checked_at = time.time()
     with _cache_lock:
@@ -212,7 +216,7 @@ def _check_command_available(command: str, node_version: str = "") -> tuple[bool
             "error": error,
             "checked_at": checked_at,
         }
-    
+
     return available, version, error, checked_at
 
 
@@ -227,17 +231,17 @@ def check_provider_availability(provider_id: str) -> ProviderAvailability:
             available=False,
             error="Unknown provider",
         )
-    
+
     available, version, error, checked_at = _check_command_available(
         config.command, config.node_version
     )
-    
+
     # Use cached timestamp if available
     if checked_at is not None:
         last_checked = datetime.fromtimestamp(checked_at, tz=timezone.utc).isoformat()
     else:
         last_checked = datetime.now(timezone.utc).isoformat()
-    
+
     return ProviderAvailability(
         id=config.id,
         name=config.name,
@@ -280,7 +284,7 @@ def get_availability_summary() -> dict:
     results = check_all_providers_availability()
     available = [r for r in results if r.available]
     unavailable = [r for r in results if not r.available]
-    
+
     return {
         "totalProviders": len(results),
         "availableCount": len(available),

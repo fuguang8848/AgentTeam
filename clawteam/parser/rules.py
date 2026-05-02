@@ -27,11 +27,11 @@ CLAUDE_RULES: list[ParserRule] = [
             re.compile(r"Press Enter to continue", re.IGNORECASE),
         ],
         extract_detail=lambda line: (
-            f"等待确认: {m.group(1)}" if (m := re.search(r"Allow\s+(.+?)\s*\?", line, re.IGNORECASE))
+            f"等待确认: {m.group(1)}"
+            if (m := re.search(r"Allow\s+(.+?)\s*\?", line, re.IGNORECASE))
             else "等待用户确认"
         ),
     ),
-    
     # Context compression
     ParserRule(
         type=ActivityEventType.CONTEXT_SUMMARY,
@@ -45,13 +45,15 @@ CLAUDE_RULES: list[ParserRule] = [
             re.compile(r"context\s+(?:limit|length)\s+(?:reached|exceeded)", re.IGNORECASE),
         ],
         extract_detail=lambda line: (
-            "自动压缩上下文" if re.search(r"auto.compact", line, re.IGNORECASE)
-            else "压缩对话上下文" if re.search(r"compress", line, re.IGNORECASE)
-            else "摘要对话上下文" if re.search(r"summariz", line, re.IGNORECASE)
+            "自动压缩上下文"
+            if re.search(r"auto.compact", line, re.IGNORECASE)
+            else "压缩对话上下文"
+            if re.search(r"compress", line, re.IGNORECASE)
+            else "摘要对话上下文"
+            if re.search(r"summariz", line, re.IGNORECASE)
             else "上下文压缩"
         ),
     ),
-    
     # Read file
     ParserRule(
         type=ActivityEventType.FILE_READ,
@@ -61,11 +63,11 @@ CLAUDE_RULES: list[ParserRule] = [
             re.compile(r"[⏺●]\s*Read\s*\(?([^\s)]+)"),
         ],
         extract_detail=lambda line: (
-            f"读取文件: {m.group(1)}" if (m := re.search(r"[⏺●]\s*Read\s*\(?([^\s)]+)", line))
+            f"读取文件: {m.group(1)}"
+            if (m := re.search(r"[⏺●]\s*Read\s*\(?([^\s)]+)", line))
             else "读取文件"
         ),
     ),
-    
     # Write/Edit file
     ParserRule(
         type=ActivityEventType.FILE_WRITE,
@@ -77,13 +79,15 @@ CLAUDE_RULES: list[ParserRule] = [
             re.compile(r"[⏺●]\s*NotebookEdit\s*\(?([^\s)]+)"),
         ],
         extract_detail=lambda line: (
-            f"写入文件: {m.group(1)}" if (m := re.search(r"[⏺●]\s*Write\s*\(?([^\s)]+)", line))
-            else f"编辑文件: {m.group(1)}" if (m := re.search(r"[⏺●]\s*Edit\s*\(?([^\s)]+)", line))
-            else f"编辑笔记本: {m.group(1)}" if (m := re.search(r"[⏺●]\s*NotebookEdit\s*\(?([^\s)]+)", line))
+            f"写入文件: {m.group(1)}"
+            if (m := re.search(r"[⏺●]\s*Write\s*\(?([^\s)]+)", line))
+            else f"编辑文件: {m.group(1)}"
+            if (m := re.search(r"[⏺●]\s*Edit\s*\(?([^\s)]+)", line))
+            else f"编辑笔记本: {m.group(1)}"
+            if (m := re.search(r"[⏺●]\s*NotebookEdit\s*\(?([^\s)]+)", line))
             else "写入文件"
         ),
     ),
-    
     # Execute command
     ParserRule(
         type=ActivityEventType.COMMAND_EXECUTED,
@@ -93,11 +97,11 @@ CLAUDE_RULES: list[ParserRule] = [
             re.compile(r"[⏺●]\s*Bash\s*\(?(.+)\)?"),
         ],
         extract_detail=lambda line: (
-            f"执行命令: {m.group(1)[:80]}" if (m := re.search(r"[⏺●]\s*Bash\s*\(?(.+?)\)?$", line))
+            f"执行命令: {m.group(1)[:80]}"
+            if (m := re.search(r"[⏺●]\s*Bash\s*\(?(.+?)\)?$", line))
             else "执行命令"
         ),
     ),
-    
     # Search
     ParserRule(
         type=ActivityEventType.SEARCH,
@@ -110,14 +114,17 @@ CLAUDE_RULES: list[ParserRule] = [
             re.compile(r"[⏺●]\s*WebFetch\s*\(?(.+)\)?"),
         ],
         extract_detail=lambda line: (
-            f"搜索文件: {m.group(1)}" if (m := re.search(r"[⏺●]\s*Glob\s*\(?([^\s)]+)", line))
-            else f"搜索内容: {m.group(1)}" if (m := re.search(r"[⏺●]\s*Grep\s*\(?([^\s)]+)", line))
-            else f"网络搜索: {m.group(1)[:60]}" if (m := re.search(r"[⏺●]\s*WebSearch\s*\(?(.+?)\)?$", line))
-            else f"获取网页: {m.group(1)[:60]}" if (m := re.search(r"[⏺●]\s*WebFetch\s*\(?(.+?)\)?$", line))
+            f"搜索文件: {m.group(1)}"
+            if (m := re.search(r"[⏺●]\s*Glob\s*\(?([^\s)]+)", line))
+            else f"搜索内容: {m.group(1)}"
+            if (m := re.search(r"[⏺●]\s*Grep\s*\(?([^\s)]+)", line))
+            else f"网络搜索: {m.group(1)[:60]}"
+            if (m := re.search(r"[⏺●]\s*WebSearch\s*\(?(.+?)\)?$", line))
+            else f"获取网页: {m.group(1)[:60]}"
+            if (m := re.search(r"[⏺●]\s*WebFetch\s*\(?(.+?)\)?$", line))
             else "搜索"
         ),
     ),
-    
     # Tool use (Task, MCP, Skill)
     ParserRule(
         type=ActivityEventType.TOOL_USE,
@@ -134,18 +141,25 @@ CLAUDE_RULES: list[ParserRule] = [
             re.compile(r"[⏺●]\s*ExitPlanMode"),
         ],
         extract_detail=lambda line: (
-            f"子任务: {m.group(1)[:80]}" if (m := re.search(r"[⏺●]\s*Task\s*\(?(.+?)\)?$", line))
-            else "读取待办事项" if re.search(r"TodoRead", line)
-            else "更新待办事项" if re.search(r"TodoWrite", line)
-            else f"MCP 工具: {m.group(1)}.{m.group(2)}" if (m := re.search(r"[⏺●]\s*mcp__(\w+)__(\w+)", line))
-            else f"技能: {m.group(1)[:60]}" if (m := re.search(r"[⏺●]\s*Skill\s*\(?(.+?)\)?$", line))
-            else "向用户提问" if re.search(r"AskUserQuestion", line)
-            else "进入规划模式" if re.search(r"EnterPlanMode", line)
-            else "退出规划模式" if re.search(r"ExitPlanMode", line)
+            f"子任务: {m.group(1)[:80]}"
+            if (m := re.search(r"[⏺●]\s*Task\s*\(?(.+?)\)?$", line))
+            else "读取待办事项"
+            if re.search(r"TodoRead", line)
+            else "更新待办事项"
+            if re.search(r"TodoWrite", line)
+            else f"MCP 工具: {m.group(1)}.{m.group(2)}"
+            if (m := re.search(r"[⏺●]\s*mcp__(\w+)__(\w+)", line))
+            else f"技能: {m.group(1)[:60]}"
+            if (m := re.search(r"[⏺●]\s*Skill\s*\(?(.+?)\)?$", line))
+            else "向用户提问"
+            if re.search(r"AskUserQuestion", line)
+            else "进入规划模式"
+            if re.search(r"EnterPlanMode", line)
+            else "退出规划模式"
+            if re.search(r"ExitPlanMode", line)
             else "工具调用"
         ),
     ),
-    
     # Token usage statistics
     ParserRule(
         type=ActivityEventType.CONTEXT_SUMMARY,
@@ -179,7 +193,6 @@ CODEX_RULES: list[ParserRule] = [
         ],
         extract_detail=lambda line: "等待确认: 权限请求",
     ),
-    
     # File operations
     ParserRule(
         type=ActivityEventType.FILE_WRITE,
@@ -190,12 +203,13 @@ CODEX_RULES: list[ParserRule] = [
             re.compile(r"Editing\s+([^\s]+)"),
         ],
         extract_detail=lambda line: (
-            f"写入文件: {m.group(1)}" if (m := re.search(r"Writing\s+to\s+([^\s]+)", line))
-            else f"编辑文件: {m.group(1)}" if (m := re.search(r"Editing\s+([^\s]+)", line))
+            f"写入文件: {m.group(1)}"
+            if (m := re.search(r"Writing\s+to\s+([^\s]+)", line))
+            else f"编辑文件: {m.group(1)}"
+            if (m := re.search(r"Editing\s+([^\s]+)", line))
             else "写入文件"
         ),
     ),
-    
     # Command execution
     ParserRule(
         type=ActivityEventType.COMMAND_EXECUTED,
@@ -206,8 +220,10 @@ CODEX_RULES: list[ParserRule] = [
             re.compile(r"Executing:\s+(.+)", re.IGNORECASE),
         ],
         extract_detail=lambda line: (
-            f"执行命令: {m.group(1)[:80]}" if (m := re.search(r"Running\s+command:\s+(.+)", line, re.IGNORECASE))
-            else f"执行命令: {m.group(1)[:80]}" if (m := re.search(r"Executing:\s+(.+)", line, re.IGNORECASE))
+            f"执行命令: {m.group(1)[:80]}"
+            if (m := re.search(r"Running\s+command:\s+(.+)", line, re.IGNORECASE))
+            else f"执行命令: {m.group(1)[:80]}"
+            if (m := re.search(r"Executing:\s+(.+)", line, re.IGNORECASE))
             else "执行命令"
         ),
     ),
@@ -230,7 +246,6 @@ GEMINI_RULES: list[ParserRule] = [
         ],
         extract_detail=lambda line: "等待确认: 权限请求",
     ),
-    
     # File operations
     ParserRule(
         type=ActivityEventType.FILE_WRITE,
@@ -241,12 +256,13 @@ GEMINI_RULES: list[ParserRule] = [
             re.compile(r"Modifying\s+file:\s+([^\s]+)"),
         ],
         extract_detail=lambda line: (
-            f"创建文件: {m.group(1)}" if (m := re.search(r"Creating\s+file:\s+([^\s]+)", line))
-            else f"修改文件: {m.group(1)}" if (m := re.search(r"Modifying\s+file:\s+([^\s]+)", line))
+            f"创建文件: {m.group(1)}"
+            if (m := re.search(r"Creating\s+file:\s+([^\s]+)", line))
+            else f"修改文件: {m.group(1)}"
+            if (m := re.search(r"Modifying\s+file:\s+([^\s]+)", line))
             else "文件操作"
         ),
     ),
-    
     # Command execution
     ParserRule(
         type=ActivityEventType.COMMAND_EXECUTED,
@@ -256,7 +272,8 @@ GEMINI_RULES: list[ParserRule] = [
             re.compile(r"Running:\s+(.+)", re.IGNORECASE),
         ],
         extract_detail=lambda line: (
-            f"执行命令: {m.group(1)[:80]}" if (m := re.search(r"Running:\s+(.+)", line, re.IGNORECASE))
+            f"执行命令: {m.group(1)[:80]}"
+            if (m := re.search(r"Running:\s+(.+)", line, re.IGNORECASE))
             else "执行命令"
         ),
     ),
@@ -279,14 +296,17 @@ GENERIC_RULES: list[ParserRule] = [
             re.compile(r"ERROR\s+\[.+?\]:\s+(.+)", re.IGNORECASE),
         ],
         extract_detail=lambda line: (
-            f"错误: {m.group(1)[:100]}" if (m := re.search(r"Error:\s+(.+)", line, re.IGNORECASE))
-            else f"失败: {m.group(1)[:100]}" if (m := re.search(r"Failed\s+to\s+(.+)", line, re.IGNORECASE))
-            else f"异常: {m.group(1)[:100]}" if (m := re.search(r"Exception:\s+(.+)", line, re.IGNORECASE))
-            else f"错误: {m.group(1)[:100]}" if (m := re.search(r"ERROR\s+\[.+?\]:\s+(.+)", line, re.IGNORECASE))
+            f"错误: {m.group(1)[:100]}"
+            if (m := re.search(r"Error:\s+(.+)", line, re.IGNORECASE))
+            else f"失败: {m.group(1)[:100]}"
+            if (m := re.search(r"Failed\s+to\s+(.+)", line, re.IGNORECASE))
+            else f"异常: {m.group(1)[:100]}"
+            if (m := re.search(r"Exception:\s+(.+)", line, re.IGNORECASE))
+            else f"错误: {m.group(1)[:100]}"
+            if (m := re.search(r"ERROR\s+\[.+?\]:\s+(.+)", line, re.IGNORECASE))
             else "错误"
         ),
     ),
-    
     # Task completion
     ParserRule(
         type=ActivityEventType.TASK_COMPLETE,
@@ -298,13 +318,15 @@ GENERIC_RULES: list[ParserRule] = [
             re.compile(r"Successfully\s+completed", re.IGNORECASE),
         ],
         extract_detail=lambda line: (
-            "任务完成" if re.search(r"Task\s+completed", line, re.IGNORECASE)
-            else "完成" if re.search(r"Done\s+\(.*?\)", line, re.IGNORECASE)
-            else f"完成: {m.group(1)[:60]}" if (m := re.search(r"Finished\s+(.+)", line, re.IGNORECASE))
+            "任务完成"
+            if re.search(r"Task\s+completed", line, re.IGNORECASE)
+            else "完成"
+            if re.search(r"Done\s+\(.*?\)", line, re.IGNORECASE)
+            else f"完成: {m.group(1)[:60]}"
+            if (m := re.search(r"Finished\s+(.+)", line, re.IGNORECASE))
             else "成功完成"
         ),
     ),
-    
     # Thinking indicator
     ParserRule(
         type=ActivityEventType.THINKING,
@@ -316,7 +338,6 @@ GENERIC_RULES: list[ParserRule] = [
         ],
         extract_detail=lambda line: "思考中...",
     ),
-    
     # File created
     ParserRule(
         type=ActivityEventType.FILE_CREATED,
@@ -326,12 +347,13 @@ GENERIC_RULES: list[ParserRule] = [
             re.compile(r"New\s+file:\s+([^\s]+)", re.IGNORECASE),
         ],
         extract_detail=lambda line: (
-            f"创建文件: {m.group(1)}" if (m := re.search(r"Created\s+file:\s+([^\s]+)", line, re.IGNORECASE))
-            else f"新文件: {m.group(1)}" if (m := re.search(r"New\s+file:\s+([^\s]+)", line, re.IGNORECASE))
+            f"创建文件: {m.group(1)}"
+            if (m := re.search(r"Created\s+file:\s+([^\s]+)", line, re.IGNORECASE))
+            else f"新文件: {m.group(1)}"
+            if (m := re.search(r"New\s+file:\s+([^\s]+)", line, re.IGNORECASE))
             else "创建文件"
         ),
     ),
-    
     # File deleted
     ParserRule(
         type=ActivityEventType.FILE_DELETED,
@@ -341,8 +363,10 @@ GENERIC_RULES: list[ParserRule] = [
             re.compile(r"Removed\s+file:\s+([^\s]+)", re.IGNORECASE),
         ],
         extract_detail=lambda line: (
-            f"删除文件: {m.group(1)}" if (m := re.search(r"Deleted\s+file:\s+([^\s]+)", line, re.IGNORECASE))
-            else f"移除文件: {m.group(1)}" if (m := re.search(r"Removed\s+file:\s+([^\s]+)", line, re.IGNORECASE))
+            f"删除文件: {m.group(1)}"
+            if (m := re.search(r"Deleted\s+file:\s+([^\s]+)", line, re.IGNORECASE))
+            else f"移除文件: {m.group(1)}"
+            if (m := re.search(r"Removed\s+file:\s+([^\s]+)", line, re.IGNORECASE))
             else "删除文件"
         ),
     ),

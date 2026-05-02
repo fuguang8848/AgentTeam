@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class WebSocketConnection:
     """Represents a WebSocket connection."""
+
     team_name: str
     connected_at: float
     last_ping: float = field(default_factory=time.time)
@@ -24,26 +25,23 @@ class WebSocketConnection:
 
 class WebSocketManager:
     """Manages WebSocket connections for team updates."""
-    
+
     def __init__(self):
         self._connections: dict[str, list[WebSocketConnection]] = {}
         self._lock = threading.Lock()
         self._ping_interval = 30.0  # seconds
-        self._ping_timeout = 10.0   # seconds
-    
+        self._ping_timeout = 10.0  # seconds
+
     def add_connection(self, team_name: str, conn_id: str) -> WebSocketConnection:
         """Add a new WebSocket connection."""
-        conn = WebSocketConnection(
-            team_name=team_name,
-            connected_at=time.time()
-        )
+        conn = WebSocketConnection(team_name=team_name, connected_at=time.time())
         with self._lock:
             if team_name not in self._connections:
                 self._connections[team_name] = []
             self._connections[team_name].append(conn)
         logger.info(f"WebSocket connected for team {team_name}")
         return conn
-    
+
     def remove_connection(self, team_name: str, conn: WebSocketConnection):
         """Remove a WebSocket connection."""
         with self._lock:
@@ -55,16 +53,16 @@ class WebSocketManager:
                 except ValueError:
                     pass
         logger.info(f"WebSocket disconnected for team {team_name}")
-    
+
     def get_connections(self, team_name: str) -> list[WebSocketConnection]:
         """Get all connections for a team."""
         with self._lock:
             return list(self._connections.get(team_name, []))
-    
+
     def broadcast(self, team_name: str, message: dict):
         """Broadcast a message to all connections for a team."""
         pass
-    
+
     def check_health(self):
         """Check connection health and remove stale connections."""
         now = time.time()
@@ -86,22 +84,18 @@ ws_manager = WebSocketManager()
 
 def create_websocket_handler(collector, team_cache):
     """Create a WebSocket handler function for aiohttp or similar."""
-    
+
     async def websocket_handler(ws, team_name: str):
         """Handle WebSocket connection for a team."""
         conn = ws_manager.add_connection(team_name, str(id(ws)))
-        
+
         try:
             team_data = team_cache.get(team_name, lambda: collector.collect_team(team_name))
-            await ws.send_json({
-                "type": "init",
-                "data": team_data,
-                "timestamp": time.time()
-            })
-            
+            await ws.send_json({"type": "init", "data": team_data, "timestamp": time.time()})
+
             ping_task = asyncio.create_task(ping_loop(ws, conn))
             message_task = asyncio.create_task(message_loop(ws, team_name, collector, team_cache))
-            
+
             try:
                 await asyncio.gather(ping_task, message_task)
             except asyncio.CancelledError:
@@ -109,12 +103,12 @@ def create_websocket_handler(collector, team_cache):
             finally:
                 ping_task.cancel()
                 message_task.cancel()
-                
+
         except Exception as e:
             logger.error(f"WebSocket error for team {team_name}: {e}")
         finally:
             ws_manager.remove_connection(team_name, conn)
-    
+
     return websocket_handler
 
 
@@ -141,11 +135,9 @@ async def message_loop(ws, team_name: str, collector, team_cache):
                     pass
                 elif data.get("type") == "refresh":
                     team_data = team_cache.get(team_name, lambda: collector.collect_team(team_name))
-                    await ws.send_json({
-                        "type": "update",
-                        "data": team_data,
-                        "timestamp": time.time()
-                    })
+                    await ws.send_json(
+                        {"type": "update", "data": team_data, "timestamp": time.time()}
+                    )
             elif msg.type == "close":
                 break
         except Exception:

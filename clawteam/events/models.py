@@ -19,24 +19,25 @@ def _now_iso() -> str:
 
 class EventType(str, Enum):
     """Core event types for ClawTeam.
-    
+
     Inspired by SpectrAI's turn_complete event-driven approach,
     these events track all meaningful state changes in the system.
     """
+
     # Team lifecycle events
     TEAM_CREATED = "team_created"
     TEAM_DESTROYED = "team_destroyed"
     MEMBER_JOINED = "member_joined"
     MEMBER_LEFT = "member_left"
     MEMBER_ALIVE = "member_alive"  # Heartbeat/keepalive
-    
+
     # Task lifecycle events
     TASK_CREATED = "task_created"
     TASK_STATUS_CHANGED = "task_status_changed"
     TASK_ASSIGNED = "task_assigned"
     TASK_COMPLETED = "task_completed"
     TASK_BLOCKED = "task_blocked"
-    
+
     # Agent/session lifecycle events
     AGENT_SPAWNED = "agent_spawned"
     AGENT_TERMINATED = "agent_terminated"
@@ -45,29 +46,30 @@ class EventType(str, Enum):
     TURN_COMPLETE = "turn_complete"  # SpectrAI-inspired: marks end of agent turn
     SESSION_STARTED = "session_started"
     SESSION_ENDED = "session_ended"
-    
+
     # Messaging events
     MESSAGE_SENT = "message_sent"
     MESSAGE_RECEIVED = "message_received"
     INBOX_NOTIFICATION = "inbox_notification"
-    
+
     # Alert events
     ALERT_TRIGGERED = "alert_triggered"
     ALERT_ACKNOWLEDGED = "alert_acknowledged"
     ALERT_RESOLVED = "alert_resolved"
-    
+
     # Cost/usage events
     USAGE_RECORDED = "usage_recorded"
-    
+
     # Command events
     COMMAND_EXECUTED = "command_executed"
-    
+
     # Error events
     ERROR_OCCURRED = "error_occurred"
 
 
 class EventSeverity(str, Enum):
     """Severity levels for events."""
+
     DEBUG = "debug"
     INFO = "info"
     WARNING = "warning"
@@ -77,6 +79,7 @@ class EventSeverity(str, Enum):
 
 class EventCategory(str, Enum):
     """Categories for organizing events."""
+
     TEAM = "team"
     TASK = "task"
     AGENT = "agent"
@@ -89,35 +92,40 @@ class EventCategory(str, Enum):
 
 class ClawTeamEvent(BaseModel):
     """Base event model for all ClawTeam events.
-    
+
     Inspired by SpectrAI's event-driven architecture, this model
     provides a consistent structure for all tracked events.
     """
+
     # Event identity
-    id: str = Field(default_factory=lambda: f"evt-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{uuid_short()}")
+    id: str = Field(
+        default_factory=lambda: (
+            f"evt-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{uuid_short()}"
+        )
+    )
     event_type: EventType
     category: EventCategory
-    
+
     # Timing
     timestamp: str = Field(default_factory=_now_iso)
     duration_ms: Optional[float] = None  # For events with duration (e.g., turn_complete)
-    
+
     # Source identification
     team_name: Optional[str] = None
     agent_name: Optional[str] = None
     agent_id: Optional[str] = None
     session_id: Optional[str] = None
     task_id: Optional[str] = None
-    
+
     # Event data
     severity: EventSeverity = EventSeverity.INFO
     message: str = ""
     data: Dict[str, Any] = Field(default_factory=dict)
-    
+
     # Context
     source: str = "clawteam"  # Which component generated this event
     correlation_id: Optional[str] = None  # For linking related events
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
@@ -142,10 +150,12 @@ class ClawTeamEvent(BaseModel):
 def uuid_short() -> str:
     """Generate a short UUID for event IDs."""
     import uuid
+
     return uuid.uuid4().hex[:8]
 
 
 # Convenience factory functions for common events
+
 
 def create_team_event(
     event_type: EventType,
@@ -284,7 +294,8 @@ def create_usage_event(
         team_name=team_name,
         session_id=session_id,
         message=f"Usage: {input_tokens} in / {output_tokens} out / ${estimated_cost:.4f}",
-        data=data or {
+        data=data
+        or {
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
             "total_tokens": input_tokens + output_tokens,

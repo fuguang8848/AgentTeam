@@ -10,7 +10,7 @@ Core Components:
 
 Usage:
     from clawteam.events import track_event, create_agent_event, EventType
-    
+
     # Track a simple event
     event = create_agent_event(
         EventType.TURN_COMPLETE,
@@ -19,7 +19,7 @@ Usage:
         duration_ms=1500.0,
     )
     track_event(event)
-    
+
     # Query events
     from clawteam.events import get_tracker
     tracker = get_tracker()

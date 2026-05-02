@@ -20,7 +20,9 @@ from clawteam.transport.file import FileTransport
 
 
 def _peers_dir(team_name: str) -> Path:
-    d = ensure_within_root(get_data_dir() / "teams", validate_identifier(team_name, "team name"), "peers")
+    d = ensure_within_root(
+        get_data_dir() / "teams", validate_identifier(team_name, "team name"), "peers"
+    )
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -246,11 +248,13 @@ class P2PTransport(Transport):
                         ClaimedMessage(
                             data=data,
                             ack=lambda: None,
-                            quarantine=lambda error, payload=data: self._file_fallback._quarantine_bytes(
-                                agent_name,
-                                payload,
-                                error,
-                                source_name=f"p2p-{uuid.uuid4().hex[:8]}.json",
+                            quarantine=lambda error, payload=data: (
+                                self._file_fallback._quarantine_bytes(
+                                    agent_name,
+                                    payload,
+                                    error,
+                                    source_name=f"p2p-{uuid.uuid4().hex[:8]}.json",
+                                )
                             ),
                         )
                     )

@@ -20,14 +20,14 @@ from clawteam.team.models import get_data_dir
 
 class EventTracker:
     """Tracks and stores ClawTeam events in SQLite.
-    
+
     Inspired by SpectrAI's event-driven approach, this tracker
     provides persistent event storage with efficient querying.
     """
-    
+
     def __init__(self, db_path: Optional[str] = None):
         """Initialize the event tracker.
-        
+
         Args:
             db_path: Path to the SQLite database file.
                      If None, uses default location in data directory.
@@ -36,21 +36,21 @@ class EventTracker:
             self.db_path = Path(db_path)
         else:
             self.db_path = get_data_dir() / "events" / "clawteam_events.db"
-        
+
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn: Optional[sqlite3.Connection] = None
         self._lock = threading.Lock()
-        
+
         # Initialize database schema
         self._init_db()
-    
+
     def _get_conn(self) -> sqlite3.Connection:
         """Get or create database connection."""
         if self._conn is None:
             self._conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
             self._conn.row_factory = sqlite3.Row
         return self._conn
-    
+
     def _init_db(self) -> None:
         """Initialize the database schema."""
         conn = self._get_conn()
@@ -83,10 +83,10 @@ class EventTracker:
             CREATE INDEX IF NOT EXISTS idx_events_task ON events(task_id);
         """)
         conn.commit()
-    
+
     def track(self, event: "ClawTeamEvent") -> None:
         """Track a single event.
-        
+
         Args:
             event: The ClawTeamEvent to track.
         """
@@ -120,16 +120,16 @@ class EventTracker:
                 ),
             )
             conn.commit()
-    
+
     def track_batch(self, events: List["ClawTeamEvent"]) -> None:
         """Track multiple events in a batch.
-        
+
         Args:
             events: List of ClawTeamEvents to track.
         """
         if not events:
             return
-        
+
         with self._lock:
             conn = self._get_conn()
             rows = [
@@ -164,7 +164,7 @@ class EventTracker:
                 rows,
             )
             conn.commit()
-    
+
     def query(
         self,
         team_name: Optional[str] = None,
@@ -180,7 +180,7 @@ class EventTracker:
         offset: int = 0,
     ) -> List[Dict[str, Any]]:
         """Query events with filters.
-        
+
         Args:
             team_name: Filter by team name.
             agent_name: Filter by agent name.
@@ -193,53 +193,53 @@ class EventTracker:
             task_id: Filter by task ID.
             limit: Maximum number of events to return.
             offset: Number of events to skip.
-            
+
         Returns:
             List of event dictionaries.
         """
         conditions = []
         params = []
-        
+
         if team_name:
             conditions.append("team_name = ?")
             params.append(team_name)
-        
+
         if agent_name:
             conditions.append("agent_name = ?")
             params.append(agent_name)
-        
+
         if event_types:
             placeholders = ",".join("?" * len(event_types))
             conditions.append(f"event_type IN ({placeholders})")
             params.extend(event_types)
-        
+
         if categories:
             placeholders = ",".join("?" * len(categories))
             conditions.append(f"category IN ({placeholders})")
             params.extend(categories)
-        
+
         if severity:
             conditions.append("severity = ?")
             params.append(severity)
-        
+
         if since:
             conditions.append("timestamp >= ?")
             params.append(since)
-        
+
         if until:
             conditions.append("timestamp <= ?")
             params.append(until)
-        
+
         if session_id:
             conditions.append("session_id = ?")
             params.append(session_id)
-        
+
         if task_id:
             conditions.append("task_id = ?")
             params.append(task_id)
-        
+
         where_clause = " AND ".join(conditions) if conditions else "1=1"
-        
+
         query = f"""
             SELECT * FROM events
             WHERE {where_clause}
@@ -247,102 +247,102 @@ class EventTracker:
             LIMIT ? OFFSET ?
         """
         params.extend([limit, offset])
-        
+
         conn = self._get_conn()
         cursor = conn.execute(query, params)
-        
+
         events = []
         for row in cursor.fetchall():
             event = dict(row)
             event["data"] = json.loads(event["data"]) if event["data"] else {}
             events.append(event)
-        
+
         return events
-    
+
     def get_events_for_dashboard(
         self,
         team_name: str,
         limit: int = 50,
     ) -> List[Dict[str, Any]]:
         """Get recent events for a team's dashboard.
-        
+
         Args:
             team_name: The team name.
             limit: Maximum number of events.
-            
+
         Returns:
             List of event dictionaries.
         """
         return self.query(team_name=team_name, limit=limit)
-    
+
     def get_agent_timeline(
         self,
         agent_name: str,
         limit: int = 100,
     ) -> List[Dict[str, Any]]:
         """Get event timeline for an agent.
-        
+
         Args:
             agent_name: The agent name.
             limit: Maximum number of events.
-            
+
         Returns:
             List of event dictionaries sorted by timestamp.
         """
         return self.query(agent_name=agent_name, limit=limit)
-    
+
     def get_task_events(
         self,
         task_id: str,
         limit: int = 50,
     ) -> List[Dict[str, Any]]:
         """Get all events related to a task.
-        
+
         Args:
             task_id: The task ID.
             limit: Maximum number of events.
-            
+
         Returns:
             List of event dictionaries.
         """
         return self.query(task_id=task_id, limit=limit)
-    
+
     def get_event_stats(
         self,
         team_name: Optional[str] = None,
         since: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Get event statistics.
-        
+
         Args:
             team_name: Optional team name to filter by.
             since: Optional ISO timestamp to filter from.
-            
+
         Returns:
             Dictionary with event statistics.
         """
         conditions = []
         params = []
-        
+
         if team_name:
             conditions.append("team_name = ?")
             params.append(team_name)
-        
+
         if since:
             conditions.append("timestamp >= ?")
             params.append(since)
-        
+
         where_clause = " AND ".join(conditions) if conditions else "1=1"
-        
+
         conn = self._get_conn()
-        
+
         # Total count
         cursor = conn.execute(
             f"SELECT COUNT(*) as total FROM events WHERE {where_clause}",
             params,
         )
         total = cursor.fetchone()["total"]
-        
+
         # By category
         cursor = conn.execute(
             f"""
@@ -354,7 +354,7 @@ class EventTracker:
             params,
         )
         by_category = {row["category"]: row["count"] for row in cursor.fetchall()}
-        
+
         # By type
         cursor = conn.execute(
             f"""
@@ -366,7 +366,7 @@ class EventTracker:
             params,
         )
         by_type = {row["event_type"]: row["count"] for row in cursor.fetchall()}
-        
+
         # By severity
         cursor = conn.execute(
             f"""
@@ -378,9 +378,9 @@ class EventTracker:
             params,
         )
         by_severity = {row["severity"]: row["count"] for row in cursor.fetchall()}
-        
+
         # Recent activity (last 24 hours)
-        last_24h = (datetime.now(timezone.utc).timestamp() - 86400)
+        last_24h = datetime.now(timezone.utc).timestamp() - 86400
         cursor = conn.execute(
             """
             SELECT DATE(timestamp) as day, COUNT(*) as count
@@ -392,11 +392,8 @@ class EventTracker:
             """,
             [datetime.fromtimestamp(last_24h, timezone.utc).isoformat()],
         )
-        recent_activity = [
-            {"day": row["day"], "count": row["count"]}
-            for row in cursor.fetchall()
-        ]
-        
+        recent_activity = [{"day": row["day"], "count": row["count"]} for row in cursor.fetchall()]
+
         return {
             "total_events": total,
             "by_category": by_category,
@@ -404,30 +401,28 @@ class EventTracker:
             "by_severity": by_severity,
             "recent_activity": recent_activity,
         }
-    
+
     def clear_old_events(self, days: int = 30) -> int:
         """Clear events older than specified days.
-        
+
         Args:
             days: Number of days to retain.
-            
+
         Returns:
             Number of events deleted.
         """
-        cutoff = (
-            datetime.now(timezone.utc).timestamp() - (days * 86400)
-        )
+        cutoff = datetime.now(timezone.utc).timestamp() - (days * 86400)
         cutoff_iso = datetime.fromtimestamp(cutoff, timezone.utc).isoformat()
-        
+
         conn = self._get_conn()
         cursor = conn.execute(
             "DELETE FROM events WHERE timestamp < ?",
             [cutoff_iso],
         )
         conn.commit()
-        
+
         return cursor.rowcount
-    
+
     def close(self) -> None:
         """Close the database connection."""
         if self._conn:

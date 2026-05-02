@@ -34,6 +34,7 @@ VALID_STRATEGIES = {"auto", "none"}
 
 class RetryConfig(BaseModel):
     """Per-agent retry configuration with exponential backoff."""
+
     max_retries: int = 3
     backoff_base_seconds: float = 1.0
     backoff_max_seconds: float = 30.0
@@ -116,6 +117,7 @@ _USER_DIR = Path.home() / ".clawteam" / "templates"
 # Variable substitution helper
 # ---------------------------------------------------------------------------
 
+
 class _SafeDict(dict):
     """dict subclass that keeps unknown {placeholders} intact."""
 
@@ -131,6 +133,7 @@ def render_task(task: str, **variables: str) -> str:
 # ---------------------------------------------------------------------------
 # Loading
 # ---------------------------------------------------------------------------
+
 
 def _parse_toml(path: Path) -> TemplateDef:
     """Parse a TOML template file into a TemplateDef."""
@@ -181,10 +184,7 @@ def load_template(name: str) -> TemplateDef:
     if builtin_path.is_file():
         return _parse_toml(builtin_path)
 
-    raise FileNotFoundError(
-        f"Template '{name}' not found. "
-        f"Searched: {_USER_DIR}, {_BUILTIN_DIR}"
-    )
+    raise FileNotFoundError(f"Template '{name}' not found. Searched: {_USER_DIR}, {_BUILTIN_DIR}")
 
 
 def list_templates() -> list[dict[str, str]]:

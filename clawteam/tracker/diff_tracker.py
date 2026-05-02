@@ -108,15 +108,15 @@ class DiffStore:
     def _is_binary(self, content: bytes) -> bool:
         """Check if content is binary (non-text)."""
         # Check for null bytes (common in binary files)
-        if b'\x00' in content[:8192]:
+        if b"\x00" in content[:8192]:
             return True
 
         # Check for high ratio of non-printable characters
         try:
-            text = content[:8192].decode('utf-8')
+            text = content[:8192].decode("utf-8")
             if len(text) == 0:
                 return False  # Empty content is not binary
-            non_printable = sum(1 for c in text if not c.isprintable() and c not in '\n\r\t')
+            non_printable = sum(1 for c in text if not c.isprintable() and c not in "\n\r\t")
             if non_printable / len(text) > 0.3:
                 return True
         except UnicodeDecodeError:
@@ -126,11 +126,11 @@ class DiffStore:
 
     def _compress(self, content: str) -> bytes:
         """Compress content using gzip."""
-        return gzip.compress(content.encode('utf-8'))
+        return gzip.compress(content.encode("utf-8"))
 
     def _decompress(self, data: bytes) -> str:
         """Decompress gzip content."""
-        return gzip.decompress(data).decode('utf-8')
+        return gzip.decompress(data).decode("utf-8")
 
     def save_diff(self, entry: DiffEntry) -> str:
         """Save a diff entry to storage.
@@ -147,7 +147,7 @@ class DiffStore:
                 entry.is_compressed = True
                 diff_data = self._compress(entry.diff)
             else:
-                diff_data = entry.diff.encode('utf-8')
+                diff_data = entry.diff.encode("utf-8")
 
             # Save to file
             path = self._root / f"{entry.id}.json"
@@ -156,10 +156,10 @@ class DiffStore:
             if entry.is_compressed:
                 # Save compressed diff separately
                 diff_path = self._root / f"{entry.id}.diff.gz"
-                with open(diff_path, 'wb') as f:
+                with open(diff_path, "wb") as f:
                     f.write(diff_data)
-                data['diff'] = None  # Don't include in JSON
-                data['diffFile'] = f"{entry.id}.diff.gz"
+                data["diff"] = None  # Don't include in JSON
+                data["diffFile"] = f"{entry.id}.diff.gz"
 
             atomic_write_text(path, json.dumps(data, indent=2, ensure_ascii=False))
             logger.debug(f"Saved diff entry: {entry.id}")
@@ -181,14 +181,14 @@ class DiffStore:
                 return None
 
             try:
-                data = json.loads(path.read_text(encoding='utf-8'))
+                data = json.loads(path.read_text(encoding="utf-8"))
                 entry = DiffEntry.model_validate(data)
 
                 # Load compressed diff if needed
-                if entry.is_compressed and 'diffFile' in data:
-                    diff_path = self._root / data['diffFile']
+                if entry.is_compressed and "diffFile" in data:
+                    diff_path = self._root / data["diffFile"]
                     if diff_path.exists():
-                        with open(diff_path, 'rb') as f:
+                        with open(diff_path, "rb") as f:
                             entry.diff = self._decompress(f.read())
 
                 return entry
@@ -313,13 +313,13 @@ class DiffTracker:
             Tuple of (content, is_binary)
         """
         try:
-            with open(path, 'rb') as f:
+            with open(path, "rb") as f:
                 content_bytes = f.read()
 
             if self.store._is_binary(content_bytes):
                 return None, True
 
-            return content_bytes.decode('utf-8'), False
+            return content_bytes.decode("utf-8"), False
         except (OSError, IOError, UnicodeDecodeError) as e:
             logger.debug(f"Could not read file {path}: {e}")
             return None, True
@@ -327,7 +327,8 @@ class DiffTracker:
     def _compute_checksum(self, content: str) -> str:
         """Compute MD5 checksum of content."""
         import hashlib
-        return hashlib.md5(content.encode('utf-8')).hexdigest()
+
+        return hashlib.md5(content.encode("utf-8")).hexdigest()
 
     def _generate_diff(self, old_content: str | None, new_content: str | None, path: str) -> str:
         """Generate a unified diff between old and new content.
@@ -351,10 +352,10 @@ class DiffTracker:
             new_lines,
             fromfile=f"a/{path}" if old_content else f"/dev/null",
             tofile=f"b/{path}" if new_content else f"/dev/null",
-            lineterm='',
+            lineterm="",
         )
 
-        return ''.join(diff)
+        return "".join(diff)
 
     def _count_diff_stats(self, diff: str) -> tuple[int, int, int]:
         """Count lines added, removed, and changed in a diff.
@@ -369,9 +370,9 @@ class DiffTracker:
         removed = 0
 
         for line in diff.splitlines():
-            if line.startswith('+') and not line.startswith('+++'):
+            if line.startswith("+") and not line.startswith("+++"):
                 added += 1
-            elif line.startswith('-') and not line.startswith('---'):
+            elif line.startswith("-") and not line.startswith("---"):
                 removed += 1
 
         # Approximate changed lines as min of added/removed
@@ -519,7 +520,9 @@ class DiffTracker:
 
         return content
 
-    def get_change_summary(self, agent_name: str | None = None, since: str | None = None) -> dict[str, Any]:
+    def get_change_summary(
+        self, agent_name: str | None = None, since: str | None = None
+    ) -> dict[str, Any]:
         """Get a summary of changes.
 
         Args:
@@ -583,6 +586,7 @@ def create_diff_handler(
     Returns:
         A handler function for FileWatcher
     """
+
     def handler(event: WatchEvent) -> None:
         # Skip directory events
         if event.is_directory:

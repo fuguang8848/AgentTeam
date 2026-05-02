@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class MemoryEntry:
     """记忆条目"""
+
     entry_id: str
     content: str
     layer: str  # L1, L2, L3, L4
@@ -63,7 +64,7 @@ class MemoryEntry:
         d = d.copy()
         for key in ["created_at", "last_accessed"]:
             if key in d and isinstance(d[key], str):
-                d[key] = datetime.fromisoformat(d[key].replace('Z', '+00:00'))
+                d[key] = datetime.fromisoformat(d[key].replace("Z", "+00:00"))
         if "tags" in d and isinstance(d["tags"], list):
             d["tags"] = set(d["tags"])
         return cls(**d)
@@ -77,8 +78,14 @@ class L1WorkingMemory:
         self._entries: List[MemoryEntry] = []
         self._lock = threading.Lock()
 
-    def add(self, content: str, importance: float = 0.5, tags: Set[str] = None,
-            metadata: Dict[str, Any] = None, session_id: str = "") -> MemoryEntry:
+    def add(
+        self,
+        content: str,
+        importance: float = 0.5,
+        tags: Set[str] = None,
+        metadata: Dict[str, Any] = None,
+        session_id: str = "",
+    ) -> MemoryEntry:
         """添加记忆"""
         entry = MemoryEntry(
             entry_id=f"l1_{uuid.uuid4().hex[:8]}",
@@ -96,7 +103,7 @@ class L1WorkingMemory:
             if len(self._entries) > self.max_entries:
                 # 移除最旧的非重要条目
                 self._entries.sort(key=lambda e: (e.importance, e.created_at))
-                self._entries = self._entries[-self.max_entries:]
+                self._entries = self._entries[-self.max_entries :]
         return entry
 
     def search(self, query: str, limit: int = 10) -> List[MemoryEntry]:
@@ -138,8 +145,14 @@ class L2SessionMemory:
         self._entries: Dict[str, MemoryEntry] = {}  # session_id -> entries
         self._lock = threading.Lock()
 
-    def add(self, content: str, session_id: str, importance: float = 0.5,
-            tags: Set[str] = None, metadata: Dict[str, Any] = None) -> MemoryEntry:
+    def add(
+        self,
+        content: str,
+        session_id: str,
+        importance: float = 0.5,
+        tags: Set[str] = None,
+        metadata: Dict[str, Any] = None,
+    ) -> MemoryEntry:
         """添加会话记忆"""
         entry = MemoryEntry(
             entry_id=f"l2_{uuid.uuid4().hex[:8]}",
@@ -227,7 +240,7 @@ class L3CrossSessionMemory:
         try:
             for f in self.storage_dir.glob("*.json"):
                 try:
-                    with open(f, 'r', encoding='utf-8') as fh:
+                    with open(f, "r", encoding="utf-8") as fh:
                         d = json.load(fh)
                         entry = MemoryEntry.from_dict(d)
                         self._entries[entry.entry_id] = entry
@@ -240,11 +253,17 @@ class L3CrossSessionMemory:
     def _save_entry(self, entry: MemoryEntry) -> None:
         """保存到磁盘"""
         path = self._entry_file(entry.entry_id)
-        with open(path, 'w', encoding='utf-8') as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(entry.to_dict(), f, ensure_ascii=False, indent=2)
 
-    def add(self, content: str, importance: float = 0.6, tags: Set[str] = None,
-            metadata: Dict[str, Any] = None, session_id: str = "") -> MemoryEntry:
+    def add(
+        self,
+        content: str,
+        importance: float = 0.6,
+        tags: Set[str] = None,
+        metadata: Dict[str, Any] = None,
+        session_id: str = "",
+    ) -> MemoryEntry:
         """添加跨会话记忆"""
         entry = MemoryEntry(
             entry_id=f"l3_{uuid.uuid4().hex[:8]}",
@@ -283,8 +302,9 @@ class L3CrossSessionMemory:
         results.sort(key=lambda e: (e.importance, e.access_count), reverse=True)
         return results[:limit]
 
-    def promote_from_l2(self, content: str, session_id: str,
-                         importance: float = 0.7, tags: Set[str] = None) -> Optional[MemoryEntry]:
+    def promote_from_l2(
+        self, content: str, session_id: str, importance: float = 0.7, tags: Set[str] = None
+    ) -> Optional[MemoryEntry]:
         """从 L2 晋升重要记忆"""
         # 检查是否已存在相似记忆
         existing = self.search(content, limit=5)
@@ -294,8 +314,13 @@ class L3CrossSessionMemory:
                 ex.access()
                 return ex
 
-        return self.add(content, importance=importance, tags=tags,
-                       metadata={"promoted_from": session_id}, session_id=session_id)
+        return self.add(
+            content,
+            importance=importance,
+            tags=tags,
+            metadata={"promoted_from": session_id},
+            session_id=session_id,
+        )
 
     def cleanup(self) -> int:
         """清理过期记忆"""
@@ -332,7 +357,7 @@ class L4KnowledgeBase:
         patterns_file = self.storage_dir / "patterns.json"
         if patterns_file.exists():
             try:
-                with open(patterns_file, 'r', encoding='utf-8') as f:
+                with open(patterns_file, "r", encoding="utf-8") as f:
                     self._patterns = json.load(f)
             except Exception as e:
                 logger.warning(f"Failed to load patterns: {e}")
@@ -342,7 +367,7 @@ class L4KnowledgeBase:
         if facts_dir.exists():
             for f in facts_dir.glob("*.json"):
                 try:
-                    with open(f, 'r', encoding='utf-8') as fh:
+                    with open(f, "r", encoding="utf-8") as fh:
                         d = json.load(fh)
                         entry = MemoryEntry.from_dict(d)
                         self._facts[entry.entry_id] = entry
@@ -353,7 +378,7 @@ class L4KnowledgeBase:
 
     def _save_patterns(self) -> None:
         path = self.storage_dir / "patterns.json"
-        with open(path, 'w', encoding='utf-8') as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(self._patterns, f, ensure_ascii=False, indent=2)
 
     def add_pattern(self, name: str, pattern: Dict[str, Any]) -> None:
@@ -382,8 +407,13 @@ class L4KnowledgeBase:
                 results.append(pattern)
         return results
 
-    def add_fact(self, content: str, importance: float = 0.8,
-                 tags: Set[str] = None, metadata: Dict[str, Any] = None) -> MemoryEntry:
+    def add_fact(
+        self,
+        content: str,
+        importance: float = 0.8,
+        tags: Set[str] = None,
+        metadata: Dict[str, Any] = None,
+    ) -> MemoryEntry:
         """添加知识库事实"""
         entry = MemoryEntry(
             entry_id=f"l4_{uuid.uuid4().hex[:8]}",
@@ -400,7 +430,7 @@ class L4KnowledgeBase:
             facts_dir = self.storage_dir / "facts"
             facts_dir.mkdir(exist_ok=True)
             path = facts_dir / f"{entry.entry_id}.json"
-            with open(path, 'w', encoding='utf-8') as f:
+            with open(path, "w", encoding="utf-8") as f:
                 json.dump(entry.to_dict(), f, ensure_ascii=False, indent=2)
         return entry
 
@@ -473,18 +503,28 @@ class LayeredMemoryProvider:
         # 提取可能的事实 -> L2
         potential_facts = self._extract_facts(user_msg)
         for fact in potential_facts:
-            self.l2.add(fact, session_id=session_id, importance=0.6,
-                       tags={"extracted"}, metadata={"role": "user"})
+            self.l2.add(
+                fact,
+                session_id=session_id,
+                importance=0.6,
+                tags={"extracted"},
+                metadata={"role": "user"},
+            )
 
         potential_facts = self._extract_facts(assistant_msg)
         for fact in potential_facts:
-            self.l2.add(fact, session_id=session_id, importance=0.6,
-                       tags={"extracted"}, metadata={"role": "assistant"})
+            self.l2.add(
+                fact,
+                session_id=session_id,
+                importance=0.6,
+                tags={"extracted"},
+                metadata={"role": "assistant"},
+            )
 
     def _extract_facts(self, text: str) -> List[str]:
         """简单的事实提取（基于规则的启发式方法）"""
         facts = []
-        lines = text.split('\n')
+        lines = text.split("\n")
 
         # 提取包含数字/日期的行
         for line in lines:
@@ -567,8 +607,9 @@ class LayeredMemoryProvider:
 
         return results[:limit]
 
-    def promote_to_l4(self, content: str, pattern_name: str = None,
-                      tags: Set[str] = None) -> Optional[MemoryEntry]:
+    def promote_to_l4(
+        self, content: str, pattern_name: str = None, tags: Set[str] = None
+    ) -> Optional[MemoryEntry]:
         """将重要内容晋升到 L4 知识库"""
         # 检查是否值得晋升（高频出现或高重要性）
         existing = self.l3.search(content, limit=3)
@@ -577,8 +618,9 @@ class LayeredMemoryProvider:
             entry = existing[0]
             if entry.importance < 0.9:
                 entry.importance = min(0.95, entry.importance + 0.1)
-            return self.l4.add_fact(content, importance=0.9, tags=tags,
-                                   metadata={"derived_from": entry.entry_id})
+            return self.l4.add_fact(
+                content, importance=0.9, tags=tags, metadata={"derived_from": entry.entry_id}
+            )
 
         return self.l4.add_fact(content, importance=0.8, tags=tags)
 

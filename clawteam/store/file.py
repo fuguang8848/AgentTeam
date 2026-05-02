@@ -212,12 +212,13 @@ class FileTaskStore(BaseTaskStore):
             # Trigger when task transitions to completed
             if status == TaskStatus.completed and prev_status != TaskStatus.completed:
                 self._run_drift_detection_unlocked(task)
-            
+
             # ── P1 Intelligent Routing ───────────────────────────────
             # Update routing profiles when task transitions to completed
             if status == TaskStatus.completed and prev_status != TaskStatus.completed:
                 try:
                     from clawteam.team.router import get_router
+
                     router = get_router(self.team_name)
                     router.update_profile(task)
                 except Exception:
@@ -254,6 +255,7 @@ class FileTaskStore(BaseTaskStore):
     def _acquire_lock(self, task: TaskItem, caller: str, force: bool) -> None:
         if task.locked_by and task.locked_by != caller and not force:
             from clawteam.spawn.registry import is_agent_alive
+
             alive = is_agent_alive(self.team_name, task.locked_by)
             if alive is not False:
                 raise TaskLockError(
@@ -323,7 +325,9 @@ class FileTaskStore(BaseTaskStore):
                 TaskPriority.medium: 2,
                 TaskPriority.low: 3,
             }
-            tasks.sort(key=lambda task: (priority_order.get(task.priority, 2), task.created_at, task.id))
+            tasks.sort(
+                key=lambda task: (priority_order.get(task.priority, 2), task.created_at, task.id)
+            )
         return tasks
 
     def _validate_blocked_by_unlocked(self, task_id: str, blocked_by: list[str]) -> None:
@@ -331,8 +335,7 @@ class FileTaskStore(BaseTaskStore):
             raise ValueError(f"Task '{task_id}' cannot be blocked by itself")
 
         graph: dict[str, list[str]] = {
-            task.id: list(task.blocked_by)
-            for task in self._list_tasks_unlocked()
+            task.id: list(task.blocked_by) for task in self._list_tasks_unlocked()
         }
         graph[task_id] = list(blocked_by)
 

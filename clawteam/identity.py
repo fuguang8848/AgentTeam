@@ -46,6 +46,7 @@ class AgentIdentity:
         user = os.environ.get("CLAWTEAM_USER", "")
         if not user:
             from clawteam.config import load_config
+
             user = load_config().user
         return cls(
             agent_id=_env("CLAWTEAM_AGENT_ID", "CLAUDE_CODE_AGENT_ID", uuid.uuid4().hex[:12]),

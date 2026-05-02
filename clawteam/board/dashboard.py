@@ -12,6 +12,7 @@ from typing import Optional
 @dataclass
 class GlobalKPI:
     """Global KPI snapshot."""
+
     total_teams: int = 0
     active_teams: int = 0
     total_tasks: int = 0
@@ -32,6 +33,7 @@ class GlobalKPI:
 @dataclass
 class LifecycleStats:
     """Session lifecycle distribution."""
+
     starting: int = 0
     running: int = 0
     waiting: int = 0
@@ -43,6 +45,7 @@ class LifecycleStats:
 @dataclass
 class EventDistribution:
     """Event type distribution."""
+
     start_events: int = 0
     activity_events: int = 0
     input_events: int = 0
@@ -54,6 +57,7 @@ class EventDistribution:
 @dataclass
 class ActiveSession:
     """Active session info for dashboard."""
+
     session_id: str
     name: str
     role: str
@@ -68,6 +72,7 @@ class ActiveSession:
 @dataclass
 class TeamSummary:
     """Team summary for dashboard."""
+
     name: str
     description: str
     leader: str
@@ -159,6 +164,7 @@ class CommandCenterDashboard:
 
         try:
             from clawteam.board.collector import BoardCollector
+
             collector = BoardCollector()
             teams = collector.collect_overview()
 
@@ -222,21 +228,28 @@ class CommandCenterDashboard:
         sessions = []
         try:
             from clawteam.session.registry import get_session_registry
+
             registry = get_session_registry()
             all_sessions = registry.list_sessions()
 
             for session in all_sessions[:limit]:
-                sessions.append(ActiveSession(
-                    session_id=session.session_id if hasattr(session, 'session_id') else str(session),
-                    name=session.name if hasattr(session, 'name') else "Unknown",
-                    role=session.role if hasattr(session, 'role') else "agent",
-                    team=session.team if hasattr(session, 'team') else "default",
-                    status=session.status if hasattr(session, 'status') else "unknown",
-                    created_at=session.created_at if hasattr(session, 'created_at') else "",
-                    last_activity=session.last_activity if hasattr(session, 'last_activity') else "",
-                    input_tokens=getattr(session, 'input_tokens', 0) or 0,
-                    output_tokens=getattr(session, 'output_tokens', 0) or 0,
-                ))
+                sessions.append(
+                    ActiveSession(
+                        session_id=session.session_id
+                        if hasattr(session, "session_id")
+                        else str(session),
+                        name=session.name if hasattr(session, "name") else "Unknown",
+                        role=session.role if hasattr(session, "role") else "agent",
+                        team=session.team if hasattr(session, "team") else "default",
+                        status=session.status if hasattr(session, "status") else "unknown",
+                        created_at=session.created_at if hasattr(session, "created_at") else "",
+                        last_activity=session.last_activity
+                        if hasattr(session, "last_activity")
+                        else "",
+                        input_tokens=getattr(session, "input_tokens", 0) or 0,
+                        output_tokens=getattr(session, "output_tokens", 0) or 0,
+                    )
+                )
         except Exception:
             pass
 
@@ -247,6 +260,7 @@ class CommandCenterDashboard:
         summaries = []
         try:
             from clawteam.board.collector import BoardCollector
+
             collector = BoardCollector()
             teams = collector.collect_overview()
 
@@ -264,19 +278,21 @@ class CommandCenterDashboard:
                 else:
                     health = "healthy"
 
-                summaries.append(TeamSummary(
-                    name=name,
-                    description=team.get("description", ""),
-                    leader=team.get("leader", ""),
-                    member_count=members,
-                    alive_count=alive,
-                    task_total=tasks,
-                    task_completed=0,  # Would need per-team data
-                    task_in_progress=0,
-                    task_pending=tasks,
-                    task_blocked=0,
-                    health=health,
-                ))
+                summaries.append(
+                    TeamSummary(
+                        name=name,
+                        description=team.get("description", ""),
+                        leader=team.get("leader", ""),
+                        member_count=members,
+                        alive_count=alive,
+                        task_total=tasks,
+                        task_completed=0,  # Would need per-team data
+                        task_in_progress=0,
+                        task_pending=tasks,
+                        task_blocked=0,
+                        health=health,
+                    )
+                )
         except Exception:
             pass
 

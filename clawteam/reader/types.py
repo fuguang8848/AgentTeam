@@ -10,6 +10,7 @@ import time
 
 class ReaderState(str, Enum):
     """Reader state enumeration."""
+
     IDLE = "idle"
     WATCHING = "watching"
     READING = "reading"
@@ -19,6 +20,7 @@ class ReaderState(str, Enum):
 
 class OutputEventType(str, Enum):
     """Output event type enumeration."""
+
     MESSAGE = "message"
     TOOL_CALL = "tool_call"
     THINKING = "thinking"
@@ -34,6 +36,7 @@ class OutputEventType(str, Enum):
 @dataclass
 class TokenUsage:
     """Token usage information."""
+
     input_tokens: int = 0
     output_tokens: int = 0
     total_tokens: int = 0
@@ -45,13 +48,14 @@ class TokenUsage:
 @dataclass
 class OutputEvent:
     """Output event from reader."""
+
     session_id: str
     event_type: OutputEventType
     content: str
     timestamp: Optional[float] = None
     metadata: Optional[Dict[str, Any]] = None
     token_usage: Optional[TokenUsage] = None
-    
+
     def __post_init__(self):
         if self.metadata is None:
             self.metadata = {}
@@ -61,32 +65,32 @@ class OutputEvent:
 
 class BaseOutputReader:
     """Base class for output readers.
-    
+
     Events:
         message(event: OutputEvent) - parsed standardized message
     """
-    
+
     @property
     def provider_id(self) -> str:
         """Provider ID this reader supports."""
         raise NotImplementedError
-    
+
     def start_watching(self, session_id: str, work_dir: str) -> None:
         """Start watching for output (called when session is created)."""
         raise NotImplementedError
-    
+
     def bind_conversation_id(self, session_id: str, conversation_id: str) -> None:
         """Bind CLI internal conversation ID to precisely locate output file."""
         raise NotImplementedError
-    
+
     def stop_watching(self, session_id: str) -> None:
         """Stop watching session."""
         raise NotImplementedError
-    
+
     def cleanup(self) -> None:
         """Clean up all resources."""
         raise NotImplementedError
-    
+
     def emit_message(self, event: OutputEvent) -> None:
         """Emit a message event (to be implemented by subclasses)."""
         raise NotImplementedError

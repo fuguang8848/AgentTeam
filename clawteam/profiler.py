@@ -3,6 +3,7 @@ ClawTeam Performance Profiler
 
 Provides profiling utilities for analyzing latency, throughput, memory, and resource usage.
 """
+
 import time
 import asyncio
 import psutil
@@ -19,6 +20,7 @@ from pathlib import Path
 @dataclass
 class ProfileResult:
     """Result of a profiling run"""
+
     name: str
     start_time: str
     end_time: str
@@ -46,6 +48,7 @@ class ProfileResult:
 @dataclass
 class LatencyResult:
     """Latency measurement result"""
+
     operation: str
     count: int
     total_ms: float
@@ -73,20 +76,20 @@ class LatencyResult:
 class Profiler:
     """
     Performance profiler for ClawTeam operations.
-    
+
     Usage:
         profiler = Profiler()
-        
+
         # Context manager
         with profiler.profile("my_operation"):
             # do work
             pass
-        
+
         # Decorator
         @profiler.profile_func()
         def my_function():
             pass
-        
+
         # Manual
         profiler.start("my_task")
         # ... work ...
@@ -150,6 +153,7 @@ class Profiler:
 
     def profile_func(self, name: Optional[str] = None):
         """Decorator for profiling functions"""
+
         def decorator(func: Callable) -> Callable:
             profile_name = name or func.__name__
 
@@ -210,9 +214,7 @@ class Profiler:
     def get_all_latency_stats(self) -> list[LatencyResult]:
         """Get all latency statistics"""
         return [
-            stats
-            for name in self._latencies
-            if (stats := self.get_latency_stats(name)) is not None
+            stats for name in self._latencies if (stats := self.get_latency_stats(name)) is not None
         ]
 
     def get_profile(self, name: str) -> Optional[ProfileResult]:

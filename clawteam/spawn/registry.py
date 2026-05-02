@@ -18,6 +18,7 @@ from clawteam.team.models import get_data_dir
 # Circuit Breaker — agent health tracking
 # ---------------------------------------------------------------------------
 
+
 class HealthState(str, Enum):
     healthy = "healthy"
     degraded = "degraded"
@@ -86,10 +87,7 @@ def get_agent_health(team_name: str, agent_name: str) -> AgentHealth:
 def get_all_health(team_name: str) -> dict[str, AgentHealth]:
     """Return health for all tracked agents."""
     health_data = _load_health(team_name)
-    return {
-        name: AgentHealth.model_validate(data)
-        for name, data in health_data.items()
-    }
+    return {name: AgentHealth.model_validate(data) for name, data in health_data.items()}
 
 
 def record_outcome(
@@ -224,7 +222,6 @@ def list_dead_agents(team_name: str) -> list[str]:
     return dead
 
 
-
 def list_zombie_agents(team_name: str, max_hours: float = 2.0) -> list[dict]:
     """Return agents that are still alive but have been running longer than max_hours.
 
@@ -243,15 +240,16 @@ def list_zombie_agents(team_name: str, max_hours: float = 2.0) -> list[dict]:
         if alive is True:
             running_seconds = now - spawned_at
             if running_seconds > threshold:
-                zombies.append({
-                    "agent_name": name,
-                    "pid": info.get("pid", 0),
-                    "backend": info.get("backend", ""),
-                    "spawned_at": spawned_at,
-                    "running_hours": round(running_seconds / 3600, 1),
-                })
+                zombies.append(
+                    {
+                        "agent_name": name,
+                        "pid": info.get("pid", 0),
+                        "backend": info.get("backend", ""),
+                        "spawned_at": spawned_at,
+                        "running_hours": round(running_seconds / 3600, 1),
+                    }
+                )
     return zombies
-
 
 
 def _tmux_pane_alive(target: str) -> bool:
@@ -284,20 +282,23 @@ def _pid_alive(pid: int) -> bool:
         return False
     import sys
     import os
+
     if sys.platform == "win32":
         # Windows doesn't support os.kill(pid, 0) for process checking
         # Use psutil or tasklist instead
         try:
             import psutil
+
             return psutil.pid_exists(pid)
         except ImportError:
             # Fallback: use tasklist command
             import subprocess
+
             result = subprocess.run(
                 ["tasklist", "/FI", f"PID eq {pid}", "/NH"],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
             )
             # If PID exists, output will contain the PID number
             return str(pid) in result.stdout
@@ -318,10 +319,7 @@ def _pid_alive(pid: int) -> bool:
 def get_children_of(team_name: str, parent_agent: str) -> list[str]:
     """Return all direct child agents of a given parent agent."""
     registry = get_registry(team_name)
-    return [
-        name for name, info in registry.items()
-        if info.get("parent_agent") == parent_agent
-    ]
+    return [name for name, info in registry.items() if info.get("parent_agent") == parent_agent]
 
 
 def get_descendants_of(team_name: str, parent_agent: str) -> list[str]:
@@ -378,7 +376,8 @@ def _kill_agent_process(info: dict) -> None:
         try:
             _subprocess.run(
                 ["tmux", "kill-window", "-t", target],
-                capture_output=True, timeout=10,
+                capture_output=True,
+                timeout=10,
             )
         except Exception:
             pass
@@ -386,6 +385,7 @@ def _kill_agent_process(info: dict) -> None:
         try:
             import os as _os
             import signal as _signal
+
             if sys.platform == "win32":
                 _subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True)
             else:

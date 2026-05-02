@@ -28,7 +28,9 @@ def _now_iso() -> str:
 
 
 def _snapshots_root(team_name: str) -> Path:
-    d = ensure_within_root(get_data_dir() / "snapshots", validate_identifier(team_name, "team name"))
+    d = ensure_within_root(
+        get_data_dir() / "snapshots", validate_identifier(team_name, "team name")
+    )
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -118,7 +120,9 @@ class SnapshotManager:
         self.team_name = team_name
 
     def _team_dir(self) -> Path:
-        return ensure_within_root(get_data_dir() / "teams", validate_identifier(self.team_name, "team name"))
+        return ensure_within_root(
+            get_data_dir() / "teams", validate_identifier(self.team_name, "team name")
+        )
 
     def create(self, tag: str = "") -> SnapshotMeta:
         """Capture current team state."""
@@ -278,9 +282,7 @@ class SnapshotManager:
             )
             agent_inbox.mkdir(parents=True, exist_ok=True)
             for j, msg in enumerate(messages):
-                _atomic_write(
-                    agent_inbox / f"msg-restored-{j:06d}.json", msg
-                )
+                _atomic_write(agent_inbox / f"msg-restored-{j:06d}.json", msg)
 
         return summary
 

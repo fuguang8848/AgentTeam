@@ -41,17 +41,27 @@ def _version_callback(value: bool):
 @app.callback()
 def main(
     version: bool = typer.Option(
-        None, "--version", "-v", callback=_version_callback, is_eager=True,
+        None,
+        "--version",
+        "-v",
+        callback=_version_callback,
+        is_eager=True,
         help="Show version and exit.",
     ),
     json_out: bool = typer.Option(
-        False, "--json", help="Output JSON instead of human-readable text.",
+        False,
+        "--json",
+        help="Output JSON instead of human-readable text.",
     ),
     data_dir: Optional[str] = typer.Option(
-        None, "--data-dir", help="Override data directory (default: ~/.clawteam).",
+        None,
+        "--data-dir",
+        help="Override data directory (default: ~/.clawteam).",
     ),
     transport: Optional[str] = typer.Option(
-        None, "--transport", help="Transport backend: file or p2p.",
+        None,
+        "--transport",
+        help="Transport backend: file or p2p.",
     ),
 ):
     """clawteam - Framework-agnostic multi-agent coordination CLI."""
@@ -59,10 +69,12 @@ def main(
     _json_output = json_out
     if data_dir:
         import os
+
         os.environ["CLAWTEAM_DATA_DIR"] = data_dir
         _data_dir = data_dir
     if transport:
         import os
+
         os.environ["CLAWTEAM_TRANSPORT"] = transport
 
 
@@ -95,8 +107,13 @@ def config_show():
     from clawteam.config import get_effective
 
     keys = [
-        "data_dir", "user", "default_team",
-        "transport", "workspace", "default_backend", "skip_permissions",
+        "data_dir",
+        "user",
+        "default_team",
+        "transport",
+        "workspace",
+        "default_backend",
+        "skip_permissions",
     ]
     data = {}
     for k in keys:
@@ -118,7 +135,10 @@ def config_show():
 
 @config_app.command("set")
 def config_set(
-    key: str = typer.Argument(..., help="Config key (e.g. data_dir, user, transport, workspace, default_backend, skip_permissions)"),
+    key: str = typer.Argument(
+        ...,
+        help="Config key (e.g. data_dir, user, transport, workspace, default_backend, skip_permissions)",
+    ),
     value: str = typer.Argument(..., help="Config value"),
 ):
     """Persistently set a configuration value."""
@@ -146,7 +166,10 @@ def config_set(
 
 @config_app.command("get")
 def config_get(
-    key: str = typer.Argument(..., help="Config key (e.g. data_dir, user, transport, workspace, default_backend, skip_permissions)"),
+    key: str = typer.Argument(
+        ...,
+        help="Config key (e.g. data_dir, user, transport, workspace, default_backend, skip_permissions)",
+    ),
 ):
     """Get the effective value of a config key."""
     from clawteam.config import ClawTeamConfig, get_effective
@@ -218,13 +241,19 @@ def config_health():
     checks["user_source"] = user_source
 
     def _human(d):
-        console.print(f"\nData Directory: [cyan]{d['data_dir']}[/cyan]  [dim]({d['data_dir_source']})[/dim]")
+        console.print(
+            f"\nData Directory: [cyan]{d['data_dir']}[/cyan]  [dim]({d['data_dir_source']})[/dim]"
+        )
         console.print(f"  Exists:     {'[green]yes[/green]' if d['exists'] else '[red]no[/red]'}")
         console.print(f"  Writable:   {'[green]yes[/green]' if d['writable'] else '[red]no[/red]'}")
-        if d['latency_ms'] >= 0:
-            color = "green" if d['latency_ms'] < 50 else "yellow" if d['latency_ms'] < 200 else "red"
+        if d["latency_ms"] >= 0:
+            color = (
+                "green" if d["latency_ms"] < 50 else "yellow" if d["latency_ms"] < 200 else "red"
+            )
             console.print(f"  Latency:    [{color}]{d['latency_ms']:.1f} ms[/{color}]")
-        console.print(f"  Mount point: {'[yellow]yes (remote/shared)[/yellow]' if d['is_mount'] else '[dim]no (local)[/dim]'}")
+        console.print(
+            f"  Mount point: {'[yellow]yes (remote/shared)[/yellow]' if d['is_mount'] else '[dim]no (local)[/dim]'}"
+        )
         console.print(f"  Teams:      {d['teams_count']}")
         console.print(f"  User:       {d['user'] or '(not set)'}  [dim]({d['user_source']})[/dim]")
 
@@ -280,7 +309,11 @@ def template_show(
         console.print(f"[bold]Leader:[/bold] {t.leader.name} ({t.leader.type})")
         if t.leader.model:
             console.print(f"  Model: {t.leader.model}")
-        console.print(f"  [dim]{t.leader.task[:80]}...[/dim]" if len(t.leader.task) > 80 else f"  [dim]{t.leader.task}[/dim]")
+        console.print(
+            f"  [dim]{t.leader.task[:80]}...[/dim]"
+            if len(t.leader.task) > 80
+            else f"  [dim]{t.leader.task}[/dim]"
+        )
         console.print()
 
         # Agents
@@ -289,7 +322,7 @@ def template_show(
             console.print(f"  {i}. {agent.name} ({agent.type})")
             if agent.model:
                 console.print(f"     Model: {agent.model}")
-            if hasattr(agent, 'task_type') and agent.task_type:
+            if hasattr(agent, "task_type") and agent.task_type:
                 console.print(f"     Task Type: {agent.task_type}")
             task_preview = agent.task[:60] + "..." if len(agent.task) > 60 else agent.task
             console.print(f"     [dim]{task_preview}[/dim]")
@@ -303,7 +336,9 @@ def template_show(
         console.print()
 
         # Meta
-        console.print(f"[dim]Backend: {t.backend} | Command: {' '.join(t.command)} | Max Agents: {t.max_agents}[/dim]")
+        console.print(
+            f"[dim]Backend: {t.backend} | Command: {' '.join(t.command)} | Max Agents: {t.max_agents}[/dim]"
+        )
 
     _output(_dump(tmpl), _human)
 
@@ -347,10 +382,13 @@ def team_spawn_team(
         }
         if identity.user:
             result["user"] = identity.user
-        _output(result, lambda d: (
-            console.print(f"[green]OK[/green] Team '{name}' created"),
-            console.print(f"  Leader: {leader_name} (id: {leader_id})"),
-        ))
+        _output(
+            result,
+            lambda d: (
+                console.print(f"[green]OK[/green] Team '{name}' created"),
+                console.print(f"  Leader: {leader_name} (id: {leader_id})"),
+            ),
+        )
     except ValueError as e:
         if _json_output:
             print(json.dumps({"error": str(e)}))
@@ -475,7 +513,10 @@ def team_request_join(
     AgentIdentity.from_env()
     config = TeamManager.get_team(team)
     if not config:
-        _output({"error": f"Team '{team}' not found"}, lambda d: console.print(f"[red]{d['error']}[/red]"))
+        _output(
+            {"error": f"Team '{team}' not found"},
+            lambda d: console.print(f"[red]{d['error']}[/red]"),
+        )
         raise typer.Exit(1)
 
     leader_inbox = TeamManager.get_leader_inbox(team)
@@ -513,9 +554,12 @@ def team_request_join(
                         "agentId": msg.agent_id or "",
                         "teamName": team,
                     }
-                    _output(result, lambda d: console.print(
-                        f"[green]Approved![/green] Joined as '{d['assignedName']}'"
-                    ))
+                    _output(
+                        result,
+                        lambda d: console.print(
+                            f"[green]Approved![/green] Joined as '{d['assignedName']}'"
+                        ),
+                    )
                     return
                 elif msg.type == MessageType.join_rejected:
                     reason = msg.reason or msg.content or ""
@@ -537,7 +581,9 @@ def team_request_join(
 def team_approve_join(
     team: str = typer.Argument(..., help="Team name"),
     request_id: str = typer.Argument(..., help="Join request ID"),
-    assigned_name: Optional[str] = typer.Option(None, "--assigned-name", help="Override proposed name"),
+    assigned_name: Optional[str] = typer.Option(
+        None, "--assigned-name", help="Override proposed name"
+    ),
 ):
     """Approve a join request (approveJoin)."""
     from clawteam.identity import AgentIdentity
@@ -598,7 +644,13 @@ def team_approve_join(
             pass
 
     _output(
-        {"status": "approved", "requestId": request_id, "assignedName": final_name, "agentId": new_agent_id, "teamName": team},
+        {
+            "status": "approved",
+            "requestId": request_id,
+            "assignedName": final_name,
+            "agentId": new_agent_id,
+            "teamName": team,
+        },
         lambda d: console.print(f"[green]OK[/green] Approved '{final_name}' (id: {new_agent_id})"),
     )
 
@@ -668,9 +720,15 @@ def team_cleanup(
             raise typer.Abort()
 
     if TeamManager.cleanup(team):
-        _output({"status": "cleaned", "team": team}, lambda d: console.print(f"[green]OK[/green] Team '{team}' deleted"))
+        _output(
+            {"status": "cleaned", "team": team},
+            lambda d: console.print(f"[green]OK[/green] Team '{team}' deleted"),
+        )
     else:
-        _output({"status": "not_found", "team": team}, lambda d: console.print(f"[yellow]Team '{team}' not found[/yellow]"))
+        _output(
+            {"status": "not_found", "team": team},
+            lambda d: console.print(f"[yellow]Team '{team}' not found[/yellow]"),
+        )
 
 
 def _workspace_cwd_from_info(repo: str | None, ws_info) -> str:
@@ -702,7 +760,10 @@ def team_status(
 
     config = TeamManager.get_team(team)
     if not config:
-        _output({"error": f"Team '{team}' not found"}, lambda d: console.print(f"[red]{d['error']}[/red]"))
+        _output(
+            {"error": f"Team '{team}' not found"},
+            lambda d: console.print(f"[red]{d['error']}[/red]"),
+        )
         raise typer.Exit(1)
 
     data = {
@@ -721,7 +782,7 @@ def team_status(
 
     def _human(d):
         console.print(f"\nTeam: [cyan]{d['name']}[/cyan]")
-        if d['description']:
+        if d["description"]:
             console.print(f"  {d['description']}")
         console.print(f"  Created: {d['createdAt'][:19]}")
         has_user = any(m.get("user") for m in d["members"])
@@ -739,12 +800,14 @@ def team_status(
                 row.append(m.get("user", ""))
             alive = m.get("alive")
             alive_label = "yes" if alive is True else "no" if alive is False else "unknown"
-            row.extend([
-                m.get("agentId", ""),
-                m.get("agentType", ""),
-                alive_label,
-                (m.get("joinedAt") or "")[:19],
-            ])
+            row.extend(
+                [
+                    m.get("agentId", ""),
+                    m.get("agentType", ""),
+                    alive_label,
+                    (m.get("joinedAt") or "")[:19],
+                ]
+            )
             table.add_row(*row)
         console.print(table)
 
@@ -766,7 +829,9 @@ def inbox_send(
     content: str = typer.Argument(..., help="Message content"),
     key: Optional[str] = typer.Option(None, "--key", "-k", help="Optional routing key"),
     msg_type: str = typer.Option("message", "--type", help="Message type"),
-    from_agent: Optional[str] = typer.Option(None, "--from", "-f", help="Override sender name (default: from env identity)"),
+    from_agent: Optional[str] = typer.Option(
+        None, "--from", "-f", help="Override sender name (default: from env identity)"
+    ),
 ):
     """Send a point-to-point message (write)."""
     from clawteam.identity import AgentIdentity
@@ -793,7 +858,9 @@ def inbox_broadcast(
     content: str = typer.Argument(..., help="Message content"),
     key: Optional[str] = typer.Option(None, "--key", "-k", help="Optional routing key"),
     msg_type: str = typer.Option("broadcast", "--type", help="Message type"),
-    from_agent: Optional[str] = typer.Option(None, "--from", "-f", help="Override sender name (default: from env identity)"),
+    from_agent: Optional[str] = typer.Option(
+        None, "--from", "-f", help="Override sender name (default: from env identity)"
+    ),
 ):
     """Broadcast a message to all team members (broadcast)."""
     from clawteam.identity import AgentIdentity
@@ -816,7 +883,9 @@ def inbox_broadcast(
 @inbox_app.command("receive")
 def inbox_receive(
     team: str = typer.Argument(..., help="Team name"),
-    agent: Optional[str] = typer.Option(None, "--agent", "-a", help="Agent name (default: from env)"),
+    agent: Optional[str] = typer.Option(
+        None, "--agent", "-a", help="Agent name (default: from env)"
+    ),
     limit: int = typer.Option(10, "--limit", "-l", help="Max messages to receive"),
 ):
     """Receive and consume messages from inbox."""
@@ -848,7 +917,9 @@ def inbox_receive(
 @inbox_app.command("peek")
 def inbox_peek(
     team: str = typer.Argument(..., help="Team name"),
-    agent: Optional[str] = typer.Option(None, "--agent", "-a", help="Agent name (default: from env)"),
+    agent: Optional[str] = typer.Option(
+        None, "--agent", "-a", help="Agent name (default: from env)"
+    ),
 ):
     """Peek at messages without consuming them."""
     from clawteam.identity import AgentIdentity
@@ -910,9 +981,18 @@ def inbox_log(
 @inbox_app.command("watch")
 def inbox_watch(
     team: str = typer.Argument(..., help="Team name"),
-    agent: Optional[str] = typer.Option(None, "--agent", "-a", help="Agent name (default: from env)"),
-    poll_interval: float = typer.Option(1.0, "--poll-interval", "-p", help="Poll interval in seconds"),
-    exec_cmd: Optional[str] = typer.Option(None, "--exec", "-e", help="Shell command to run for each new message (msg data in env vars)"),
+    agent: Optional[str] = typer.Option(
+        None, "--agent", "-a", help="Agent name (default: from env)"
+    ),
+    poll_interval: float = typer.Option(
+        1.0, "--poll-interval", "-p", help="Poll interval in seconds"
+    ),
+    exec_cmd: Optional[str] = typer.Option(
+        None,
+        "--exec",
+        "-e",
+        help="Shell command to run for each new message (msg data in env vars)",
+    ),
 ):
     """Watch inbox for new messages (blocking, Ctrl+C to stop).
 
@@ -960,7 +1040,9 @@ def runtime_inject(
     source: str = typer.Option("system", "--source", "-s", help="Runtime notification source"),
     channel: str = typer.Option("direct", "--channel", help="Runtime notification channel"),
     priority: str = typer.Option("medium", "--priority", help="Runtime notification priority"),
-    summary: str = typer.Option(..., "--summary", help="Summary text for the injected notification"),
+    summary: str = typer.Option(
+        ..., "--summary", help="Summary text for the injected notification"
+    ),
     evidence: list[str] = typer.Option([], "--evidence", "-e", help="Repeatable evidence line"),
     recommended_next_action: Optional[str] = typer.Option(
         None,
@@ -996,8 +1078,12 @@ def runtime_inject(
 @runtime_app.command("watch")
 def runtime_watch(
     team: str = typer.Argument(..., help="Team name"),
-    agent: Optional[str] = typer.Option(None, "--agent", "-a", help="Agent name (default: from env)"),
-    poll_interval: float = typer.Option(1.0, "--poll-interval", "-p", help="Poll interval in seconds"),
+    agent: Optional[str] = typer.Option(
+        None, "--agent", "-a", help="Agent name (default: from env)"
+    ),
+    poll_interval: float = typer.Option(
+        1.0, "--poll-interval", "-p", help="Poll interval in seconds"
+    ),
     exec_cmd: Optional[str] = typer.Option(
         None,
         "--exec",
@@ -1050,9 +1136,7 @@ def runtime_state(
     state = DefaultRoutingPolicy(team_name=team).read_state()
 
     def _human(data):
-        console.print(
-            f"Runtime state for '{data['team']}' (throttle={data['throttleSeconds']}s)"
-        )
+        console.print(f"Runtime state for '{data['team']}' (throttle={data['throttleSeconds']}s)")
         routes = data.get("routes", {})
         if not routes:
             console.print("[dim]No runtime route state.[/dim]")
@@ -1083,8 +1167,12 @@ def task_create(
     subject: str = typer.Argument(..., help="Task subject"),
     description: str = typer.Option("", "--description", "-d", help="Task description"),
     owner: Optional[str] = typer.Option(None, "--owner", "-o", help="Owner agent name"),
-    blocks: Optional[str] = typer.Option(None, "--blocks", help="Comma-separated task IDs this blocks"),
-    blocked_by: Optional[str] = typer.Option(None, "--blocked-by", help="Comma-separated task IDs this is blocked by"),
+    blocks: Optional[str] = typer.Option(
+        None, "--blocks", help="Comma-separated task IDs this blocks"
+    ),
+    blocked_by: Optional[str] = typer.Option(
+        None, "--blocked-by", help="Comma-separated task IDs this is blocked by"
+    ),
 ):
     """Create a new task (TaskCreate)."""
     from clawteam.team.tasks import TaskStore
@@ -1102,12 +1190,15 @@ def task_create(
     )
 
     data = _dump(task)
-    _output(data, lambda d: (
-        console.print(f"[green]OK[/green] Task created: {d['id']}"),
-        console.print(f"  Subject: {d['subject']}"),
-        console.print(f"  Status: {d['status']}"),
-        console.print(f"  Owner: {d.get('owner', '')}") if d.get('owner') else None,
-    ))
+    _output(
+        data,
+        lambda d: (
+            console.print(f"[green]OK[/green] Task created: {d['id']}"),
+            console.print(f"  Subject: {d['subject']}"),
+            console.print(f"  Status: {d['status']}"),
+            console.print(f"  Owner: {d.get('owner', '')}") if d.get("owner") else None,
+        ),
+    )
 
 
 @task_app.command("get")
@@ -1121,7 +1212,10 @@ def task_get(
     store = TaskStore(team)
     task = store.get(task_id)
     if not task:
-        _output({"error": f"Task '{task_id}' not found"}, lambda d: console.print(f"[red]{d['error']}[/red]"))
+        _output(
+            {"error": f"Task '{task_id}' not found"},
+            lambda d: console.print(f"[red]{d['error']}[/red]"),
+        )
         raise typer.Exit(1)
 
     data = _dump(task)
@@ -1130,15 +1224,17 @@ def task_get(
         console.print(f"Task: [cyan]{d['id']}[/cyan]")
         console.print(f"  Subject: {d['subject']}")
         console.print(f"  Status: {d['status']}")
-        if d.get('owner'):
+        if d.get("owner"):
             console.print(f"  Owner: {d['owner']}")
-        if d.get('lockedBy'):
-            console.print(f"  Locked by: [yellow]{d['lockedBy']}[/yellow] (since {d.get('lockedAt', '')[:19]})")
-        if d.get('description'):
+        if d.get("lockedBy"):
+            console.print(
+                f"  Locked by: [yellow]{d['lockedBy']}[/yellow] (since {d.get('lockedAt', '')[:19]})"
+            )
+        if d.get("description"):
             console.print(f"  Description: {d['description']}")
-        if d.get('blocks'):
+        if d.get("blocks"):
             console.print(f"  Blocks: {', '.join(d['blocks'])}")
-        if d.get('blockedBy'):
+        if d.get("blockedBy"):
             console.print(f"  Blocked by: {', '.join(d['blockedBy'])}")
 
     _output(data, _human)
@@ -1148,12 +1244,18 @@ def task_get(
 def task_update(
     team: str = typer.Argument(..., help="Team name"),
     task_id: str = typer.Argument(..., help="Task ID"),
-    status: Optional[str] = typer.Option(None, "--status", "-s", help="New status: pending, in_progress, completed, blocked"),
+    status: Optional[str] = typer.Option(
+        None, "--status", "-s", help="New status: pending, in_progress, completed, blocked"
+    ),
     owner: Optional[str] = typer.Option(None, "--owner", "-o", help="New owner"),
     subject: Optional[str] = typer.Option(None, "--subject", help="New subject"),
     description: Optional[str] = typer.Option(None, "--description", "-d", help="New description"),
-    add_blocks: Optional[str] = typer.Option(None, "--add-blocks", help="Comma-separated task IDs this blocks"),
-    add_blocked_by: Optional[str] = typer.Option(None, "--add-blocked-by", help="Comma-separated task IDs blocking this"),
+    add_blocks: Optional[str] = typer.Option(
+        None, "--add-blocks", help="Comma-separated task IDs this blocks"
+    ),
+    add_blocked_by: Optional[str] = typer.Option(
+        None, "--add-blocked-by", help="Comma-separated task IDs blocking this"
+    ),
     force: bool = typer.Option(False, "--force", "-f", help="Force override task lock"),
 ):
     """Update a task (TaskUpdate)."""
@@ -1164,7 +1266,9 @@ def task_update(
     store = TaskStore(team)
     ts = TaskStatus(status) if status else None
     blocks_list = [b.strip() for b in add_blocks.split(",") if b.strip()] if add_blocks else None
-    blocked_by_list = [b.strip() for b in add_blocked_by.split(",") if b.strip()] if add_blocked_by else None
+    blocked_by_list = (
+        [b.strip() for b in add_blocked_by.split(",") if b.strip()] if add_blocked_by else None
+    )
 
     caller = AgentIdentity.from_env().agent_name
 
@@ -1181,11 +1285,16 @@ def task_update(
             force=force,
         )
     except TaskLockError as e:
-        _output({"error": str(e)}, lambda d: console.print(f"[red]Lock conflict: {d['error']}[/red]"))
+        _output(
+            {"error": str(e)}, lambda d: console.print(f"[red]Lock conflict: {d['error']}[/red]")
+        )
         raise typer.Exit(1)
 
     if not task:
-        _output({"error": f"Task '{task_id}' not found"}, lambda d: console.print(f"[red]{d['error']}[/red]"))
+        _output(
+            {"error": f"Task '{task_id}' not found"},
+            lambda d: console.print(f"[red]{d['error']}[/red]"),
+        )
         raise typer.Exit(1)
 
     data = _dump(task)
@@ -1221,7 +1330,12 @@ def task_list(
         table.add_column("Blocked By", style="dim")
         for t in items:
             st = t.get("status", "")
-            style = {"pending": "white", "in_progress": "yellow", "completed": "green", "blocked": "red"}.get(st, "")
+            style = {
+                "pending": "white",
+                "in_progress": "yellow",
+                "completed": "green",
+                "blocked": "red",
+            }.get(st, "")
             table.add_row(
                 t["id"],
                 t["subject"],
@@ -1287,7 +1401,9 @@ def cost_report(
     cost_cents: float = typer.Option(0.0, "--cost-cents", help="Cost in cents"),
     provider: str = typer.Option("", "--provider", help="Provider name (e.g. anthropic)"),
     model: str = typer.Option("", "--model", help="Model name"),
-    agent: Optional[str] = typer.Option(None, "--agent", "-a", help="Agent name (default: from env)"),
+    agent: Optional[str] = typer.Option(
+        None, "--agent", "-a", help="Agent name (default: from env)"
+    ),
     task_id: str = typer.Option("", "--task-id", help="Associated task ID"),
 ):
     """Report token usage and cost for an agent."""
@@ -1331,7 +1447,9 @@ def cost_report(
 def cost_show(
     team: str = typer.Argument(..., help="Team name"),
     agent: Optional[str] = typer.Option(None, "--agent", "-a", help="Filter by agent"),
-    by: Optional[str] = typer.Option(None, "--by", "-b", help="Breakdown dimension: agent, task, or model"),
+    by: Optional[str] = typer.Option(
+        None, "--by", "-b", help="Breakdown dimension: agent, task, or model"
+    ),
 ):
     """Show cost summary and event history."""
     from clawteam.team.costs import CostStore
@@ -1413,18 +1531,23 @@ def cost_budget(
 
     config = TeamManager.get_team(team)
     if not config:
-        _output({"error": f"Team '{team}' not found"}, lambda d: console.print(f"[red]{d['error']}[/red]"))
+        _output(
+            {"error": f"Team '{team}' not found"},
+            lambda d: console.print(f"[red]{d['error']}[/red]"),
+        )
         raise typer.Exit(1)
 
     config.budget_cents = dollars * 100
     # Save config back
     from clawteam.team.manager import _save_config
+
     _save_config(config)
 
     _output(
         {"status": "set", "team": team, "budgetDollars": dollars},
         lambda d: console.print(
-            f"[green]OK[/green] Budget set to ${dollars:.2f}" if dollars > 0
+            f"[green]OK[/green] Budget set to ${dollars:.2f}"
+            if dollars > 0
             else "[green]OK[/green] Budget removed (unlimited)"
         ),
     )
@@ -1433,9 +1556,13 @@ def cost_budget(
 @task_app.command("wait")
 def task_wait(
     team: str = typer.Argument(..., help="Team name"),
-    agent: Optional[str] = typer.Option(None, "--agent", "-a", help="Agent inbox to monitor (default: leader from team config)"),
+    agent: Optional[str] = typer.Option(
+        None, "--agent", "-a", help="Agent inbox to monitor (default: leader from team config)"
+    ),
     poll_interval: float = typer.Option(5.0, "--poll-interval", "-p", help="Seconds between polls"),
-    timeout: Optional[float] = typer.Option(None, "--timeout", "-t", help="Max seconds to wait (default: no limit)"),
+    timeout: Optional[float] = typer.Option(
+        None, "--timeout", "-t", help="Max seconds to wait (default: no limit)"
+    ),
 ):
     """Block until all tasks in a team are completed."""
     from clawteam.team.mailbox import MailboxManager
@@ -1449,10 +1576,12 @@ def task_wait(
         agent_name = TeamManager.get_leader_inbox(team)
     if not agent_name:
         from clawteam.identity import AgentIdentity
+
         identity = AgentIdentity.from_env()
         agent_name = TeamManager.resolve_inbox(team, identity.agent_name, identity.user)
     elif agent:
         from clawteam.identity import AgentIdentity
+
         identity = AgentIdentity.from_env()
         agent_name = TeamManager.resolve_inbox(team, agent_name, identity.user)
 
@@ -1466,12 +1595,17 @@ def task_wait(
         from_agent = msg.from_agent or "?"
         content = msg.content or ""
         if _json_output:
-            print(json.dumps({
-                "event": "message",
-                "from": from_agent,
-                "content": content,
-                "timestamp": msg.timestamp,
-            }), flush=True)
+            print(
+                json.dumps(
+                    {
+                        "event": "message",
+                        "from": from_agent,
+                        "content": content,
+                        "timestamp": msg.timestamp,
+                    }
+                ),
+                flush=True,
+            )
         else:
             console.print(f"  {ts}  message from={from_agent}: {content}")
 
@@ -1484,14 +1618,19 @@ def task_wait(
             return
         last_progress = summary
         if _json_output:
-            print(json.dumps({
-                "event": "progress",
-                "completed": completed,
-                "total": total,
-                "in_progress": in_progress,
-                "pending": pending,
-                "blocked": blocked,
-            }), flush=True)
+            print(
+                json.dumps(
+                    {
+                        "event": "progress",
+                        "completed": completed,
+                        "total": total,
+                        "in_progress": in_progress,
+                        "pending": pending,
+                        "blocked": blocked,
+                    }
+                ),
+                flush=True,
+            )
         else:
             console.print(
                 f"  {completed}/{total} tasks completed"
@@ -1509,11 +1648,18 @@ def task_wait(
     def _on_agent_dead(dead_agent, abandoned_tasks):
         task_subjects = ", ".join(t.subject for t in abandoned_tasks)
         if _json_output:
-            print(json.dumps({
-                "event": "agent_dead",
-                "agent": dead_agent,
-                "abandoned_tasks": [{"id": t.id, "subject": t.subject} for t in abandoned_tasks],
-            }), flush=True)
+            print(
+                json.dumps(
+                    {
+                        "event": "agent_dead",
+                        "agent": dead_agent,
+                        "abandoned_tasks": [
+                            {"id": t.id, "subject": t.subject} for t in abandoned_tasks
+                        ],
+                    }
+                ),
+                flush=True,
+            )
         else:
             console.print(
                 f"  [yellow]Agent '{dead_agent}' is dead.[/yellow]"
@@ -1534,18 +1680,23 @@ def task_wait(
     result = waiter.wait()
 
     if _json_output:
-        print(json.dumps({
-            "event": "result",
-            "status": result.status,
-            "elapsed": round(result.elapsed, 1),
-            "total": result.total,
-            "completed": result.completed,
-            "in_progress": result.in_progress,
-            "pending": result.pending,
-            "blocked": result.blocked,
-            "messages_received": result.messages_received,
-            "task_details": result.task_details,
-        }), flush=True)
+        print(
+            json.dumps(
+                {
+                    "event": "result",
+                    "status": result.status,
+                    "elapsed": round(result.elapsed, 1),
+                    "total": result.total,
+                    "completed": result.completed,
+                    "in_progress": result.in_progress,
+                    "pending": result.pending,
+                    "blocked": result.blocked,
+                    "messages_received": result.messages_received,
+                    "task_details": result.task_details,
+                }
+            ),
+            flush=True,
+        )
     else:
         console.print()
         if result.status == "completed":
@@ -1576,7 +1727,9 @@ def _print_incomplete_tasks(task_details: list[dict]):
     if incomplete:
         console.print("  Incomplete tasks:")
         for t in incomplete:
-            console.print(f"    [{t['status']}] {t['id']}  {t['subject']}  (owner: {t['owner'] or '-'})")
+            console.print(
+                f"    [{t['status']}] {t['id']}  {t['subject']}  (owner: {t['owner'] or '-'})"
+            )
 
 
 # ============================================================================
@@ -1592,7 +1745,9 @@ def session_save(
     team: str = typer.Argument(..., help="Team name"),
     session_id: str = typer.Option("", "--session-id", "-s", help="Claude Code session ID"),
     last_task: str = typer.Option("", "--last-task", help="Last task ID worked on"),
-    agent: Optional[str] = typer.Option(None, "--agent", "-a", help="Agent name (default: from env)"),
+    agent: Optional[str] = typer.Option(
+        None, "--agent", "-a", help="Agent name (default: from env)"
+    ),
 ):
     """Save agent session for later resume."""
     from clawteam.identity import AgentIdentity
@@ -1614,42 +1769,51 @@ def task_route(
     team: str = typer.Argument(...),
     subject: str = typer.Option(..., "--subject", "-s"),
     description: str = typer.Option("", "--description", "-d"),
-    candidates: str = typer.Option(None, "--candidates", "-c", help="Comma-separated list of agent names"),
+    candidates: str = typer.Option(
+        None, "--candidates", "-c", help="Comma-separated list of agent names"
+    ),
 ):
     """Find the best agent for a task using intelligent routing."""
     from clawteam.team.router import get_router
-    
+
     router = get_router(team)
     router.update_load(team)
-    
+
     cand_list = [c.strip() for c in candidates.split(",")] if candidates else None
-    
+
     # Get all candidates
     all_candidates = router.get_all_candidates(subject, description, cand_list)
-    
+
     if not all_candidates:
         console.print("[yellow]No agents available for routing.[/yellow]")
         return
-    
+
     best = all_candidates[0]
-    
+
     def _human(_data):
         console.print(f"[bold]Task Route — '{subject}'[/bold]")
         console.print(f"  [green]Recommended: {best.name}[/green] (score: {best.match_score})")
-        console.print(f"  Success rate: {best.success_rate:.0%}  Avg score: {best.avg_score:.1f}/10  Load: {best.current_load}")
+        console.print(
+            f"  Success rate: {best.success_rate:.0%}  Avg score: {best.avg_score:.1f}/10  Load: {best.current_load}"
+        )
         if best.matching_topics:
             console.print(f"  Matching topics: {', '.join(best.matching_topics[:5])}")
-        
+
         if len(all_candidates) > 1:
             console.print()
             console.print("[dim]Other candidates:[/dim]")
             for c in all_candidates[1:]:
-                console.print(f"  {c.name}: score={c.match_score} (success={c.success_rate:.0%}, load={c.current_load})")
-    
-    _output({
-        "best": best.__dict__,
-        "all_candidates": [c.__dict__ for c in all_candidates],
-    }, _human)
+                console.print(
+                    f"  {c.name}: score={c.match_score} (success={c.success_rate:.0%}, load={c.current_load})"
+                )
+
+    _output(
+        {
+            "best": best.__dict__,
+            "all_candidates": [c.__dict__ for c in all_candidates],
+        },
+        _human,
+    )
 
 
 @session_app.command("show")
@@ -1664,15 +1828,21 @@ def session_show(
     if agent:
         session = store.load(agent)
         if not session:
-            _output({"error": f"No session for '{agent}'"}, lambda d: console.print(f"[dim]{d['error']}[/dim]"))
+            _output(
+                {"error": f"No session for '{agent}'"},
+                lambda d: console.print(f"[dim]{d['error']}[/dim]"),
+            )
             return
         data = _dump(session)
-        _output(data, lambda d: (
-            console.print(f"Session: [cyan]{d.get('agentName', '')}[/cyan]"),
-            console.print(f"  Session ID: {d.get('sessionId', '')}"),
-            console.print(f"  Last task:  {d.get('lastTaskId', '')}"),
-            console.print(f"  Saved at:   {d.get('savedAt', '')[:19]}"),
-        ))
+        _output(
+            data,
+            lambda d: (
+                console.print(f"Session: [cyan]{d.get('agentName', '')}[/cyan]"),
+                console.print(f"  Session ID: {d.get('sessionId', '')}"),
+                console.print(f"  Last task:  {d.get('lastTaskId', '')}"),
+                console.print(f"  Saved at:   {d.get('savedAt', '')[:19]}"),
+            ),
+        )
     else:
         sessions = store.list_sessions()
         data = [_dump(s) for s in sessions]
@@ -1709,16 +1879,25 @@ def session_clear(
     store = SessionStore(team)
     if agent:
         if store.clear(agent):
-            _output({"status": "cleared", "agent": agent}, lambda d: console.print(f"[green]OK[/green] Session cleared for '{agent}'"))
+            _output(
+                {"status": "cleared", "agent": agent},
+                lambda d: console.print(f"[green]OK[/green] Session cleared for '{agent}'"),
+            )
         else:
-            _output({"status": "not_found", "agent": agent}, lambda d: console.print(f"[dim]No session for '{agent}'[/dim]"))
+            _output(
+                {"status": "not_found", "agent": agent},
+                lambda d: console.print(f"[dim]No session for '{agent}'[/dim]"),
+            )
     else:
         sessions = store.list_sessions()
         count = 0
         for s in sessions:
             if store.clear(s.agent_name):
                 count += 1
-        _output({"status": "cleared", "count": count}, lambda d: console.print(f"[green]OK[/green] Cleared {count} session(s)"))
+        _output(
+            {"status": "cleared", "count": count},
+            lambda d: console.print(f"[green]OK[/green] Cleared {count} session(s)"),
+        )
 
 
 # ============================================================================
@@ -1753,7 +1932,9 @@ def plan_submit(
 
     mailbox = MailboxManager(team)
     pm = PlanManager(team, mailbox)
-    plan_id = pm.submit_plan(agent_name=agent, leader_name=leader_name, plan_content=plan_content, summary=summary)
+    plan_id = pm.submit_plan(
+        agent_name=agent, leader_name=leader_name, plan_content=plan_content, summary=summary
+    )
 
     _output(
         {"status": "submitted", "planId": plan_id, "agent": agent},
@@ -1776,7 +1957,9 @@ def plan_approve(
     identity = AgentIdentity.from_env()
     mailbox = MailboxManager(team)
     pm = PlanManager(team, mailbox)
-    pm.approve_plan(leader_name=identity.agent_name, plan_id=plan_id, agent_name=agent, feedback=feedback)
+    pm.approve_plan(
+        leader_name=identity.agent_name, plan_id=plan_id, agent_name=agent, feedback=feedback
+    )
 
     _output(
         {"status": "approved", "planId": plan_id},
@@ -1799,7 +1982,9 @@ def plan_reject(
     identity = AgentIdentity.from_env()
     mailbox = MailboxManager(team)
     pm = PlanManager(team, mailbox)
-    pm.reject_plan(leader_name=identity.agent_name, plan_id=plan_id, agent_name=agent, feedback=feedback)
+    pm.reject_plan(
+        leader_name=identity.agent_name, plan_id=plan_id, agent_name=agent, feedback=feedback
+    )
 
     _output(
         {"status": "rejected", "planId": plan_id},
@@ -1832,7 +2017,9 @@ def lifecycle_request_shutdown(
 
     _output(
         {"status": "requested", "requestId": request_id, "from": from_agent, "to": to_agent},
-        lambda d: console.print(f"[green]OK[/green] Shutdown request sent to '{to_agent}' (id: {request_id})"),
+        lambda d: console.print(
+            f"[green]OK[/green] Shutdown request sent to '{to_agent}' (id: {request_id})"
+        ),
     )
 
 
@@ -1874,7 +2061,9 @@ def lifecycle_reject_shutdown(
     identity = AgentIdentity.from_env()
     mailbox = MailboxManager(team)
     lm = LifecycleManager(team, mailbox)
-    lm.reject_shutdown(agent_name=agent, request_id=request_id, requester_name=identity.agent_name, reason=reason)
+    lm.reject_shutdown(
+        agent_name=agent, request_id=request_id, requester_name=identity.agent_name, reason=reason
+    )
 
     _output(
         {"status": "rejected", "requestId": request_id, "agent": agent, "reason": reason},
@@ -1921,7 +2110,9 @@ def lifecycle_idle(
 def lifecycle_on_exit(
     team: str = typer.Option(..., "--team", "-t", help="Team name"),
     agent: str = typer.Option(..., "--agent", "-n", help="Agent name"),
-    cascade: bool = typer.Option(True, "--cascade/--no-cascade", help="Terminate child agents on exit (default: true)"),
+    cascade: bool = typer.Option(
+        True, "--cascade/--no-cascade", help="Terminate child agents on exit (default: true)"
+    ),
 ):
     """Handle agent process exit: clean up session and reset in_progress tasks.
 
@@ -1983,10 +2174,7 @@ def lifecycle_on_exit(
 
     # Find this agent's in_progress tasks and reset them
     tasks = store.list_tasks()
-    abandoned = [
-        t for t in tasks
-        if t.owner == agent and t.status == TaskStatus.in_progress
-    ]
+    abandoned = [t for t in tasks if t.owner == agent and t.status == TaskStatus.in_progress]
 
     # Unregister from spawn registry so is_agent_alive returns None for this agent.
     # Guard: only unregister if the agent is already dead (avoids removing a live entry
@@ -2045,7 +2233,7 @@ def lifecycle_on_exit(
             from_agent=agent,
             to=leader_name,
             content=f"Agent '{agent}' exited unexpectedly. "
-                    f"Reset {len(abandoned)} task(s) to pending: {task_subjects}.{exit_detail}",
+            f"Reset {len(abandoned)} task(s) to pending: {task_subjects}.{exit_detail}",
         )
 
     _output(
@@ -2058,7 +2246,11 @@ def lifecycle_on_exit(
         lambda d: console.print(
             f"[yellow]Agent '{agent}' exited.[/yellow] "
             f"Reset {len(d['abandoned_tasks'])} task(s) to pending."
-            + (f" Terminated {len(d['children_terminated'])} child agent(s)." if d['children_terminated'] else "")
+            + (
+                f" Terminated {len(d['children_terminated'])} child agent(s)."
+                if d["children_terminated"]
+                else ""
+            )
         ),
     )
 
@@ -2066,7 +2258,9 @@ def lifecycle_on_exit(
 @lifecycle_app.command("check-zombies")
 def lifecycle_check_zombies(
     team: str = typer.Option(..., "--team", "-t", help="Team name"),
-    max_hours: float = typer.Option(2.0, "--max-hours", help="Warn if agent has been running longer than this many hours"),
+    max_hours: float = typer.Option(
+        2.0, "--max-hours", help="Warn if agent has been running longer than this many hours"
+    ),
 ):
     """Warn about agents that have been running unusually long (possible zombies).
 
@@ -2080,7 +2274,9 @@ def lifecycle_check_zombies(
     if not zombies:
         _output(
             {"team": team, "zombies": []},
-            lambda d: console.print(f"[green]*[/green] No zombie agents detected for team '{team}'"),
+            lambda d: console.print(
+                f"[green]*[/green] No zombie agents detected for team '{team}'"
+            ),
         )
         return
 
@@ -2107,8 +2303,12 @@ def lifecycle_check_zombies(
 def lifecycle_terminate_children(
     team: str = typer.Option(..., "--team", "-t", help="Team name"),
     parent: str = typer.Option(..., "--parent", "-p", help="Parent agent name"),
-    cascade: bool = typer.Option(False, "--cascade/--no-cascade", help="Also terminate grandchildren and deeper descendants"),
-    force: bool = typer.Option(False, "--force", "-f", help="Force terminate even if agent is alive"),
+    cascade: bool = typer.Option(
+        False, "--cascade/--no-cascade", help="Also terminate grandchildren and deeper descendants"
+    ),
+    force: bool = typer.Option(
+        False, "--force", "-f", help="Force terminate even if agent is alive"
+    ),
 ):
     """Terminate child agents of a parent agent.
 
@@ -2144,6 +2344,7 @@ def lifecycle_terminate_children(
                 continue
             try:
                 from clawteam.spawn.registry import terminate_agent_tree
+
                 terminate_agent_tree(team, child)
             except Exception:
                 pass
@@ -2169,7 +2370,10 @@ def lifecycle_terminate_children(
         try:
             terminated = lm.terminate_tree(parent)
         except Exception as e:
-            _output({"status": "error", "error": str(e)}, lambda d: console.print(f"[red]Error: {d['error']}[/red]"))
+            _output(
+                {"status": "error", "error": str(e)},
+                lambda d: console.print(f"[red]Error: {d['error']}[/red]"),
+            )
             raise typer.Exit(1)
 
         _output(
@@ -2183,7 +2387,9 @@ def lifecycle_terminate_children(
 @lifecycle_app.command("terminate-tree")
 def lifecycle_terminate_tree(
     team: str = typer.Option(..., "--team", "-t", help="Team name"),
-    root: str = typer.Option(..., "--root", "-r", help="Root agent name (tree is terminated from this agent downward)"),
+    root: str = typer.Option(
+        ..., "--root", "-r", help="Root agent name (tree is terminated from this agent downward)"
+    ),
 ):
     """Terminate an entire agent tree (root + all descendants).
 
@@ -2199,7 +2405,10 @@ def lifecycle_terminate_tree(
     try:
         terminated = lm.terminate_tree(root)
     except Exception as e:
-        _output({"status": "error", "error": str(e)}, lambda d: console.print(f"[red]Error: {d['error']}[/red]"))
+        _output(
+            {"status": "error", "error": str(e)},
+            lambda d: console.print(f"[red]Error: {d['error']}[/red]"),
+        )
         raise typer.Exit(1)
 
     _output(
@@ -2231,7 +2440,9 @@ def lifecycle_list_children(
         children = lm.get_children(agent)
         _output(
             {"agent": agent, "children": children},
-            lambda d: console.print(f"[dim]Children of '{d['agent']}': {d['children'] or '(none)'}[/dim]"),
+            lambda d: console.print(
+                f"[dim]Children of '{d['agent']}': {d['children'] or '(none)'}[/dim]"
+            ),
         )
     else:
         tree = lm.get_tree(agent)
@@ -2255,8 +2466,7 @@ def lifecycle_show_parent(
     team: str = typer.Option(..., "--team", "-t", help="Team name"),
     agent: str = typer.Option(..., "--agent", "-a", help="Agent name"),
 ):
-    """Show the parent of an agent, and optionally its full ancestor chain.
-    """
+    """Show the parent of an agent, and optionally its full ancestor chain."""
     from clawteam.team.lifecycle import LifecycleManager
     from clawteam.team.mailbox import MailboxManager
 
@@ -2300,7 +2510,10 @@ def lifecycle_register_child(
     try:
         lm.register_child(parent, child)
     except Exception as e:
-        _output({"status": "error", "error": str(e)}, lambda d: console.print(f"[red]Error: {d['error']}[/red]"))
+        _output(
+            {"status": "error", "error": str(e)},
+            lambda d: console.print(f"[red]Error: {d['error']}[/red]"),
+        )
         raise typer.Exit(1)
 
     _output(
@@ -2315,22 +2528,48 @@ def lifecycle_register_child(
 # Spawn Command
 # ============================================================================
 
+
 @app.command("spawn")
 def spawn_agent(
-    backend: Optional[str] = typer.Argument(None, help="Backend: auto (default), tmux, subprocess, openclaw_api, or openclaw_sdk"),
-    command: list[str] = typer.Argument(None, help="Command and arguments to run (default: openclaw)"),
+    backend: Optional[str] = typer.Argument(
+        None, help="Backend: auto (default), tmux, subprocess, openclaw_api, or openclaw_sdk"
+    ),
+    command: list[str] = typer.Argument(
+        None, help="Command and arguments to run (default: openclaw)"
+    ),
     team: Optional[str] = typer.Option(None, "--team", "-t", help="Team name"),
     agent_name: Optional[str] = typer.Option(None, "--agent-name", "-n", help="Agent name"),
     agent_type: str = typer.Option("general-purpose", "--agent-type", help="Agent type"),
-    task: Optional[str] = typer.Option(None, "--task", help="Task to assign (becomes the agent's initial prompt)"),
-    workspace: Optional[bool] = typer.Option(None, "--workspace/--no-workspace", "-w", help="Create isolated git worktree (default: auto)"),
+    task: Optional[str] = typer.Option(
+        None, "--task", help="Task to assign (becomes the agent's initial prompt)"
+    ),
+    workspace: Optional[bool] = typer.Option(
+        None,
+        "--workspace/--no-workspace",
+        "-w",
+        help="Create isolated git worktree (default: auto)",
+    ),
     repo: Optional[str] = typer.Option(None, "--repo", help="Git repo path (default: cwd)"),
-    skip_permissions: Optional[bool] = typer.Option(None, "--skip-permissions/--no-skip-permissions", help="Skip tool approval for claude (default: from config, true)"),
-    resume: bool = typer.Option(False, "--resume", "-r", help="Resume previous session if available"),
-    openclaw_agent: Optional[str] = typer.Option(None, "--openclaw-agent", help="OpenClaw agent id to use (routes to a specific agent config/model)"),
+    skip_permissions: Optional[bool] = typer.Option(
+        None,
+        "--skip-permissions/--no-skip-permissions",
+        help="Skip tool approval for claude (default: from config, true)",
+    ),
+    resume: bool = typer.Option(
+        False, "--resume", "-r", help="Resume previous session if available"
+    ),
+    openclaw_agent: Optional[str] = typer.Option(
+        None,
+        "--openclaw-agent",
+        help="OpenClaw agent id to use (routes to a specific agent config/model)",
+    ),
     force: bool = typer.Option(False, "--force", "-f", help="Suppress max-agent warnings"),
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="Model alias or ID (passed to backend via --model)"),
-    parent: Optional[str] = typer.Option(None, "--parent", "-p", help="Parent agent name (for parent-child lifecycle management)"),
+    model: Optional[str] = typer.Option(
+        None, "--model", "-m", help="Model alias or ID (passed to backend via --model)"
+    ),
+    parent: Optional[str] = typer.Option(
+        None, "--parent", "-p", help="Parent agent name (for parent-child lifecycle management)"
+    ),
 ):
     """Spawn a new agent process with identity + task as its initial prompt.
 
@@ -2385,6 +2624,7 @@ def spawn_agent(
 
     if workspace:
         from clawteam.workspace import get_workspace_manager
+
         ws_mgr = get_workspace_manager(repo)
         if ws_mgr is None:
             if ws_mode not in ("auto", ""):
@@ -2421,6 +2661,7 @@ def spawn_agent(
     # Session resume: inject --resume flag for claude commands
     if resume:
         from clawteam.spawn.sessions import SessionStore
+
         session_store = SessionStore(_team)
         session = session_store.load(_name)
         if session and session.session_id:
@@ -2435,6 +2676,7 @@ def spawn_agent(
     import os as _os2
 
     from clawteam.team.manager import TeamManager
+
     member_added = False
     try:
         TeamManager.add_member(
@@ -2478,11 +2720,14 @@ def spawn_agent(
     if parent:
         try:
             from clawteam.team.parent_child import ParentChildRegistry
+
             ParentChildRegistry.register(_team, _name, parent)
             child_registered = True
             console.print(f"[dim]Registered '{_name}' as child of '{parent}'[/dim]")
         except Exception as e:
-            console.print(f"[yellow]Warning: Failed to register parent-child relationship: {e}[/yellow]")
+            console.print(
+                f"[yellow]Warning: Failed to register parent-child relationship: {e}[/yellow]"
+            )
 
     spawn_data = {
         "status": "spawned",
@@ -2556,7 +2801,9 @@ def identity_set(
         lines.append(f'export CLAWTEAM_TEAM_NAME="{team}"')
 
     if not lines:
-        console.print("[yellow]No options specified. Use --agent-id, --agent-name, --agent-type, --team[/yellow]")
+        console.print(
+            "[yellow]No options specified. Use --agent-id, --agent-name, --agent-type, --team[/yellow]"
+        )
         raise typer.Exit(1)
 
     output = "\n".join(lines)
@@ -2742,7 +2989,9 @@ def workspace_merge(
     team: str = typer.Argument(..., help="Team name"),
     agent: str = typer.Argument(..., help="Agent name"),
     repo: Optional[str] = typer.Option(None, "--repo", help="Git repo path"),
-    target: Optional[str] = typer.Option(None, "--target", help="Target branch (default: base branch)"),
+    target: Optional[str] = typer.Option(
+        None, "--target", help="Target branch (default: base branch)"
+    ),
     no_cleanup: bool = typer.Option(False, "--no-cleanup", help="Keep worktree after merge"),
 ):
     """Merge an agent's workspace branch back to the base branch."""
@@ -2894,6 +3143,7 @@ def template_show(
 # Launch Command
 # ============================================================================
 
+
 @app.command("launch")
 def launch_team(
     template: str = typer.Argument(..., help="Template name (e.g., hedge-fund)"),
@@ -2902,10 +3152,16 @@ def launch_team(
     team_name: Optional[str] = typer.Option(None, "--team-name", "-t", help="Override team name"),
     workspace: bool = typer.Option(False, "--workspace/--no-workspace", "-w"),
     repo: Optional[str] = typer.Option(None, "--repo", help="Git repo path"),
-    command_override: Optional[list[str]] = typer.Option(None, "--command", help="Override agent command"),
+    command_override: Optional[list[str]] = typer.Option(
+        None, "--command", help="Override agent command"
+    ),
     force: bool = typer.Option(False, "--force", "-f", help="Suppress max-agent warnings"),
-    model_override: Optional[str] = typer.Option(None, "--model", help="Override model for ALL agents"),
-    model_strategy_override: Optional[str] = typer.Option(None, "--model-strategy", help="Model strategy: auto | none"),
+    model_override: Optional[str] = typer.Option(
+        None, "--model", help="Override model for ALL agents"
+    ),
+    model_strategy_override: Optional[str] = typer.Option(
+        None, "--model-strategy", help="Model strategy: auto | none"
+    ),
 ):
     """Launch a full agent team from a template with one command."""
     import os as _os
@@ -2985,6 +3241,7 @@ def launch_team(
     ws_mgr = None
     if workspace:
         from clawteam.workspace import get_workspace_manager
+
         ws_mgr = get_workspace_manager(repo)
         if ws_mgr is None:
             console.print("[red]Not in a git repository. Use --repo or cd into a repo.[/red]")
@@ -2993,6 +3250,7 @@ def launch_team(
     # 8. Spawn all agents (leader first, then workers)
     # Load config once for model resolution (avoid re-reading per agent)
     from clawteam.config import load_config as _load_config
+
     _model_cfg = _load_config()
 
     all_agents = [tmpl.leader] + list(tmpl.agents)
@@ -3015,7 +3273,9 @@ def launch_team(
         ws_branch = ""
         if ws_mgr:
             ws_info = ws_mgr.create_workspace(
-                team_name=t_name, agent_name=agent.name, agent_id=a_id,
+                team_name=t_name,
+                agent_name=agent.name,
+                agent_id=a_id,
             )
             cwd = _workspace_cwd_from_info(repo, ws_info)
             ws_branch = ws_info.branch_name
@@ -3040,6 +3300,7 @@ def launch_team(
 
         # Resolve skip_permissions from config
         from clawteam.config import get_effective
+
         sp_val, _ = get_effective("skip_permissions")
         _skip = str(sp_val).lower() not in ("false", "0", "no", "")
 
@@ -3068,6 +3329,7 @@ def launch_team(
         )
         if agent.retry:
             from clawteam.spawn import spawn_with_retry
+
             result = spawn_with_retry(
                 be,
                 max_retries=agent.retry.max_retries,
@@ -3089,7 +3351,9 @@ def launch_team(
     }
 
     def _human(_data):
-        console.print(f"\n[green bold]Team '{t_name}' launched from template '{tmpl.name}'[/green bold]\n")
+        console.print(
+            f"\n[green bold]Team '{t_name}' launched from template '{tmpl.name}'[/green bold]\n"
+        )
         table = Table(title="Agents")
         table.add_column("Name", style="cyan")
         table.add_column("Type")
@@ -3118,11 +3382,17 @@ app.add_typer(review_app, name="review")
 def review_score(
     team: str = typer.Argument(..., help="Team name"),
     task_id: str = typer.Argument(..., help="Task ID to score"),
-    completeness: int = typer.Option(0, "--completeness", "-c", min=0, max=10, help="Completeness score (0-10)"),
-    accuracy: int = typer.Option(0, "--accuracy", "-a", min=0, max=10, help="Accuracy score (0-10)"),
+    completeness: int = typer.Option(
+        0, "--completeness", "-c", min=0, max=10, help="Completeness score (0-10)"
+    ),
+    accuracy: int = typer.Option(
+        0, "--accuracy", "-a", min=0, max=10, help="Accuracy score (0-10)"
+    ),
     quality: int = typer.Option(0, "--quality", "-q", min=0, max=10, help="Quality score (0-10)"),
-   规范性: int = typer.Option(0, "--规范性", "-n", min=0, max=10, help="规范性 score (0-10)"),
-    innovation: int = typer.Option(0, "--innovation", "-i", min=0, max=10, help="Innovation score (0-10)"),
+    规范性: int = typer.Option(0, "--规范性", "-n", min=0, max=10, help="规范性 score (0-10)"),
+    innovation: int = typer.Option(
+        0, "--innovation", "-i", min=0, max=10, help="Innovation score (0-10)"
+    ),
     scorer: str = typer.Option("leader", "--scorer", "-s", help="Who is scoring (agent name)"),
     feedback: str = typer.Option("", "--feedback", "-f", help="Free-text feedback"),
 ):
@@ -3157,14 +3427,19 @@ def review_score(
         if feedback:
             console.print(f"  [dim]反馈: {feedback}[/dim]")
 
-    _output({"task_id": task_id, "subject": task.subject, "score": score.model_dump(by_alias=True)}, _human)
+    _output(
+        {"task_id": task_id, "subject": task.subject, "score": score.model_dump(by_alias=True)},
+        _human,
+    )
 
 
 @review_app.command("show")
 def review_show(
     team: str = typer.Argument(..., help="Team name"),
     owner: str = typer.Option(None, "--owner", "-o", help="Filter by owner (agent name)"),
-    sort_by_score: bool = typer.Option(False, "--sort", "-S", help="Sort by total score (highest first)"),
+    sort_by_score: bool = typer.Option(
+        False, "--sort", "-S", help="Sort by total score (highest first)"
+    ),
 ):
     """Show all task scores for a team."""
     from clawteam.store.file import FileTaskStore
@@ -3212,7 +3487,17 @@ def review_show(
         console.print(f"\n[dim]{len(scored_tasks)} scored task(s)[/dim]")
 
     _output(
-        [{"task_id": t.id, "subject": t.subject, "owner": t.owner, "best_score": max(t.scores, key=lambda s: s.total).model_dump(by_alias=True) if t.scores else None} for t in scored_tasks],
+        [
+            {
+                "task_id": t.id,
+                "subject": t.subject,
+                "owner": t.owner,
+                "best_score": max(t.scores, key=lambda s: s.total).model_dump(by_alias=True)
+                if t.scores
+                else None,
+            }
+            for t in scored_tasks
+        ],
         _human,
     )
 
@@ -3220,7 +3505,9 @@ def review_show(
 @review_app.command("compare")
 def review_compare(
     team: str = typer.Argument(..., help="Team name"),
-    subject_keyword: str = typer.Argument(..., help="Keyword to match task subjects for comparison"),
+    subject_keyword: str = typer.Argument(
+        ..., help="Keyword to match task subjects for comparison"
+    ),
 ):
     """Compare scores for tasks with similar subjects (multi-agent same-task comparison)."""
     from clawteam.store.file import FileTaskStore
@@ -3264,15 +3551,29 @@ def review_compare(
                     is_best,
                 )
         console.print(table)
-        console.print(f"\n[green bold]推荐: {best_task.subject} (Owner: {best_task.owner}, Score: {max(best_task.scores, key=lambda s: s.total).total})[/green bold]")
+        console.print(
+            f"\n[green bold]推荐: {best_task.subject} (Owner: {best_task.owner}, Score: {max(best_task.scores, key=lambda s: s.total).total})[/green bold]"
+        )
 
     _output(
-        [{"task_id": t.id, "subject": t.subject, "owner": t.owner, "best_score": max(t.scores, key=lambda s: s.total).model_dump(by_alias=True) if t.scores else None} for t in matched],
+        [
+            {
+                "task_id": t.id,
+                "subject": t.subject,
+                "owner": t.owner,
+                "best_score": max(t.scores, key=lambda s: s.total).model_dump(by_alias=True)
+                if t.scores
+                else None,
+            }
+            for t in matched
+        ],
         _human,
     )
 
 
-drift_app = typer.Typer(help="Drift detection — detect when agent output diverges from task intent.")
+drift_app = typer.Typer(
+    help="Drift detection — detect when agent output diverges from task intent."
+)
 app.add_typer(drift_app, name="drift")
 
 
@@ -3280,8 +3581,12 @@ app.add_typer(drift_app, name="drift")
 def drift_check(
     team: str = typer.Argument(..., help="Team name"),
     task_id: str = typer.Argument(..., help="Task ID to check"),
-    output: str = typer.Option(..., "--output", "-o", help="Agent's completion report or deliverable description"),
-    threshold: float = typer.Option(0.5, "--threshold", "-t", min=0.0, max=1.0, help="Drift threshold (below = alert)"),
+    output: str = typer.Option(
+        ..., "--output", "-o", help="Agent's completion report or deliverable description"
+    ),
+    threshold: float = typer.Option(
+        0.5, "--threshold", "-t", min=0.0, max=1.0, help="Drift threshold (below = alert)"
+    ),
 ):
     """Check a task for drift between original intent and actual output."""
     from clawteam.store.file import FileTaskStore
@@ -3296,21 +3601,34 @@ def drift_check(
     result = check_task_drift(task, output, threshold)
 
     def _human(_data):
-        status_icon = "[green]* Aligned[/green]" if result["aligned"] else "[red]! DRIFT DETECTED[/red]"
+        status_icon = (
+            "[green]* Aligned[/green]" if result["aligned"] else "[red]! DRIFT DETECTED[/red]"
+        )
         console.print(f"[bold]Drift Check: {task.subject}[/bold] {status_icon}")
         console.print(f"  Task ID: {task.id}")
         console.print(f"  Drift Score: {result['drift_score']:.3f} (threshold: {threshold})")
         console.print(f"  Keyword Overlap (Jaccard): {result['jaccard_similarity']:.3f}")
 
         if result["missing_key_terms"]:
-            console.print(f"  [yellow]Missing key terms:[/yellow] {', '.join(result['missing_key_terms'])}")
+            console.print(
+                f"  [yellow]Missing key terms:[/yellow] {', '.join(result['missing_key_terms'])}"
+            )
         if result["extra_key_terms"]:
-            console.print(f"  [dim]Extra terms in output:[/dim] {', '.join(result['extra_key_terms'])}")
+            console.print(
+                f"  [dim]Extra terms in output:[/dim] {', '.join(result['extra_key_terms'])}"
+            )
 
         if result["alert"]:
             alert = result["alert"]
-            severity_icon = {"low": "[yellow]![/yellow]", "medium": "[orange3]!![/orange3]", "high": "[red]!!![/red]", "critical": "[red bold]XXXX[/red bold]"}.get(alert["severity"], "!")
-            console.print(f"  {severity_icon} Alert severity: [bold]{alert['severity']}[/bold] (score: {alert['driftScore']:.3f})")
+            severity_icon = {
+                "low": "[yellow]![/yellow]",
+                "medium": "[orange3]!![/orange3]",
+                "high": "[red]!!![/red]",
+                "critical": "[red bold]XXXX[/red bold]",
+            }.get(alert["severity"], "!")
+            console.print(
+                f"  {severity_icon} Alert severity: [bold]{alert['severity']}[/bold] (score: {alert['driftScore']:.3f})"
+            )
             console.print(f"  [dim]Original: {alert['originalSubject']}[/dim]")
             console.print(f"  [dim]Actual: {alert['actualOutput'][:100]}...[/dim]")
 
@@ -3320,7 +3638,9 @@ def drift_check(
 @drift_app.command("list")
 def drift_list(
     team: str = typer.Argument(..., help="Team name"),
-    severity: str = typer.Option("", "--severity", "-s", help="Filter by severity: low/medium/high/critical"),
+    severity: str = typer.Option(
+        "", "--severity", "-s", help="Filter by severity: low/medium/high/critical"
+    ),
     unacked: bool = typer.Option(False, "--unacked", "-u", help="Show only unacknowledged alerts"),
 ):
     """List all drift alerts for a team."""
@@ -3337,12 +3657,14 @@ def drift_list(
                 continue
             if unacked and alert.acknowledged:
                 continue
-            alerts.append({
-                "task_id": task.id,
-                "subject": task.subject,
-                "owner": task.owner,
-                **alert.model_dump(by_alias=True),
-            })
+            alerts.append(
+                {
+                    "task_id": task.id,
+                    "subject": task.subject,
+                    "owner": task.owner,
+                    **alert.model_dump(by_alias=True),
+                }
+            )
 
     def _human(_data):
         if not alerts:
@@ -3350,6 +3672,7 @@ def drift_list(
             return
 
         from rich.table import Table
+
         table = Table(title=f"Drift Alerts — Team '{team}'")
         table.add_column("Task", style="cyan")
         table.add_column("Owner", style="blue")
@@ -3357,7 +3680,12 @@ def drift_list(
         table.add_column("Severity")
         table.add_column("Ack")
 
-        severity_icon = {"low": "[yellow]![/yellow]", "medium": "[orange3]!![/orange3]", "high": "[red]!!![/red]", "critical": "[red bold]XXXX[/red bold]"}
+        severity_icon = {
+            "low": "[yellow]![/yellow]",
+            "medium": "[orange3]!![/orange3]",
+            "high": "[red]!!![/red]",
+            "critical": "[red bold]XXXX[/red bold]",
+        }
         for a in sorted(alerts, key=lambda x: x["driftScore"]):
             table.add_row(
                 a["originalSubject"][:30],
@@ -3389,7 +3717,9 @@ def drift_ack(
         raise typer.Exit(1)
 
     if alert_index < 0 or alert_index >= len(task.drift_alerts):
-        console.print(f"[red]Alert index {alert_index} out of range (0-{len(task.drift_alerts) - 1}).[/red]")
+        console.print(
+            f"[red]Alert index {alert_index} out of range (0-{len(task.drift_alerts) - 1}).[/red]"
+        )
         raise typer.Exit(1)
 
     alert = task.drift_alerts[alert_index]
@@ -3402,7 +3732,9 @@ def drift_ack(
         store._save_unlocked(task)
 
     def _human(_data):
-        console.print(f"[green]* Acknowledged drift alert #{alert_index} for task '{task_id}'[/green]")
+        console.print(
+            f"[green]* Acknowledged drift alert #{alert_index} for task '{task_id}'[/green]"
+        )
         if notes:
             console.print(f"  [dim]Notes: {notes}[/dim]")
 
@@ -3430,13 +3762,24 @@ def drift_record(
 
     def _human(_data):
         if alert is None:
-            console.print(f"[green]* No drift detected for '{task.subject}' (score: above threshold)[/green]")
+            console.print(
+                f"[green]* No drift detected for '{task.subject}' (score: above threshold)[/green]"
+            )
         else:
-            severity_icon = {"low": "[yellow]![/yellow]", "medium": "[orange3]!![/orange3]", "high": "[red]!!![/red]", "critical": "[red bold]XXXX[/red bold]"}.get(alert.severity, "!")
-            console.print(f"{severity_icon} [bold]{alert.severity.upper()}[/bold] drift detected for '{task.subject}'")
+            severity_icon = {
+                "low": "[yellow]![/yellow]",
+                "medium": "[orange3]!![/orange3]",
+                "high": "[red]!!![/red]",
+                "critical": "[red bold]XXXX[/red bold]",
+            }.get(alert.severity, "!")
+            console.print(
+                f"{severity_icon} [bold]{alert.severity.upper()}[/bold] drift detected for '{task.subject}'"
+            )
             console.print(f"  Score: {alert.drift_score:.3f} (threshold: {threshold})")
 
-    _output({"task_id": task_id, "alert": alert.model_dump(by_alias=True) if alert else None}, _human)
+    _output(
+        {"task_id": task_id, "alert": alert.model_dump(by_alias=True) if alert else None}, _human
+    )
 
     if alert:
         task.drift_alerts.append(alert)
@@ -3490,12 +3833,14 @@ def drift_scan(
             task.updated_at = _now_iso()
             with store._write_lock():
                 store._save_unlocked(task)
-            results.append({
-                "task_id": task.id,
-                "subject": task.subject,
-                "drift_score": alert.drift_score,
-                "severity": alert.severity,
-            })
+            results.append(
+                {
+                    "task_id": task.id,
+                    "subject": task.subject,
+                    "drift_score": alert.drift_score,
+                    "severity": alert.severity,
+                }
+            )
 
     def _human(_data):
         console.print(f"[bold]Drift Scan — Team '{team}'[/bold]")
@@ -3505,8 +3850,15 @@ def drift_scan(
         if results:
             console.print()
             for r in results:
-                severity_icon = {"low": "[yellow]![/yellow]", "medium": "[orange3]!![/orange3]", "high": "[red]!!![/red]", "critical": "[red bold]XXXX[/red bold]"}.get(r["severity"], "!")
-                console.print(f"  {severity_icon} [{r['task_id']}] {r['subject']} — score: {r['drift_score']:.3f} ({r['severity']})")
+                severity_icon = {
+                    "low": "[yellow]![/yellow]",
+                    "medium": "[orange3]!![/orange3]",
+                    "high": "[red]!!![/red]",
+                    "critical": "[red bold]XXXX[/red bold]",
+                }.get(r["severity"], "!")
+                console.print(
+                    f"  {severity_icon} [{r['task_id']}] {r['subject']} — score: {r['drift_score']:.3f} ({r['severity']})"
+                )
         else:
             console.print("[green]* No drift detected on any completed task.[/green]")
 
@@ -3527,42 +3879,49 @@ def alert_check(
 ):
     """Check for new alerts based on current team activity."""
     from clawteam.alerts import check_all_alerts
-    
+
     alerts = check_all_alerts(team)
-    
+
     def _human(_data):
         if not alerts:
             console.print("[green]* No new alerts detected.[/green]")
         else:
             console.print(f"[bold]New Alerts — Team '{team}'[/bold]")
             for alert in alerts:
-                severity_icon = {"low": "[yellow]![/yellow]", "medium": "[orange3]!![/orange3]", "high": "[red]!!![/red]", "critical": "[red bold]XXXX[/red bold]"}.get(alert.severity, "!")
+                severity_icon = {
+                    "low": "[yellow]![/yellow]",
+                    "medium": "[orange3]!![/orange3]",
+                    "high": "[red]!!![/red]",
+                    "critical": "[red bold]XXXX[/red bold]",
+                }.get(alert.severity, "!")
                 console.print(f"  {severity_icon} [{alert.alert_id[:8]}] {alert.message}")
-    
+
     _output({"team": team, "alerts": [a.model_dump(by_alias=True) for a in alerts]}, _human)
 
 
 @alert_app.command("list")
 def alert_list(
     team: str = typer.Argument(..., help="Team name"),
-    acknowledged: bool = typer.Option(None, "--acknowledged/--unacknowledged", "-a/-u", help="Filter by acknowledgment status"),
+    acknowledged: bool = typer.Option(
+        None, "--acknowledged/--unacknowledged", "-a/-u", help="Filter by acknowledgment status"
+    ),
     alert_type: str = typer.Option(None, "--type", "-t", help="Filter by alert type"),
     severity: str = typer.Option(None, "--severity", "-s", help="Filter by severity"),
 ):
     """List all alerts for a team."""
     from clawteam.alerts import list_alerts, AlertType, AlertSeverity
-    
+
     # Convert string filters to enums if provided
     type_enum = AlertType(alert_type) if alert_type else None
     severity_enum = AlertSeverity(severity) if severity else None
-    
+
     alerts = list_alerts(
         team=team,
         acknowledged=acknowledged,
         alert_type=type_enum,
         severity=severity_enum,
     )
-    
+
     def _human(_data):
         if not alerts:
             console.print(f"[green]* No alerts found for team '{team}'.[/green]")
@@ -3574,10 +3933,15 @@ def alert_list(
             table.add_column("Severity")
             table.add_column("Acknowledged")
             table.add_column("Message")
-            
+
             for alert in alerts:
                 ack_status = "[green]✓[/green]" if alert.acknowledged else "[red]✗[/red]"
-                severity_color = {"low": "yellow", "medium": "orange3", "high": "red", "critical": "red bold"}.get(alert.severity, "white")
+                severity_color = {
+                    "low": "yellow",
+                    "medium": "orange3",
+                    "high": "red",
+                    "critical": "red bold",
+                }.get(alert.severity, "white")
                 table.add_row(
                     alert.alert_id[:8],
                     alert.alert_type,
@@ -3585,9 +3949,9 @@ def alert_list(
                     ack_status,
                     alert.message,
                 )
-            
+
             console.print(table)
-    
+
     _output({"team": team, "alerts": [a.model_dump(by_alias=True) for a in alerts]}, _human)
 
 
@@ -3599,41 +3963,51 @@ def alert_acknowledge(
 ):
     """Acknowledge an alert."""
     from clawteam.alerts import acknowledge_alert, get_alert
-    
+
     success = acknowledge_alert(team, alert_id, by)
     alert = get_alert(team, alert_id)
-    
+
     def _human(_data):
         if success:
             console.print(f"[green]* Acknowledged alert '{alert_id}' by {by}[/green]")
         else:
             console.print(f"[red]* Failed to acknowledge alert '{alert_id}'[/red]")
-    
+
     _output({"alert_id": alert_id, "acknowledged": success, "by": by}, _human)
 
 
 @alert_app.command("config")
 def alert_config(
     team: str = typer.Argument(..., help="Team name"),
-    task_timeout: float = typer.Option(None, "--task-timeout", "-t", help="Task timeout threshold in hours"),
-    failure_rate: float = typer.Option(None, "--failure-rate", "-f", help="Agent failure rate threshold (0.0-1.0)"),
-    inactivity: float = typer.Option(None, "--inactivity", "-i", help="Team inactivity threshold in hours"),
+    task_timeout: float = typer.Option(
+        None, "--task-timeout", "-t", help="Task timeout threshold in hours"
+    ),
+    failure_rate: float = typer.Option(
+        None, "--failure-rate", "-f", help="Agent failure rate threshold (0.0-1.0)"
+    ),
+    inactivity: float = typer.Option(
+        None, "--inactivity", "-i", help="Team inactivity threshold in hours"
+    ),
     show: bool = typer.Option(False, "--show", "-s", help="Show current configuration"),
 ):
     """Configure alert thresholds for a team."""
     from clawteam.alerts import get_alert_config, save_alert_config, AlertConfig
-    
+
     if show:
         config = get_alert_config(team)
+
         def _human(_data):
             console.print(f"[bold]Alert Configuration — Team '{team}'[/bold]")
             console.print(f"  Task timeout: {config.task_timeout_hours} hours")
             console.print(f"  Agent failure rate: {config.agent_failure_rate_threshold:.1%}")
             console.print(f"  Team inactivity: {config.team_inactivity_hours} hours")
-            console.print(f"  Enabled alert types: {', '.join(t.value for t in config.enabled_alert_types)}")
+            console.print(
+                f"  Enabled alert types: {', '.join(t.value for t in config.enabled_alert_types)}"
+            )
+
         _output(config.__dict__, _human)
         return
-    
+
     # Update configuration
     config = get_alert_config(team)
     if task_timeout is not None:
@@ -3642,11 +4016,12 @@ def alert_config(
         config.agent_failure_rate_threshold = failure_rate
     if inactivity is not None:
         config.team_inactivity_hours = inactivity
-    
+
     save_alert_config(team, config)
-    
+
     def _human(_data):
         console.print(f"[green]* Updated alert configuration for team '{team}'[/green]")
+
     _output({"team": team, "config": config.__dict__}, _human)
 
 
@@ -3661,93 +4036,116 @@ app.add_typer(alert_app, name="alert")
 @alert_app.command("check")
 def alert_check(
     team: str = typer.Argument(..., help="Team name"),
-    timeout_threshold: int = typer.Option(60, "--timeout-threshold", "-t", help="Task timeout threshold in minutes"),
-    failure_rate_threshold: float = typer.Option(0.3, "--failure-rate-threshold", "-f", help="Agent failure rate threshold (0.0-1.0)"),
-    min_tasks: int = typer.Option(5, "--min-tasks", "-m", help="Minimum tasks for failure rate calculation"),
+    timeout_threshold: int = typer.Option(
+        60, "--timeout-threshold", "-t", help="Task timeout threshold in minutes"
+    ),
+    failure_rate_threshold: float = typer.Option(
+        0.3, "--failure-rate-threshold", "-f", help="Agent failure rate threshold (0.0-1.0)"
+    ),
+    min_tasks: int = typer.Option(
+        5, "--min-tasks", "-m", help="Minimum tasks for failure rate calculation"
+    ),
 ):
     """Check for and create alerts based on current team state.
-    
+
     Creates alerts for:
     - Tasks that have exceeded the timeout threshold
     - Agents with failure rates above the threshold
     """
     from clawteam.alerts import check_task_timeouts, check_agent_failure_rates
-    
+
     # Check task timeouts
     timeout_alerts = check_task_timeouts(team, timeout_threshold)
-    
+
     # Check agent failure rates
     failure_alerts = check_agent_failure_rates(team, failure_rate_threshold, min_tasks)
-    
+
     total_alerts = len(timeout_alerts) + len(failure_alerts)
-    
+
     def _human(_data):
         console.print(f"[bold]Alert Check — Team '{team}'[/bold]")
         console.print(f"  Task timeout alerts created: {len(timeout_alerts)}")
         console.print(f"  Agent failure rate alerts created: {len(failure_alerts)}")
         console.print(f"  Total alerts created: {total_alerts}")
         if total_alerts > 0:
-            console.print("[yellow]* New alerts have been created. Use 'clawteam alert list' to view them.[/yellow]")
+            console.print(
+                "[yellow]* New alerts have been created. Use 'clawteam alert list' to view them.[/yellow]"
+            )
         else:
             console.print("[green]* No new alerts created.[/green]")
-    
-    _output({
-        "timeout_alerts": timeout_alerts,
-        "failure_alerts": failure_alerts,
-        "total_alerts": total_alerts
-    }, _human)
+
+    _output(
+        {
+            "timeout_alerts": timeout_alerts,
+            "failure_alerts": failure_alerts,
+            "total_alerts": total_alerts,
+        },
+        _human,
+    )
 
 
 @alert_app.command("list")
 def alert_list(
     team: str = typer.Argument(..., help="Team name"),
-    acknowledged: bool = typer.Option(None, "--acknowledged/--unacknowledged", help="Filter by acknowledgment status"),
+    acknowledged: bool = typer.Option(
+        None, "--acknowledged/--unacknowledged", help="Filter by acknowledgment status"
+    ),
     limit: int = typer.Option(None, "--limit", "-l", help="Maximum number of alerts to show"),
 ):
     """List alerts for a team."""
     from clawteam.alerts import list_alerts, AlertSeverity
-    
+
     alerts = list_alerts(team, acknowledged=acknowledged, limit=limit)
-    
+
     def _human(_data):
         if not alerts:
             console.print(f"[green]* No alerts found for team '{team}'.[/green]")
             return
-            
+
         console.print(f"[bold]Alerts — Team '{team}'[/bold]")
         console.print(f"  Total alerts: {len(alerts)}")
         console.print()
-        
+
         for alert in alerts:
             severity_icon = {
                 "low": "[yellow]![/yellow]",
-                "medium": "[orange3]!![/orange3]", 
+                "medium": "[orange3]!![/orange3]",
                 "high": "[red]!!![/red]",
-                "critical": "[red bold]XXXX[/red bold]"
+                "critical": "[red bold]XXXX[/red bold]",
             }.get(alert.severity, "!")
-            
+
             ack_status = "[dim](acknowledged)[/dim]" if alert.acknowledged else ""
             target_info = f" → {alert.target}" if alert.target else ""
-            
-            console.print(f"  {severity_icon} [{alert.alert_id[:8]}] {alert.event_type}{target_info} {ack_status}")
+
+            console.print(
+                f"  {severity_icon} [{alert.alert_id[:8]}] {alert.event_type}{target_info} {ack_status}"
+            )
             console.print(f"    {alert.timestamp} | {alert.source}")
             if alert.details:
-                details_str = ", ".join(f"{k}: {v}" for k, v in alert.details.items() if k not in ["task_subject"])
+                details_str = ", ".join(
+                    f"{k}: {v}" for k, v in alert.details.items() if k not in ["task_subject"]
+                )
                 if details_str:
                     console.print(f"    Details: {details_str}")
-    
-    _output([{
-        "alert_id": a.alert_id,
-        "event_type": a.event_type,
-        "severity": a.severity,
-        "timestamp": a.timestamp,
-        "source": a.source,
-        "target": a.target,
-        "details": a.details,
-        "acknowledged": a.acknowledged,
-        "acknowledged_by": a.acknowledged_by,
-        "acknowledged_at": a.acknowledged_at
-    } for a in alerts], _human)
+
+    _output(
+        [
+            {
+                "alert_id": a.alert_id,
+                "event_type": a.event_type,
+                "severity": a.severity,
+                "timestamp": a.timestamp,
+                "source": a.source,
+                "target": a.target,
+                "details": a.details,
+                "acknowledged": a.acknowledged,
+                "acknowledged_by": a.acknowledged_by,
+                "acknowledged_at": a.acknowledged_at,
+            }
+            for a in alerts
+        ],
+        _human,
+    )
 
 
 @alert_app.command("ack")
@@ -3758,18 +4156,18 @@ def alert_ack(
     """Acknowledge an alert."""
     from clawteam.alerts import acknowledge_alert
     from clawteam.identity import AgentIdentity
-    
+
     identity = AgentIdentity.from_env()
     ack_by = identity.agent_name or "unknown"
-    
+
     success = acknowledge_alert(team, alert_id, ack_by)
-    
+
     def _human(_data):
         if success:
             console.print(f"[green]* Acknowledged alert '{alert_id}' by {ack_by}[/green]")
         else:
             console.print(f"[red]Error: Alert '{alert_id}' not found or already acknowledged[/red]")
-    
+
     _output({"alert_id": alert_id, "acknowledged": success, "by": ack_by}, _human)
 
 
@@ -3784,7 +4182,9 @@ app.add_typer(audit_app, name="audit")
 @audit_app.command("query")
 def audit_query(
     team: str = typer.Argument(..., help="Team name"),
-    action: str = typer.Option(None, "--action", "-a", help="Filter by event type (e.g. task_created, agent_spawned)"),
+    action: str = typer.Option(
+        None, "--action", "-a", help="Filter by event type (e.g. task_created, agent_spawned)"
+    ),
     actor: str = typer.Option("", "--actor", "-o", help="Filter by actor name"),
     target: str = typer.Option("", "--target", "-t", help="Filter by target entity"),
     limit: int = typer.Option(20, "--limit", "-l", help="Maximum number of entries to show"),
@@ -3823,14 +4223,17 @@ def audit_query(
         console.print(table)
 
     _output(
-        [{
-            "event_id": e.event_id,
-            "event_type": e.event_type.value,
-            "timestamp": e.timestamp,
-            "actor": e.actor,
-            "target": e.target,
-            "details": e.details,
-        } for e in events],
+        [
+            {
+                "event_id": e.event_id,
+                "event_type": e.event_type.value,
+                "timestamp": e.timestamp,
+                "actor": e.actor,
+                "target": e.target,
+                "details": e.details,
+            }
+            for e in events
+        ],
         _human,
     )
 
@@ -3853,7 +4256,10 @@ def audit_summary(
         table.add_row("First Event", summary["first_event"][:19] if summary["first_event"] else "—")
         table.add_row("Last Event", summary["last_event"][:19] if summary["last_event"] else "—")
         table.add_row("Active Agents", ", ".join(summary["active_agents"]) or "—")
-        types_str = ", ".join(f"{k.value if hasattr(k, 'value') else k}={v}" for k, v in sorted(summary["event_types"].items(), key=lambda x: -x[1]))
+        types_str = ", ".join(
+            f"{k.value if hasattr(k, 'value') else k}={v}"
+            for k, v in sorted(summary["event_types"].items(), key=lambda x: -x[1])
+        )
         table.add_row("Event Types", types_str)
         console.print(table)
 
@@ -3863,7 +4269,9 @@ def audit_summary(
 @audit_app.command("log")
 def audit_log(
     team: str = typer.Argument(..., help="Team name"),
-    event_type: str = typer.Option(..., "--type", "-T", help="Event type (e.g. task_created, agent_spawned)"),
+    event_type: str = typer.Option(
+        ..., "--type", "-T", help="Event type (e.g. task_created, agent_spawned)"
+    ),
     actor: str = typer.Option("system", "--actor", "-o", help="Actor name"),
     target: str = typer.Option("", "--target", "-t", help="Target entity"),
     details: str = typer.Option("", "--details", "-d", help="Details as JSON string"),
@@ -3919,7 +4327,9 @@ def dag_sort(
     try:
         ordered = topological_sort(tasks)
     except CycleDetectedError as e:
-        _output({"error": str(e)}, lambda d: console.print(f"[red]Cycle detected: {d['error']}[/red]"))
+        _output(
+            {"error": str(e)}, lambda d: console.print(f"[red]Cycle detected: {d['error']}[/red]")
+        )
         raise typer.Exit(1)
 
     def _human(_data):
@@ -3931,16 +4341,33 @@ def dag_sort(
         table.add_column("Depends On", style="dim")
         for i, t in enumerate(ordered, 1):
             status_style = {
-                "pending": "white", "in_progress": "yellow",
-                "completed": "green", "blocked": "red",
+                "pending": "white",
+                "in_progress": "yellow",
+                "completed": "green",
+                "blocked": "red",
             }.get(t.status.value, "")
-            status_text = f"[{status_style}]{t.status.value}[/{status_style}]" if status_style else t.status.value
+            status_text = (
+                f"[{status_style}]{t.status.value}[/{status_style}]"
+                if status_style
+                else t.status.value
+            )
             deps = ", ".join(t.depends_on) if t.depends_on else "—"
             table.add_row(str(i), t.id, t.subject[:40], status_text, deps)
         console.print(table)
 
     _output(
-        {"team": team, "order": [{"id": t.id, "subject": t.subject, "status": t.status.value, "depends_on": t.depends_on} for t in ordered]},
+        {
+            "team": team,
+            "order": [
+                {
+                    "id": t.id,
+                    "subject": t.subject,
+                    "status": t.status.value,
+                    "depends_on": t.depends_on,
+                }
+                for t in ordered
+            ],
+        },
         _human,
     )
 
@@ -3957,7 +4384,10 @@ def dag_check(
     tasks = store.list_tasks()
 
     if not tasks:
-        _output({"team": team, "has_cycle": False}, lambda d: console.print("[dim]No tasks to check.[/dim]"))
+        _output(
+            {"team": team, "has_cycle": False},
+            lambda d: console.print("[dim]No tasks to check.[/dim]"),
+        )
         return
 
     has_cycle = detect_cycle(tasks)
@@ -3990,7 +4420,9 @@ def dag_ready(
     tasks = store.list_tasks()
 
     if not tasks:
-        _output({"team": team, "ready_tasks": []}, lambda d: console.print("[dim]No tasks found.[/dim]"))
+        _output(
+            {"team": team, "ready_tasks": []}, lambda d: console.print("[dim]No tasks found.[/dim]")
+        )
         return
 
     ready = get_ready_tasks(tasks)
@@ -4000,6 +4432,7 @@ def dag_ready(
             console.print("[dim]No tasks ready to execute.[/dim]")
             # Show what's blocking
             from clawteam.team.dag import get_blocking_tasks
+
             pending = [t for t in tasks if t.status.value == "pending"]
             if pending:
                 console.print("\nPending tasks and their blockers:")
@@ -4009,7 +4442,9 @@ def dag_ready(
                         blocker_names = ", ".join(f"{b.id} ({b.subject[:20]})" for b in blockers)
                         console.print(f"  [{t.id}] {t.subject[:30]} — blocked by: {blocker_names}")
                     else:
-                        console.print(f"  [{t.id}] {t.subject[:30]} — no blockers (should be ready?)")
+                        console.print(
+                            f"  [{t.id}] {t.subject[:30]} — no blockers (should be ready?)"
+                        )
             return
 
         table = Table(title=f"Ready Tasks — {team}")
@@ -4018,13 +4453,28 @@ def dag_ready(
         table.add_column("Owner")
         table.add_column("Priority")
         for t in ready:
-            priority_style = {"urgent": "red bold", "high": "red", "medium": "yellow", "low": "dim"}.get(t.priority.value, "")
-            priority_text = f"[{priority_style}]{t.priority.value}[/{priority_style}]" if priority_style else t.priority.value
+            priority_style = {
+                "urgent": "red bold",
+                "high": "red",
+                "medium": "yellow",
+                "low": "dim",
+            }.get(t.priority.value, "")
+            priority_text = (
+                f"[{priority_style}]{t.priority.value}[/{priority_style}]"
+                if priority_style
+                else t.priority.value
+            )
             table.add_row(t.id, t.subject[:40], t.owner or "—", priority_text)
         console.print(table)
 
     _output(
-        {"team": team, "ready_tasks": [{"id": t.id, "subject": t.subject, "owner": t.owner, "priority": t.priority.value} for t in ready]},
+        {
+            "team": team,
+            "ready_tasks": [
+                {"id": t.id, "subject": t.subject, "owner": t.owner, "priority": t.priority.value}
+                for t in ready
+            ],
+        },
         _human,
     )
 
@@ -4041,8 +4491,12 @@ app.add_typer(role_app, name="role")
 def role_assign(
     team: str = typer.Argument(..., help="Team name"),
     agent: str = typer.Argument(..., help="Agent name"),
-    role: str = typer.Argument(..., help="Role: developer, reviewer, tester, architect, coordinator"),
-    expires_at: str = typer.Option(None, "--expires-at", "-e", help="Expiration timestamp (ISO format)"),
+    role: str = typer.Argument(
+        ..., help="Role: developer, reviewer, tester, architect, coordinator"
+    ),
+    expires_at: str = typer.Option(
+        None, "--expires-at", "-e", help="Expiration timestamp (ISO format)"
+    ),
 ):
     """Assign a role to an agent."""
     from clawteam.team.roles import AgentRole, assign_role
@@ -4057,12 +4511,20 @@ def role_assign(
     assignment = assign_role(team, agent, role_enum, expires_at=expires_at)
 
     def _human(_data):
-        console.print(f"[green]✓[/green] Assigned [cyan]{role_enum.value}[/cyan] to [bold]{agent}[/bold] in team '{team}'")
+        console.print(
+            f"[green]✓[/green] Assigned [cyan]{role_enum.value}[/cyan] to [bold]{agent}[/bold] in team '{team}'"
+        )
         if expires_at:
             console.print(f"  Expires: {expires_at}")
 
     _output(
-        {"team": team, "agent": agent, "role": role_enum.value, "assigned_at": assignment.assigned_at, "expires_at": assignment.expires_at},
+        {
+            "team": team,
+            "agent": agent,
+            "role": role_enum.value,
+            "assigned_at": assignment.assigned_at,
+            "expires_at": assignment.expires_at,
+        },
         _human,
     )
 
@@ -4087,9 +4549,13 @@ def role_unassign(
 
     def _human(_data):
         if removed:
-            console.print(f"[green]✓[/green] Removed [cyan]{role_enum.value}[/cyan] from [bold]{agent}[/bold]")
+            console.print(
+                f"[green]✓[/green] Removed [cyan]{role_enum.value}[/cyan] from [bold]{agent}[/bold]"
+            )
         else:
-            console.print(f"[yellow]Agent '{agent}' did not have role '{role_enum.value}'.[/yellow]")
+            console.print(
+                f"[yellow]Agent '{agent}' did not have role '{role_enum.value}'.[/yellow]"
+            )
 
     _output({"team": team, "agent": agent, "role": role_enum.value, "removed": removed}, _human)
 
@@ -4121,10 +4587,7 @@ def role_list(
                 table.add_row(agent_name, a.role.value, (a.assigned_at or "")[:19], expires)
         console.print(table)
 
-    data = {
-        agent: [a.model_dump() for a in assigns]
-        for agent, assigns in assignments.items()
-    }
+    data = {agent: [a.model_dump() for a in assigns] for agent, assigns in assignments.items()}
     _output({"team": team, "assignments": data}, _human)
 
 
@@ -4140,13 +4603,17 @@ def role_suggest(
     store = TaskStore(team)
     task = store.get(task_id)
     if not task:
-        _output({"error": f"Task '{task_id}' not found"}, lambda d: console.print(f"[red]{d['error']}[/red]"))
+        _output(
+            {"error": f"Task '{task_id}' not found"},
+            lambda d: console.print(f"[red]{d['error']}[/red]"),
+        )
         raise typer.Exit(1)
 
     # Try to use router for history-based suggestion
     router = None
     try:
         from clawteam.team.router import get_router
+
         router = get_router(team)
     except Exception:
         pass
@@ -4160,7 +4627,15 @@ def role_suggest(
         if task.owner:
             console.print(f"  For agent: {task.owner}")
 
-    _output({"task_id": task_id, "subject": task.subject, "suggested_role": suggested.value, "owner": task.owner}, _human)
+    _output(
+        {
+            "task_id": task_id,
+            "subject": task.subject,
+            "suggested_role": suggested.value,
+            "owner": task.owner,
+        },
+        _human,
+    )
 
 
 # ============================================================================
@@ -4168,6 +4643,7 @@ def role_suggest(
 # ============================================================================
 
 from clawteam.cli.session import session_app
+
 app.add_typer(session_app, name="session", help="Session awareness commands")
 
 
@@ -4216,7 +4692,9 @@ def insights_show(
 
         # Skill usage
         skill_u = d.get("skill_usage", {})
-        console.print(f"[bold]Skill Usage[/bold] — {skill_u.get('total_skill_invocations', 0)} total invocations")
+        console.print(
+            f"[bold]Skill Usage[/bold] — {skill_u.get('total_skill_invocations', 0)} total invocations"
+        )
         top_skills = skill_u.get("top_skills", {})
         if top_skills:
             for skill, count in list(top_skills.items())[:5]:

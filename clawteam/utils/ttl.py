@@ -25,7 +25,7 @@ DEFAULT_TTL_SECONDS = 86400
 
 def get_message_ttl() -> int:
     """Get message TTL from environment.
-    
+
     Returns:
         TTL in seconds. 0 means no TTL (messages never expire).
     """
@@ -41,7 +41,7 @@ def get_message_ttl() -> int:
 
 def is_ttl_enabled() -> bool:
     """Check if TTL is enabled.
-    
+
     Returns:
         True if TTL > 0, False if TTL == 0 (disabled).
     """
@@ -50,50 +50,50 @@ def is_ttl_enabled() -> bool:
 
 def is_message_expired(timestamp_ms: int, ttl_seconds: Optional[int] = None) -> bool:
     """Check if a message timestamp is expired.
-    
+
     Args:
         timestamp_ms: Message timestamp in milliseconds.
         ttl_seconds: TTL in seconds. If None, uses environment config.
-        
+
     Returns:
         True if message is expired, False otherwise.
     """
     if ttl_seconds is None:
         ttl_seconds = get_message_ttl()
-    
+
     if ttl_seconds <= 0:
         return False  # TTL disabled
-    
+
     current_ms = int(time.time() * 1000)
     age_ms = current_ms - timestamp_ms
     age_seconds = age_ms / 1000
-    
+
     return age_seconds > ttl_seconds
 
 
 def get_expiry_timestamp_ms(timestamp_ms: int, ttl_seconds: Optional[int] = None) -> int:
     """Calculate expiry timestamp for a message.
-    
+
     Args:
         timestamp_ms: Message creation timestamp in milliseconds.
         ttl_seconds: TTL in seconds. If None, uses environment config.
-        
+
     Returns:
         Expiry timestamp in milliseconds.
     """
     if ttl_seconds is None:
         ttl_seconds = get_message_ttl()
-    
+
     return timestamp_ms + (ttl_seconds * 1000)
 
 
 @dataclass
 class TTLConfig:
     """TTL configuration container."""
-    
+
     ttl_seconds: int
     enabled: bool
-    
+
     @classmethod
     def from_env(cls) -> "TTLConfig":
         """Create TTLConfig from environment."""
@@ -102,13 +102,13 @@ class TTLConfig:
             ttl_seconds=ttl,
             enabled=ttl > 0,
         )
-    
+
     def is_expired(self, timestamp_ms: int) -> bool:
         """Check if a timestamp is expired."""
         if not self.enabled:
             return False
         return is_message_expired(timestamp_ms, self.ttl_seconds)
-    
+
     def get_expiry_ms(self, timestamp_ms: int) -> int:
         """Get expiry timestamp."""
         return get_expiry_timestamp_ms(timestamp_ms, self.ttl_seconds)

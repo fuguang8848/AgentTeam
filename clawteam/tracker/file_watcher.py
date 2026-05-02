@@ -222,7 +222,13 @@ class FileWatcher:
 
         try:
             from watchdog.observers import Observer
-            from watchdog.events import FileSystemEventHandler, FileCreatedEvent, FileModifiedEvent, FileDeletedEvent, FileMovedEvent
+            from watchdog.events import (
+                FileSystemEventHandler,
+                FileCreatedEvent,
+                FileModifiedEvent,
+                FileDeletedEvent,
+                FileMovedEvent,
+            )
 
             class Handler(FileSystemEventHandler):
                 def __init__(self, watcher: FileWatcher):

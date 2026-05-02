@@ -14,6 +14,7 @@ from clawteam.team.models import TaskItem, TaskStatus
 
 class CycleDetectedError(Exception):
     """Raised when a cycle is detected in the task dependency graph."""
+
     pass
 
 
@@ -191,9 +192,7 @@ def get_execution_order(tasks: list[TaskItem]) -> list[list[str]]:
         # Find all tasks with in-degree 0 among remaining
         wave = sorted(tid for tid in remaining if in_degree.get(tid, 0) == 0)
         if not wave:
-            raise CycleDetectedError(
-                f"Cycle detected: {len(remaining)} tasks remain unorderable."
-            )
+            raise CycleDetectedError(f"Cycle detected: {len(remaining)} tasks remain unorderable.")
         waves.append(wave)
         for tid in wave:
             completed.add(tid)

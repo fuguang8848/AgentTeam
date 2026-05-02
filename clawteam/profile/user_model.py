@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class Preference(BaseModel):
     """用户偏好"""
+
     key: str
     value: Any
     confidence: float = Field(default=0.5, ge=0.0, le=1.0)
@@ -36,6 +37,7 @@ class Preference(BaseModel):
 
 class BehavioralPattern(BaseModel):
     """行为模式"""
+
     pattern_type: str  # working_hours, tool_preference, communication_style
     data: Dict[str, Any]
     confidence: float = Field(default=0.5, ge=0.0, le=1.0)
@@ -47,6 +49,7 @@ class BehavioralPattern(BaseModel):
 
 class UserProfile(BaseModel):
     """用户画像"""
+
     user_id: str = "default"
     name: Optional[str] = None
     identity: str = ""
@@ -125,10 +128,7 @@ class PreferenceExtractor:
     def __init__(self):
         self._compiled_patterns: Dict[str, List[tuple]] = {}
         for key, patterns in self.PREFERENCE_PATTERNS.items():
-            self._compiled_patterns[key] = [
-                (re.compile(p, re.IGNORECASE), v)
-                for p, v in patterns
-            ]
+            self._compiled_patterns[key] = [(re.compile(p, re.IGNORECASE), v) for p, v in patterns]
 
     def extract(self, user_message: str, assistant_response: str = "") -> List[Dict[str, Any]]:
         """从对话中提取偏好
@@ -155,13 +155,15 @@ class PreferenceExtractor:
                             pass
 
                     evidence = match.group(0)
-                    extracted.append({
-                        "key": pref_key,
-                        "value": value,
-                        "confidence": 0.7,
-                        "evidence": [evidence],
-                        "source": "conversation"
-                    })
+                    extracted.append(
+                        {
+                            "key": pref_key,
+                            "value": value,
+                            "confidence": 0.7,
+                            "evidence": [evidence],
+                            "source": "conversation",
+                        }
+                    )
                     break  # 每个偏好类型只取第一个匹配
 
         return extracted
@@ -199,27 +201,22 @@ class BehaviorAnalyzer:
         if len(work_hours) / len(hours) > 0.7:
             return BehavioralPattern(
                 pattern_type="working_hours",
-                data={
-                    "peak_start": "09:00",
-                    "peak_end": "18:00",
-                    "timezone": "Asia/Shanghai"
-                },
+                data={"peak_start": "09:00", "peak_end": "18:00", "timezone": "Asia/Shanghai"},
                 confidence=0.8,
                 first_observed=min(conversation_times),
-                last_observed=max(conversation_times)
+                last_observed=max(conversation_times),
             )
 
         return None
 
-    def analyze_tool_preference(
-        self, tool_usage_history: List[str]
-    ) -> Optional[BehavioralPattern]:
+    def analyze_tool_preference(self, tool_usage_history: List[str]) -> Optional[BehavioralPattern]:
         """分析工具使用偏好"""
         if len(tool_usage_history) < 5:
             return None
 
         # 统计工具使用频率
         from collections import Counter
+
         tool_counts = Counter(tool_usage_history)
         most_common = tool_counts.most_common(3)
 
@@ -235,18 +232,16 @@ class BehaviorAnalyzer:
                 pattern_type="tool_preference",
                 data={
                     "preferred_tools": [t for t, _ in most_common],
-                    "usage_ratios": {t: c / total for t, c in most_common}
+                    "usage_ratios": {t: c / total for t, c in most_common},
                 },
                 confidence=min(0.9, preference_ratio),
                 first_observed=datetime.now() - timedelta(days=self.pattern_window_days),
-                last_observed=datetime.now()
+                last_observed=datetime.now(),
             )
 
         return None
 
-    def analyze_communication_style(
-        self, messages: List[str]
-    ) -> Optional[BehavioralPattern]:
+    def analyze_communication_style(self, messages: List[str]) -> Optional[BehavioralPattern]:
         """分析沟通风格"""
         if len(messages) < 3:
             return None
@@ -272,11 +267,11 @@ class BehaviorAnalyzer:
             data={
                 "style": style,
                 "avg_message_length": avg_length,
-                "question_ratio": question_ratio
+                "question_ratio": question_ratio,
             },
             confidence=confidence,
             first_observed=datetime.now() - timedelta(days=self.pattern_window_days),
-            last_observed=datetime.now()
+            last_observed=datetime.now(),
         )
 
 
@@ -302,24 +297,28 @@ class UserProfileManager:
         try:
             for file_path in self.profile_dir.glob("*.json"):
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         data = json.load(f)
                         # 转换 datetime 字符串
                         for key in ["created_at", "updated_at"]:
                             if key in data and isinstance(data[key], str):
-                                data[key] = datetime.fromisoformat(data[key].replace('Z', '+00:00'))
+                                data[key] = datetime.fromisoformat(data[key].replace("Z", "+00:00"))
                         # 转换 preferences 中的 datetime
                         if "preferences" in data:
                             for pref in data["preferences"].values():
                                 for key in ["created_at", "updated_at"]:
                                     if key in pref and isinstance(pref[key], str):
-                                        pref[key] = datetime.fromisoformat(pref[key].replace('Z', '+00:00'))
+                                        pref[key] = datetime.fromisoformat(
+                                            pref[key].replace("Z", "+00:00")
+                                        )
                         # 转换 behavioral_patterns 中的 datetime
                         if "behavioral_patterns" in data:
                             for bp in data["behavioral_patterns"].values():
                                 for key in ["first_observed", "last_observed"]:
                                     if key in bp and isinstance(bp[key], str):
-                                        bp[key] = datetime.fromisoformat(bp[key].replace('Z', '+00:00'))
+                                        bp[key] = datetime.fromisoformat(
+                                            bp[key].replace("Z", "+00:00")
+                                        )
                         profile = UserProfile(**data)
                         self._profiles[profile.user_id] = profile
                 except Exception as e:
@@ -332,7 +331,7 @@ class UserProfileManager:
         """保存用户画像到文件"""
         file_path = self.profile_dir / f"{profile.user_id}.json"
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 data = profile.model_dump()
                 # 转换 datetime 为 ISO 字符串
                 for key in ["created_at", "updated_at"]:
@@ -355,7 +354,7 @@ class UserProfileManager:
         self,
         user_message: str,
         assistant_response: str = "",
-        session_context: Optional[Dict[str, Any]] = None
+        session_context: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """分析对话，提取用户偏好
 
@@ -404,12 +403,14 @@ class UserProfileManager:
                     updated.value = value
                     updated.updated_at = datetime.now()
                 profile.preferences[key] = updated
-                changes.append({
-                    "action": "updated",
-                    "key": key,
-                    "old_confidence": existing.confidence,
-                    "new_confidence": updated.confidence
-                })
+                changes.append(
+                    {
+                        "action": "updated",
+                        "key": key,
+                        "old_confidence": existing.confidence,
+                        "new_confidence": updated.confidence,
+                    }
+                )
             else:
                 # 新增偏好
                 profile.preferences[key] = Preference(
@@ -417,13 +418,9 @@ class UserProfileManager:
                     value=value,
                     confidence=pref_data["confidence"],
                     source=source,
-                    evidence=[evidence]
+                    evidence=[evidence],
                 )
-                changes.append({
-                    "action": "created",
-                    "key": key,
-                    "value": value
-                })
+                changes.append({"action": "created", "key": key, "value": value})
 
         if changes:
             profile.updated_at = datetime.now()
@@ -433,10 +430,7 @@ class UserProfileManager:
         return changes
 
     def update_profile(
-        self,
-        user_id: str,
-        changes: List[Dict[str, Any]],
-        source: str = "conversation"
+        self, user_id: str, changes: List[Dict[str, Any]], source: str = "conversation"
     ) -> UserProfile:
         """更新用户画像
 
@@ -460,11 +454,7 @@ class UserProfileManager:
                     profile.preferences[key].value = value
                     profile.preferences[key].updated_at = datetime.now()
                 else:
-                    profile.preferences[key] = Preference(
-                        key=key,
-                        value=value,
-                        source=source
-                    )
+                    profile.preferences[key] = Preference(key=key, value=value, source=source)
 
             elif change_type == "identity":
                 profile.identity = value
@@ -478,11 +468,9 @@ class UserProfileManager:
                     profile.projects[project_name] = value
 
         # 记录进化
-        profile.evolution.append({
-            "timestamp": datetime.now().isoformat(),
-            "changes": changes,
-            "source": source
-        })
+        profile.evolution.append(
+            {"timestamp": datetime.now().isoformat(), "changes": changes, "source": source}
+        )
         profile.updated_at = datetime.now()
 
         self._save_profile(profile)
@@ -490,11 +478,7 @@ class UserProfileManager:
 
         return profile
 
-    def get_context_for_prompt(
-        self,
-        user_id: str,
-        task_type: Optional[str] = None
-    ) -> str:
+    def get_context_for_prompt(self, user_id: str, task_type: Optional[str] = None) -> str:
         """为系统提示生成用户上下文
 
         Args:
@@ -507,7 +491,12 @@ class UserProfileManager:
         profile = self.get_profile(user_id)
 
         # 如果什么都没有，返回空
-        if not profile.preferences and not profile.behavioral_patterns and not profile.identity and not profile.name:
+        if (
+            not profile.preferences
+            and not profile.behavioral_patterns
+            and not profile.identity
+            and not profile.name
+        ):
             return ""
 
         context_parts = ["## 用户上下文"]
@@ -539,9 +528,7 @@ class UserProfileManager:
                             f"({data.get('timezone', 'N/A')})"
                         )
                     elif ptype == "communication_style":
-                        context_parts.append(
-                            f"- 沟通风格: {pattern.data.get('style', 'unknown')}"
-                        )
+                        context_parts.append(f"- 沟通风格: {pattern.data.get('style', 'unknown')}")
                     elif ptype == "tool_preference":
                         tools = pattern.data.get("preferred_tools", [])
                         if tools:
@@ -550,19 +537,14 @@ class UserProfileManager:
         # 项目信息
         if profile.projects:
             active_projects = [
-                name for name, info in profile.projects.items()
-                if info.get("status") == "active"
+                name for name, info in profile.projects.items() if info.get("status") == "active"
             ]
             if active_projects:
                 context_parts.append(f"**活跃项目**: {', '.join(active_projects)}")
 
         return "\n".join(context_parts)
 
-    def detect_behavioral_changes(
-        self,
-        user_id: str,
-        days: int = 7
-    ) -> List[Dict[str, Any]]:
+    def detect_behavioral_changes(self, user_id: str, days: int = 7) -> List[Dict[str, Any]]:
         """检测行为变化
 
         Args:
@@ -586,19 +568,23 @@ class UserProfileManager:
                     old_data = existing.data
                     new_data = work_hours.data
                     if old_data.get("peak_start") != new_data.get("peak_start"):
-                        changes.append({
-                            "type": "working_hours_changed",
-                            "old": old_data,
-                            "new": new_data,
-                            "confidence": work_hours.confidence
-                        })
+                        changes.append(
+                            {
+                                "type": "working_hours_changed",
+                                "old": old_data,
+                                "new": new_data,
+                                "confidence": work_hours.confidence,
+                            }
+                        )
                 else:
-                    changes.append({
-                        "type": "new_pattern",
-                        "pattern_type": "working_hours",
-                        "data": work_hours.data,
-                        "confidence": work_hours.confidence
-                    })
+                    changes.append(
+                        {
+                            "type": "new_pattern",
+                            "pattern_type": "working_hours",
+                            "data": work_hours.data,
+                            "confidence": work_hours.confidence,
+                        }
+                    )
 
         # 分析工具偏好变化
         tool_history = self._tool_usage_history.get(user_id, [])
@@ -610,12 +596,14 @@ class UserProfileManager:
                     old_tools = set(existing.data.get("preferred_tools", []))
                     new_tools = set(tool_pattern.data.get("preferred_tools", []))
                     if old_tools != new_tools:
-                        changes.append({
-                            "type": "tool_preference_changed",
-                            "old": existing.data,
-                            "new": tool_pattern.data,
-                            "confidence": tool_pattern.confidence
-                        })
+                        changes.append(
+                            {
+                                "type": "tool_preference_changed",
+                                "old": existing.data,
+                                "new": tool_pattern.data,
+                                "confidence": tool_pattern.confidence,
+                            }
+                        )
 
         return changes
 

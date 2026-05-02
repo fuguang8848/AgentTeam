@@ -3,6 +3,7 @@ CLI utilities for ClawTeam
 
 Provides interactive CLI features like colored output and progress indicators.
 """
+
 import os
 import sys
 from typing import Optional
@@ -19,6 +20,7 @@ def is_color_supported() -> bool:
 
 class Colors:
     """ANSI color codes for terminal output"""
+
     RESET = "\033[0m"
     BOLD = "\033[1m"
     DIM = "\033[2m"
@@ -32,6 +34,7 @@ class Colors:
 
 class OutputStyle:
     """Output styling utilities"""
+
     _colors_enabled = True
 
     @classmethod
@@ -67,6 +70,7 @@ class OutputStyle:
 
 class Spinner:
     """Simple spinner for CLI"""
+
     FRAMES = ["-", "\\", "|", "/"]
 
     def __init__(self, desc: str = ""):

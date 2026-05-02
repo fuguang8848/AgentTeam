@@ -32,6 +32,7 @@ DATA_DIR = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
 @dataclass
 class OCAProcess:
     """追踪 OpenClaw SDK Agent 会话"""
+
     name: str
     session_key: str
     session_id: str
@@ -47,7 +48,7 @@ class OCAProcess:
 class OpenClawSDKBackend(SpawnBackend):
     """
     OpenClaw SDK Backend - 通过 Gateway Sessions API 实现原生多 Agent 协作
-    
+
     架构图：
     ┌─────────────────────────────────────────────────────────────┐
     │                     ClawTeam CLI                            │
@@ -88,8 +89,7 @@ class OpenClawSDKBackend(SpawnBackend):
         for cmd in ["openclaw", "openclaw.exe"]:
             try:
                 r = subprocess.run(
-                    ["cmd", "/c", cmd, "gateway", "health"],
-                    capture_output=True, timeout=5
+                    ["cmd", "/c", cmd, "gateway", "health"], capture_output=True, timeout=5
                 )
                 if r.returncode == 0:
                     return cmd
@@ -100,36 +100,39 @@ class OpenClawSDKBackend(SpawnBackend):
     def _gateway_call(self, method: str, params: dict = None, timeout: int = 30) -> dict:
         """调用 Gateway RPC"""
         import locale
+
         encoding = locale.getpreferredencoding(False) or "utf-8"
-        
+
         cmd = ["cmd", "/c", self._gateway_cmd, "gateway", "call", method]
-        
+
         if params:
             params_json = json.dumps(params, ensure_ascii=False)
             # Escape < > for cmd.exe (redirection operators) - MUST be before extending cmd
-            params_json = params_json.replace('<', '^<').replace('>', '^>')
+            params_json = params_json.replace("<", "^<").replace(">", "^>")
             cmd.extend(["--params", params_json])
-        
+
         if GATEWAY_TOKEN:
             cmd.extend(["--token", GATEWAY_TOKEN])
-        
+
         try:
             result = subprocess.run(cmd, capture_output=True, timeout=timeout)
             stdout = result.stdout.decode(encoding, errors="replace") if result.stdout else ""
             stderr = result.stderr.decode(encoding, errors="replace") if result.stderr else ""
         except Exception as e:
             raise RuntimeError(f"Gateway call exception: {e}")
-        
+
         if result.returncode != 0:
-            raise RuntimeError(f"Gateway call failed (code {result.returncode}): {stderr or stdout}")
-        
+            raise RuntimeError(
+                f"Gateway call failed (code {result.returncode}): {stderr or stdout}"
+            )
+
         output = stdout.strip()
-        lines = output.split('\n')
+        lines = output.split("\n")
         if lines and lines[0].startswith("Gateway call:"):
-            json_str = '\n'.join(lines[1:])
+            json_str = "\n".join(lines[1:])
         else:
             json_str = output
-            
+
         try:
             return json.loads(json_str)
         except json.JSONDecodeError as e:
@@ -151,7 +154,7 @@ class OpenClawSDKBackend(SpawnBackend):
     ) -> str:
         """
         通过 Gateway Sessions API 启动 OpenClaw Agent
-        
+
         流程：
         1. 创建 Session（Agent 的独立运行环境）
         2. 发送任务消息（包含 clawteam 协作协议）
@@ -163,12 +166,12 @@ class OpenClawSDKBackend(SpawnBackend):
                 # 检查是否已存在同名 Agent
                 if agent_name in self._processes and not self._processes[agent_name].done:
                     return f"Error: Agent '{agent_name}' is already running"
-                
+
                 # Step 1: 创建 Session
                 create_data = self._gateway_call("sessions.create", timeout=10)
                 session_key = create_data["key"]
                 session_id = create_data["sessionId"]
-                
+
                 # Step 2: 构建任务消息（注入协作协议）
                 task = self._build_task_message(
                     agent_name=agent_name,
@@ -178,19 +181,19 @@ class OpenClawSDKBackend(SpawnBackend):
                     prompt=prompt or "Complete your assigned task",
                     cwd=cwd,
                 )
-                
+
                 # Step 3: 发送任务到 Session
                 send_params = {
                     "key": session_key,
                     "message": task,
                 }
-                
+
                 if model:
                     send_params["model"] = model
-                
+
                 send_data = self._gateway_call("sessions.send", params=send_params, timeout=10)
                 run_id = send_data.get("runId")
-                
+
                 # Step 4: 注册到团队注册表
                 proc = OCAProcess(
                     name=agent_name,
@@ -200,12 +203,12 @@ class OpenClawSDKBackend(SpawnBackend):
                     run_id=run_id,
                 )
                 self._processes[agent_name] = proc
-                
+
                 # 写入团队注册表
                 self._register_agent(team_name, agent_name, session_key)
-                
+
                 return f"Agent '{agent_name}' started via OpenClaw SDK (session={session_key})"
-                
+
         except Exception as e:
             return f"Error spawning OpenClaw SDK agent: {e}"
 
@@ -219,7 +222,7 @@ class OpenClawSDKBackend(SpawnBackend):
         cwd: str | None = None,
     ) -> str:
         """构建包含 clawteam 协作协议的任务消息"""
-        
+
         lines = [
             f"You are **{agent_name}** ({agent_type}), an agent on team **{team_name}**.",
             "",
@@ -257,35 +260,34 @@ class OpenClawSDKBackend(SpawnBackend):
             "- Use `clawteam status {team_name}` to see team status",
             "",
         ]
-        
+
         if cwd:
             lines.insert(-2, f"**Working directory:** `{cwd}`\n")
-        
+
         lines.append("Begin your task now.\n")
-        
+
         return "\n".join(lines)
 
     def _register_agent(self, team_name: str, agent_name: str, session_key: str) -> None:
         """注册 Agent 到团队注册表"""
         registry_path = DATA_DIR / "teams" / team_name / "agents.json"
         registry_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         registry = {}
         if registry_path.exists():
             try:
                 registry = json.loads(registry_path.read_text(encoding="utf-8"))
             except Exception:
                 registry = {}
-        
+
         registry[agent_name] = {
             "session_key": session_key,
             "backend": "openclaw_sdk",
             "registered_at": time.time(),
         }
-        
+
         registry_path.write_text(
-            json.dumps(registry, indent=2, ensure_ascii=False),
-            encoding="utf-8"
+            json.dumps(registry, indent=2, ensure_ascii=False), encoding="utf-8"
         )
 
     def list_running(self) -> list[dict[str, str]]:
@@ -308,12 +310,12 @@ class OpenClawSDKBackend(SpawnBackend):
         proc = self._processes.get(agent_name)
         if not proc:
             return False, None
-        
+
         if proc.done:
             if proc.error:
                 return True, f"Error: {proc.error}"
             return True, proc.result or "Completed"
-        
+
         return False, None
 
     def wait_for_result(self, agent_name: str, timeout: int = 300) -> str:
@@ -331,7 +333,7 @@ class OpenClawSDKBackend(SpawnBackend):
         proc = self._processes.get(agent_name)
         if not proc:
             return False
-        
+
         try:
             # 通过 gateway 关闭 session
             self._gateway_call("sessions.abort", params={"key": proc.session_key}, timeout=10)

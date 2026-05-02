@@ -36,7 +36,9 @@ def _now_iso() -> str:
 
 def _provider_root(team_name: str) -> Path:
     """Get the provider data directory for a team."""
-    d = ensure_within_root(get_data_dir() / "providers", validate_identifier(team_name, "team name"))
+    d = ensure_within_root(
+        get_data_dir() / "providers", validate_identifier(team_name, "team name")
+    )
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -395,7 +397,9 @@ class ProviderSelector:
         # Check if cooldown has expired
         if provider.last_failure_at:
             try:
-                last_failure = datetime.fromisoformat(provider.last_failure_at.replace("Z", "+00:00"))
+                last_failure = datetime.fromisoformat(
+                    provider.last_failure_at.replace("Z", "+00:00")
+                )
                 elapsed = time.time() - last_failure.timestamp()
                 if elapsed >= self.cooldown_seconds:
                     # Exit cooldown
@@ -513,7 +517,11 @@ class ProviderSelector:
                             provider_name=preferred_provider,
                             adapter_type=provider.adapter_type,
                             reason="Preferred provider selected",
-                            fallback_chain=[p for p in chain.providers if p != preferred_provider and self._is_available(p)],
+                            fallback_chain=[
+                                p
+                                for p in chain.providers
+                                if p != preferred_provider and self._is_available(p)
+                            ],
                             confidence=1.0,
                             task_type=task_type.value,
                             estimated_latency_ms=provider.avg_latency_ms,
@@ -578,7 +586,8 @@ class ProviderSelector:
         if best_provider:
             # Build fallback chain (remaining available providers)
             fallback = [
-                p for p in chain.providers
+                p
+                for p in chain.providers
                 if p != best_provider.name and self._is_available(p) and p not in exclude
             ]
 
@@ -608,15 +617,15 @@ class ProviderSelector:
         max_fallback_attempts: int = 3,
     ) -> SelectionResult:
         """Select provider with automatic fallback on failure.
-        
+
         This method combines select() and fallback() for a simpler API.
         Inspired by SpectrAI providerAvailability.ts design.
-        
+
         Args:
             task_type: Type of task
             preferred_provider: Optional preferred provider
             max_fallback_attempts: Maximum fallback attempts
-        
+
         Returns:
             SelectionResult with selected provider
         """
@@ -625,25 +634,25 @@ class ProviderSelector:
             task_type=task_type,
             preferred_provider=preferred_provider,
         )
-        
+
         if result.success:
             return result
-        
+
         # Try fallback chain
         for i in range(max_fallback_attempts):
             if not result.fallback_chain:
                 break
-            
+
             next_provider = result.fallback_chain[0]
             result = self.select(
                 task_type=task_type,
                 preferred_provider=next_provider,
             )
-            
+
             if result.success:
-                result.reason = f"Fallback attempt {i+1} successful"
+                result.reason = f"Fallback attempt {i + 1} successful"
                 return result
-        
+
         # All attempts failed
         return SelectionResult(
             success=False,
@@ -652,7 +661,9 @@ class ProviderSelector:
             task_type=task_type.value,
         )
 
-    def fallback(self, failed_provider: str, task_type: TaskType = TaskType.general) -> SelectionResult:
+    def fallback(
+        self, failed_provider: str, task_type: TaskType = TaskType.general
+    ) -> SelectionResult:
         """Get a fallback provider after a failure.
 
         Args:
@@ -676,7 +687,8 @@ class ProviderSelector:
                 provider = self.providers.get(provider_name)
                 if provider:
                     remaining_fallback = [
-                        p for p in chain.providers
+                        p
+                        for p in chain.providers
                         if p != provider_name and p != failed_provider and self._is_available(p)
                     ]
 
@@ -715,7 +727,7 @@ class ProviderSelector:
 
                 if latency_ms > 0:
                     # Update average latency (simple moving average)
-                    provider.avg_latency_ms = (provider.avg_latency_ms * 0.9 + latency_ms * 0.1)
+                    provider.avg_latency_ms = provider.avg_latency_ms * 0.9 + latency_ms * 0.1
 
             # Track request time for rate limiting
             now = time.time()
@@ -747,7 +759,9 @@ class ProviderSelector:
                 # Check if should enter cooldown
                 if provider.consecutive_failures >= self.failure_threshold:
                     provider.status = ProviderStatus.cooldown
-                    logger.warning(f"Provider {provider_name} entering cooldown after {provider.consecutive_failures} failures")
+                    logger.warning(
+                        f"Provider {provider_name} entering cooldown after {provider.consecutive_failures} failures"
+                    )
 
                 # Handle specific error types
                 if error_type == "quota_exceeded":
@@ -835,8 +849,7 @@ class ProviderSelector:
                     for name, p in self.providers.items()
                 },
                 "quotas": {
-                    name: q.model_dump(by_alias=True)
-                    for name, q in self._quota_info.items()
+                    name: q.model_dump(by_alias=True) for name, q in self._quota_info.items()
                 },
                 "updatedAt": _now_iso(),
             }
@@ -913,33 +926,33 @@ def get_provider_selector(team_name: str) -> ProviderSelector:
 
 class ProviderAutoSwitchManager:
     """Provider 自动切换管理器
-    
+
     当 Provider 额度不足或失败时自动切换到备用 Provider。
     参考 SpectrAI 的 Provider 可用性检测和自动切换逻辑。
     """
-    
+
     def __init__(self, team_name: str):
         self.team_name = team_name
         self.selector = get_provider_selector(team_name)
         self._current_provider: str | None = None
         self._switch_history: list[dict] = []
         self._lock = threading.Lock()
-        
+
         # 自动切换配置
         self.auto_switch_enabled = True
         self.max_switch_attempts = 3  # 最大切换尝试次数
         self.switch_cooldown_seconds = 30  # 切换冷却时间
-    
+
     def get_current_provider(self) -> str | None:
         """获取当前使用的 Provider"""
         with self._lock:
             return self._current_provider
-    
+
     def set_current_provider(self, provider_name: str) -> None:
         """设置当前 Provider"""
         with self._lock:
             self._current_provider = provider_name
-    
+
     def select_provider(
         self,
         task_type: TaskType = TaskType.general,
@@ -947,12 +960,12 @@ class ProviderAutoSwitchManager:
         **kwargs,
     ) -> SelectionResult:
         """选择 Provider（支持自动切换）
-        
+
         Args:
             task_type: 任务类型
             preferred_provider: 首选 Provider
             **kwargs: 其他选择参数
-            
+
         Returns:
             SelectionResult
         """
@@ -960,36 +973,38 @@ class ProviderAutoSwitchManager:
         if preferred_provider and self.selector._is_available(preferred_provider):
             self.set_current_provider(preferred_provider)
             return self.selector.select(task_type, preferred_provider, **kwargs)
-        
+
         # 如果当前 Provider 可用，继续使用
         current = self.get_current_provider()
         if current and self.selector._is_available(current):
             return self.selector.select(task_type, current, **kwargs)
-        
+
         # 选择新的 Provider
         result = self.selector.select(task_type, preferred_provider, **kwargs)
         if result.success:
             self.set_current_provider(result.provider_name)
-        
+
         return result
-    
-    def handle_quota_exceeded(self, provider_name: str, task_type: TaskType = TaskType.general) -> SelectionResult:
+
+    def handle_quota_exceeded(
+        self, provider_name: str, task_type: TaskType = TaskType.general
+    ) -> SelectionResult:
         """处理额度不足情况
-        
+
         当 Provider 额度不足时，自动切换到备用 Provider。
-        
+
         Args:
             provider_name: 额度不足的 Provider
             task_type: 任务类型
-            
+
         Returns:
             SelectionResult（切换后的 Provider）
         """
         logger.warning(f"Provider {provider_name} quota exceeded, attempting auto-switch")
-        
+
         # 记录额度不足
         self.selector.record_failure(provider_name, "quota_exceeded")
-        
+
         # 记录切换历史
         switch_record = {
             "from_provider": provider_name,
@@ -997,10 +1012,10 @@ class ProviderAutoSwitchManager:
             "timestamp": _now_iso(),
             "task_type": task_type.value,
         }
-        
+
         # 尝试切换
         result = self.selector.fallback(provider_name, task_type)
-        
+
         if result.success:
             switch_record["to_provider"] = result.provider_name
             switch_record["success"] = True
@@ -1010,29 +1025,31 @@ class ProviderAutoSwitchManager:
             switch_record["success"] = False
             switch_record["error"] = result.reason
             logger.error(f"Auto-switch failed: {result.reason}")
-        
+
         with self._lock:
             self._switch_history.append(switch_record)
-        
+
         return result
-    
-    def handle_rate_limit(self, provider_name: str, task_type: TaskType = TaskType.general) -> SelectionResult:
+
+    def handle_rate_limit(
+        self, provider_name: str, task_type: TaskType = TaskType.general
+    ) -> SelectionResult:
         """处理速率限制情况
-        
+
         当 Provider 达到速率限制时，自动切换到备用 Provider。
-        
+
         Args:
             provider_name: 达到速率限制的 Provider
             task_type: 任务类型
-            
+
         Returns:
             SelectionResult（切换后的 Provider）
         """
         logger.warning(f"Provider {provider_name} rate limit exceeded, attempting auto-switch")
-        
+
         # 记录速率限制
         self.selector.record_failure(provider_name, "rate_limit")
-        
+
         # 记录切换历史
         switch_record = {
             "from_provider": provider_name,
@@ -1040,10 +1057,10 @@ class ProviderAutoSwitchManager:
             "timestamp": _now_iso(),
             "task_type": task_type.value,
         }
-        
+
         # 尝试切换
         result = self.selector.fallback(provider_name, task_type)
-        
+
         if result.success:
             switch_record["to_provider"] = result.provider_name
             switch_record["success"] = True
@@ -1053,62 +1070,64 @@ class ProviderAutoSwitchManager:
             switch_record["success"] = False
             switch_record["error"] = result.reason
             logger.error(f"Auto-switch failed: {result.reason}")
-        
+
         with self._lock:
             self._switch_history.append(switch_record)
-        
+
         return result
-    
-    def handle_error(self, provider_name: str, error_type: str, task_type: TaskType = TaskType.general) -> SelectionResult:
+
+    def handle_error(
+        self, provider_name: str, error_type: str, task_type: TaskType = TaskType.general
+    ) -> SelectionResult:
         """处理错误情况
-        
+
         当 Provider 发生错误时，根据错误类型决定是否切换。
-        
+
         Args:
             provider_name: 发生错误的 Provider
             error_type: 错误类型
             task_type: 任务类型
-            
+
         Returns:
             SelectionResult（切换后的 Provider）
         """
         logger.warning(f"Provider {provider_name} error: {error_type}")
-        
+
         # 记录错误
         self.selector.record_failure(provider_name, error_type)
-        
+
         # 检查是否需要切换
         provider = self.selector.get_provider_info(provider_name)
         if provider and provider.consecutive_failures >= self.selector.failure_threshold:
             # 连续失败次数达到阈值，需要切换
             return self.selector.fallback(provider_name, task_type)
-        
+
         # 尝试继续使用当前 Provider（可能只是临时错误）
         current = self.get_current_provider()
         if current and self.selector._is_available(current):
             return self.selector.select(task_type, current)
-        
+
         # 选择新的 Provider
         return self.selector.select(task_type)
-    
+
     def get_switch_history(self, limit: int = 10) -> list[dict]:
         """获取切换历史"""
         with self._lock:
             return self._switch_history[-limit:]
-    
+
     def get_switch_summary(self) -> dict:
         """获取切换统计摘要"""
         with self._lock:
             total_switches = len(self._switch_history)
             successful_switches = sum(1 for s in self._switch_history if s.get("success"))
             failed_switches = total_switches - successful_switches
-            
+
             # 按原因统计
             by_reason = {}
             for s in self._switch_history:
                 reason = s.get("reason", "unknown")
                 by_reason[reason] = by_reason.get(reason, 0) + 1
-            
+
             # 按Provider统计
             by_provider = {}
             for s in self._switch_history:
@@ -1121,7 +1140,7 @@ class ProviderAutoSwitchManager:
                 by_provider[from_provider]["switched_out"] += 1
                 if s.get("success"):
                     by_provider[to_provider]["switched_in"] += 1
-            
+
             return {
                 "totalSwitches": total_switches,
                 "successfulSwitches": successful_switches,
@@ -1131,29 +1150,31 @@ class ProviderAutoSwitchManager:
                 "byProvider": by_provider,
                 "currentProvider": self._current_provider,
             }
-    
+
     def reset_switch_history(self) -> None:
         """重置切换历史"""
         with self._lock:
             self._switch_history.clear()
-    
+
     def check_and_recover(self) -> bool:
         """检查并恢复 Provider 状态
-        
+
         检查是否有 Provider 从额度不足或冷却状态恢复。
-        
+
         Returns:
             是否有 Provider 恢复
         """
         recovered = False
-        
+
         for name, provider in self.selector.providers.items():
             if provider.status == ProviderStatus.quota_exceeded:
                 # 检查额度是否恢复
                 quota = self.selector.get_quota(name)
                 if quota and quota.quota_reset_at:
                     try:
-                        reset_time = datetime.fromisoformat(quota.quota_reset_at.replace("Z", "+00:00"))
+                        reset_time = datetime.fromisoformat(
+                            quota.quota_reset_at.replace("Z", "+00:00")
+                        )
                         if datetime.now(timezone.utc) > reset_time:
                             provider.status = ProviderStatus.available
                             quota.quota_remaining = quota.quota_limit
@@ -1162,12 +1183,14 @@ class ProviderAutoSwitchManager:
                             logger.info(f"Provider {name} quota recovered")
                     except ValueError:
                         pass
-            
+
             elif provider.status == ProviderStatus.cooldown:
                 # 检查冷却是否结束
                 if provider.last_failure_at:
                     try:
-                        failure_time = datetime.fromisoformat(provider.last_failure_at.replace("Z", "+00:00"))
+                        failure_time = datetime.fromisoformat(
+                            provider.last_failure_at.replace("Z", "+00:00")
+                        )
                         cooldown_end = failure_time.timestamp() + self.selector.cooldown_seconds
                         if time.time() > cooldown_end:
                             provider.status = ProviderStatus.available
@@ -1176,9 +1199,9 @@ class ProviderAutoSwitchManager:
                             logger.info(f"Provider {name} cooldown ended")
                     except ValueError:
                         pass
-        
+
         return recovered
-    
+
     def get_status_report(self) -> dict:
         """获取完整状态报告"""
         return {
@@ -1193,10 +1216,10 @@ class ProviderAutoSwitchManager:
 
 def get_auto_switch_manager(team_name: str) -> ProviderAutoSwitchManager:
     """获取 ProviderAutoSwitchManager 实例
-    
+
     Args:
         team_name: 团队名称
-        
+
     Returns:
         ProviderAutoSwitchManager 实例
     """

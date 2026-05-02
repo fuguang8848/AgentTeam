@@ -3,6 +3,7 @@ ClawTeam Exception System
 
 Hierarchical exception classes with error codes, recovery strategies, and context tracking.
 """
+
 from typing import Optional, Any
 from dataclasses import dataclass, field
 import asyncio
@@ -12,6 +13,7 @@ import traceback
 @dataclass
 class ErrorContext:
     """Context information for an error"""
+
     team_name: Optional[str] = None
     agent_id: Optional[str] = None
     session_id: Optional[str] = None
@@ -33,6 +35,7 @@ class ErrorContext:
 
 class ClawTeamError(Exception):
     """Base exception for all ClawTeam errors"""
+
     code: str = "CLAWTEAM_ERROR"
     is_retryable: bool = False
     severity: str = "error"
@@ -68,112 +71,132 @@ class ClawTeamError(Exception):
 # Agent-related errors
 class AgentError(ClawTeamError):
     """Agent operation errors"""
+
     code = "AGENT_ERROR"
     severity = "error"
 
 
 class AgentNotFoundError(AgentError):
     """Agent not found"""
+
     code = "AGENT_NOT_FOUND"
 
 
 class AgentSpawnError(AgentError):
     """Failed to spawn agent"""
+
     code = "AGENT_SPAWN_ERROR"
     is_retryable = True
 
 
 class AgentTimeoutError(AgentError):
     """Agent operation timed out"""
+
     code = "AGENT_TIMEOUT"
     is_retryable = True
 
 
 class AgentCrashedError(AgentError):
     """Agent process crashed"""
+
     code = "AGENT_CRASHED"
 
 
 # Team-related errors
 class TeamError(ClawTeamError):
     """Team operation errors"""
+
     code = "TEAM_ERROR"
     severity = "error"
 
 
 class TeamNotFoundError(TeamError):
     """Team not found"""
+
     code = "TEAM_NOT_FOUND"
 
 
 class TeamFullError(TeamError):
     """Team has reached maximum capacity"""
+
     code = "TEAM_FULL"
 
 
 class MemberNotFoundError(TeamError):
     """Team member not found"""
+
     code = "MEMBER_NOT_FOUND"
 
 
 # Session-related errors
 class SessionError(ClawTeamError):
     """Session operation errors"""
+
     code = "SESSION_ERROR"
 
 
 class SessionNotFoundError(SessionError):
     """Session not found"""
+
     code = "SESSION_NOT_FOUND"
 
 
 class SessionExpiredError(SessionError):
     """Session has expired"""
+
     code = "SESSION_EXPIRED"
 
 
 # Transport/Mailbox errors
 class TransportError(ClawTeamError):
     """Transport layer errors"""
+
     code = "TRANSPORT_ERROR"
     is_retryable = True
 
 
 class MailboxError(TransportError):
     """Mailbox operation errors"""
+
     code = "MAILBOX_ERROR"
 
 
 class MailboxFullError(MailboxError):
     """Mailbox is full"""
+
     code = "MAILBOX_FULL"
 
 
 # Config errors
 class ConfigError(ClawTeamError):
     """Configuration errors"""
+
     code = "CONFIG_ERROR"
 
 
 class ConfigNotFoundError(ConfigError):
     """Config file not found"""
+
     code = "CONFIG_NOT_FOUND"
 
 
 class ConfigValidationError(ConfigError):
     """Config validation failed"""
+
     code = "CONFIG_VALIDATION"
 
 
 # Retryable errors mixin
 class RetryableError(ClawTeamError):
     """Marker for errors that can be retried"""
+
     is_retryable = True
 
 
 # Rate limiting
 class RateLimitError(ClawTeamError):
     """Rate limit exceeded"""
+
     code = "RATE_LIMIT"
     is_retryable = True
 
@@ -181,11 +204,13 @@ class RateLimitError(ClawTeamError):
 # Authentication/Authorization
 class AuthError(ClawTeamError):
     """Authentication/Authorization errors"""
+
     code = "AUTH_ERROR"
 
 
 class PermissionDeniedError(AuthError):
     """Permission denied"""
+
     code = "PERMISSION_DENIED"
 
 
@@ -218,7 +243,7 @@ class ErrorRecovery:
         if retry_count >= self.max_retries:
             return False, f"Max retries ({self.max_retries}) exceeded"
 
-        delay = min(self.base_delay * (2 ** retry_count), self.max_delay)
+        delay = min(self.base_delay * (2**retry_count), self.max_delay)
 
         if isinstance(error, AgentSpawnError):
             return await self._recover_agent_spawn(context, retry_count, delay)

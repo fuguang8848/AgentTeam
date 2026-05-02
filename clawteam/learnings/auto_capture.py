@@ -26,16 +26,20 @@ import re
 
 logger = logging.getLogger(__name__)
 
+
 class LearningType(str, Enum):
     """学习类型枚举"""
+
     ERROR = "error"
     LEARNING = "learning"
     BEST_PRACTICE = "best_practice"
     FEATURE_REQUEST = "feature_request"
     KNOWLEDGE_GAP = "knowledge_gap"
 
+
 class ExperienceEntry(BaseModel):
     """经验条目"""
+
     entry_id: str = Field(default_factory=lambda: f"exp_{uuid.uuid4().hex[:8]}")
     entry_type: LearningType
     summary: str
@@ -52,28 +56,25 @@ class ExperienceEntry(BaseModel):
     resolution: Optional[str] = None
     session_ids: List[str] = Field(default_factory=list)
     related_task_ids: List[str] = Field(default_factory=list)
-    
-    model_config = ConfigDict(
-        json_encoders={
-            datetime: lambda dt: dt.isoformat()
-        }
-    )
+
+    model_config = ConfigDict(json_encoders={datetime: lambda dt: dt.isoformat()})
+
 
 class PatternDetector:
     """模式检测器"""
-    
-    def detect_repetitive_patterns(self,
-                                  activities: List[Dict[str, Any]],
-                                  window_size: int = 10) -> List[Dict[str, Any]]:
+
+    def detect_repetitive_patterns(
+        self, activities: List[Dict[str, Any]], window_size: int = 10
+    ) -> List[Dict[str, Any]]:
         """检测重复模式"""
         patterns = []
         if len(activities) < window_size:
             return patterns
-            
+
         # 简单模式检测：基于活动类型和内容的相似性
         for i in range(len(activities) - window_size + 1):
-            window = activities[i:i + window_size]
-            
+            window = activities[i : i + window_size]
+
             # 检查是否有重复的错误模式
             error_count = sum(1 for a in window if a.get("status") == "error")
             if error_count >= 3:
@@ -82,12 +83,18 @@ class PatternDetector:
                     "start_index": i,
                     "end_index": i + window_size - 1,
                     "error_count": error_count,
-                    "error_types": list(set(a.get("error_type", "unknown") for a in window if a.get("status") == "error")),
+                    "error_types": list(
+                        set(
+                            a.get("error_type", "unknown")
+                            for a in window
+                            if a.get("status") == "error"
+                        )
+                    ),
                     "confidence": min(1.0, error_count / window_size),
-                    "activities": window
+                    "activities": window,
                 }
                 patterns.append(pattern)
-                
+
             # 检查工具使用模式
             tool_uses = [a.get("tool") for a in window if a.get("tool")]
             if len(set(tool_uses)) <= 2 and len(tool_uses) >= 5:
@@ -96,15 +103,15 @@ class PatternDetector:
                     "tools": list(set(tool_uses)),
                     "frequency": len(tool_uses),
                     "confidence": min(1.0, len(tool_uses) / window_size),
-                    "activities": window
+                    "activities": window,
                 }
                 patterns.append(pattern)
-                
+
         return patterns
-    
-    def calculate_pattern_confidence(self,
-                                   pattern: Dict[str, Any],
-                                   occurrences: List[Dict[str, Any]]) -> float:
+
+    def calculate_pattern_confidence(
+        self, pattern: Dict[str, Any], occurrences: List[Dict[str, Any]]
+    ) -> float:
         """计算模式置信度"""
         if pattern["type"] == "error_cluster":
             # 基于错误频率和相似性计算置信度
@@ -126,12 +133,13 @@ class PatternDetector:
                 return 0.5
         return 0.0
 
+
 class AutoCaptureEngine:
     """自动经验捕获引擎"""
-    
+
     def __init__(self, learnings_dir: Optional[str] = None):
         """初始化引擎
-        
+
         Args:
             learnings_dir: .learnings 文件存储目录，默认 ~/.openclaw/workspace/.learnings
         """
@@ -140,33 +148,33 @@ class AutoCaptureEngine:
         self.pattern_detector = PatternDetector()
         self._experiences: Dict[str, ExperienceEntry] = {}
         self._load_experiences()
-        
+
     def _load_experiences(self) -> None:
         """加载已存在的经验记录"""
         try:
             experience_files = list(self.learnings_dir.glob("experience_*.json"))
             for file_path in experience_files:
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         data = json.load(f)
                         # 转换 ISO 格式时间字符串回 datetime
                         for key in ["first_seen", "last_seen"]:
                             if key in data and isinstance(data[key], str):
-                                data[key] = datetime.fromisoformat(data[key].replace('Z', '+00:00'))
+                                data[key] = datetime.fromisoformat(data[key].replace("Z", "+00:00"))
                         entry = ExperienceEntry(**data)
                         self._experiences[entry.entry_id] = entry
                 except Exception as e:
                     logger.warning(f"Failed to load experience from {file_path}: {e}")
-                    
+
             logger.info(f"Loaded {len(self._experiences)} experience entries")
         except Exception as e:
             logger.error(f"Error loading experiences: {e}")
-    
+
     def _save_experience(self, entry: ExperienceEntry) -> None:
         """保存经验条目到文件"""
         file_path = self.learnings_dir / f"experience_{entry.entry_id}.json"
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 # 使用 Pydantic model_dump 方法
                 data = entry.model_dump()
                 for key in ["first_seen", "last_seen"]:
@@ -176,16 +184,16 @@ class AutoCaptureEngine:
         except Exception as e:
             logger.error(f"Failed to save experience {entry.entry_id}: {e}")
             raise
-    
-    def evaluate_task_result(self,
-                           task_result: Dict[str, Any],
-                           user_feedback: Optional[str] = None) -> Optional[ExperienceEntry]:
+
+    def evaluate_task_result(
+        self, task_result: Dict[str, Any], user_feedback: Optional[str] = None
+    ) -> Optional[ExperienceEntry]:
         """评估任务结果，判断是否需要记录
-        
+
         Args:
             task_result: 任务结果字典，包含状态、输出、错误等信息
             user_feedback: 用户反馈文本
-            
+
         Returns:
             如果需要记录则返回 ExperienceEntry，否则返回 None
         """
@@ -194,10 +202,10 @@ class AutoCaptureEngine:
         error = task_result.get("error")
         session_id = task_result.get("session_id")
         task_id = task_result.get("task_id")
-        
+
         # 判断是否需要记录
         entry = None
-        
+
         if status == "failed" and error:
             # 错误记录
             error_summary = str(error)[:200]
@@ -209,9 +217,15 @@ class AutoCaptureEngine:
                 area=self._detect_area(task_result),
                 priority="high" if "critical" in str(error).lower() else "medium",
                 session_ids=[session_id] if session_id else [],
-                related_task_ids=[task_id] if task_id else []
+                related_task_ids=[task_id] if task_id else [],
             )
-        elif user_feedback and ("good" in user_feedback.lower() or "great" in user_feedback.lower() or "很好" in user_feedback or "不错" in user_feedback or "优秀" in user_feedback):
+        elif user_feedback and (
+            "good" in user_feedback.lower()
+            or "great" in user_feedback.lower()
+            or "很好" in user_feedback
+            or "不错" in user_feedback
+            or "优秀" in user_feedback
+        ):
             # 成功经验记录
             entry = ExperienceEntry(
                 entry_type=LearningType.BEST_PRACTICE,
@@ -221,7 +235,7 @@ class AutoCaptureEngine:
                 area=self._detect_area(task_result),
                 priority="medium",
                 session_ids=[session_id] if session_id else [],
-                related_task_ids=[task_id] if task_id else []
+                related_task_ids=[task_id] if task_id else [],
             )
         elif status == "success" and task_result.get("time_saved_minutes", 0) > 30:
             # 时间节省显著的经验
@@ -233,21 +247,21 @@ class AutoCaptureEngine:
                 area=self._detect_area(task_result),
                 priority="medium",
                 session_ids=[session_id] if session_id else [],
-                related_task_ids=[task_id] if task_id else []
+                related_task_ids=[task_id] if task_id else [],
             )
-        
+
         if entry and session_id:
             entry.session_ids = list(set(entry.session_ids + [session_id]))
         if entry and task_id:
             entry.related_task_ids = list(set(entry.related_task_ids + [task_id]))
-            
+
         return entry
-    
+
     def _detect_area(self, task_result: Dict[str, Any]) -> str:
         """检测任务所属领域"""
         tools = task_result.get("tools_used", [])
         description = str(task_result.get("description", "")).lower()
-        
+
         # 基于工具和描述判断领域
         frontend_tools = ["html", "css", "javascript", "react", "vue", "angular", "frontend"]
         backend_tools = ["api", "database", "sql", "python", "backend", "server", "flask", "django"]
@@ -255,7 +269,7 @@ class AutoCaptureEngine:
         test_tools = ["test", "pytest", "unittest", "coverage", "qa"]
         docs_tools = ["docs", "documentation", "readme", "markdown"]
         config_tools = ["config", "configuration", "yaml", "toml", "json", "env"]
-        
+
         for tool in tools:
             tool_lower = str(tool).lower()
             if any(ft in tool_lower for ft in frontend_tools):
@@ -270,7 +284,7 @@ class AutoCaptureEngine:
                 return "docs"
             elif any(ct in tool_lower for ct in config_tools):
                 return "config"
-                
+
         # 基于描述判断
         if any(word in description for word in ["frontend", "ui", "界面", "网页"]):
             return "frontend"
@@ -282,21 +296,21 @@ class AutoCaptureEngine:
             return "tests"
         elif any(word in description for word in ["文档", "docs", "readme", "markdown"]):
             return "docs"
-            
+
         return "general"
-    
+
     def record_experience(self, entry: ExperienceEntry) -> str:
         """记录经验到 .learnings 系统
-        
+
         Args:
             entry: 经验条目
-            
+
         Returns:
             经验条目ID
         """
         # 检查是否存在类似的经验条目
         similar_entry_id = self._find_similar_experience(entry)
-        
+
         if similar_entry_id:
             # 合并到已有条目
             existing = self._experiences[similar_entry_id]
@@ -304,8 +318,10 @@ class AutoCaptureEngine:
             existing.last_seen = datetime.now()
             existing.occurrences.extend(entry.occurrences)
             existing.session_ids = list(set(existing.session_ids + entry.session_ids))
-            existing.related_task_ids = list(set(existing.related_task_ids + entry.related_task_ids))
-            
+            existing.related_task_ids = list(
+                set(existing.related_task_ids + entry.related_task_ids)
+            )
+
             # 更新优先级的逻辑：基于出现次数
             if existing.count >= 10:
                 existing.priority = "critical"
@@ -315,9 +331,11 @@ class AutoCaptureEngine:
                 existing.priority = "medium"
             else:
                 existing.priority = "low"
-                
+
             self._save_experience(existing)
-            logger.info(f"Merged experience into existing entry {similar_entry_id} (count: {existing.count})")
+            logger.info(
+                f"Merged experience into existing entry {similar_entry_id} (count: {existing.count})"
+            )
             return similar_entry_id
         else:
             # 新增条目
@@ -325,57 +343,59 @@ class AutoCaptureEngine:
             self._save_experience(entry)
             logger.info(f"Recorded new experience: {entry.entry_id} ({entry.entry_type})")
             return entry.entry_id
-    
+
     def _find_similar_experience(self, entry: ExperienceEntry) -> Optional[str]:
         """查找相似的经验条目"""
         for existing_id, existing_entry in self._experiences.items():
             if existing_entry.entry_type != entry.entry_type:
                 continue
-                
+
             # 检查摘要相似性
             summary_similarity = self._calculate_similarity(existing_entry.summary, entry.summary)
             if summary_similarity > 0.7:
                 return existing_id
-                
+
             # 检查领域和类别相似性
-            if (existing_entry.area == entry.area and 
-                existing_entry.category == entry.category and
-                len(set(existing_entry.tags) & set(entry.tags)) > 0):
+            if (
+                existing_entry.area == entry.area
+                and existing_entry.category == entry.category
+                and len(set(existing_entry.tags) & set(entry.tags)) > 0
+            ):
                 return existing_id
-                
+
         return None
-    
+
     def _calculate_similarity(self, text1: str, text2: str) -> float:
         """计算文本相似度（简单实现）"""
         if not text1 or not text2:
             return 0.0
-            
+
         # 转换为小写并分词
-        words1 = set(re.findall(r'\w+', text1.lower()))
-        words2 = set(re.findall(r'\w+', text2.lower()))
-        
+        words1 = set(re.findall(r"\w+", text1.lower()))
+        words2 = set(re.findall(r"\w+", text2.lower()))
+
         if not words1 or not words2:
             return 0.0
-            
+
         intersection = words1 & words2
         union = words1 | words2
-        
+
         return len(intersection) / len(union) if union else 0.0
-    
-    def check_for_promotion(self,
-                          min_occurrences: int = 3,
-                          min_confidence: float = 0.8) -> List[ExperienceEntry]:
+
+    def check_for_promotion(
+        self, min_occurrences: int = 3, min_confidence: float = 0.8
+    ) -> List[ExperienceEntry]:
         """检查是否需要晋升到 AGENTS.md/TOOLS.md/SOUL.md
-        
+
         Args:
             min_occurrences: 最小出现次数
             min_confidence: 最小置信度
-            
+
         Returns:
             需要晋升的经验条目列表
         """
         candidates = []
-        
+
         for entry in self._experiences.values():
             if entry.count >= min_occurrences and not entry.resolved:
                 # 检查是否已经值得晋升
@@ -385,30 +405,28 @@ class AutoCaptureEngine:
                 elif entry.entry_type == LearningType.ERROR and entry.count >= 5:
                     # 高频错误需要晋升
                     candidates.append(entry)
-                    
+
         return candidates
-    
-    def promote_to_documentation(self,
-                               entry: ExperienceEntry,
-                               target_doc: str) -> bool:
+
+    def promote_to_documentation(self, entry: ExperienceEntry, target_doc: str) -> bool:
         """晋升到文档系统
-        
+
         Args:
             entry: 经验条目
             target_doc: 目标文档名称 (AGENTS.md, TOOLS.md, SOUL.md)
-            
+
         Returns:
             是否成功晋升
         """
         try:
             doc_path = self.learnings_dir.parent / target_doc
-            
+
             # 读取现有文档内容
             existing_content = ""
             if doc_path.exists():
-                with open(doc_path, 'r', encoding='utf-8') as f:
+                with open(doc_path, "r", encoding="utf-8") as f:
                     existing_content = f.read()
-            
+
             # 构建要添加的内容
             promotion_text = f"""
 ## {entry.summary}
@@ -416,8 +434,8 @@ class AutoCaptureEngine:
 **类型**: {entry.entry_type.value}
 **优先级**: {entry.priority}
 **出现次数**: {entry.count}
-**首次出现**: {entry.first_seen.strftime('%Y-%m-%d %H:%M:%S')}
-**最后出现**: {entry.last_seen.strftime('%Y-%m-%d %H:%M:%S')}
+**首次出现**: {entry.first_seen.strftime("%Y-%m-%d %H:%M:%S")}
+**最后出现**: {entry.last_seen.strftime("%Y-%m-%d %H:%M:%S")}
 
 ### 详情
 {entry.details}
@@ -429,89 +447,86 @@ class AutoCaptureEngine:
 """
             # 添加到文档
             new_content = existing_content + promotion_text
-            
-            with open(doc_path, 'w', encoding='utf-8') as f:
+
+            with open(doc_path, "w", encoding="utf-8") as f:
                 f.write(new_content)
-                
+
             # 标记为已解决
             entry.resolved = True
             entry.resolution = f"已晋升到 {target_doc}"
             self._save_experience(entry)
-            
+
             logger.info(f"Promoted experience {entry.entry_id} to {target_doc}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to promote experience to {target_doc}: {e}")
             return False
-    
-    def search_experiences(self,
-                          query: str,
-                          entry_type: Optional[LearningType] = None,
-                          limit: int = 50) -> List[ExperienceEntry]:
+
+    def search_experiences(
+        self, query: str, entry_type: Optional[LearningType] = None, limit: int = 50
+    ) -> List[ExperienceEntry]:
         """搜索经验记录
-        
+
         Args:
             query: 搜索查询
             entry_type: 过滤类型
             limit: 返回结果限制
-            
+
         Returns:
             匹配的经验条目列表
         """
         results = []
         query_lower = query.lower()
-        
+
         for entry in self._experiences.values():
             if entry_type and entry.entry_type != entry_type:
                 continue
-                
+
             # 检查是否匹配搜索条件
             match_score = 0
-            
+
             # 摘要匹配
             if query_lower in entry.summary.lower():
                 match_score += 3
-                
+
             # 详情匹配
             if query_lower in entry.details.lower():
                 match_score += 2
-                
+
             # 标签匹配
             for tag in entry.tags:
                 if query_lower in tag.lower():
                     match_score += 1
-                    
+
             # 领域匹配
             if query_lower in entry.area.lower():
                 match_score += 1
-                
+
             if match_score > 0:
                 results.append((match_score, entry))
-                
+
         # 按匹配度排序
         results.sort(key=lambda x: x[0], reverse=True)
         return [entry for _, entry in results[:limit]]
-    
-    def generate_learning_summary(self,
-                                 days: int = 7,
-                                 format: str = "markdown") -> str:
+
+    def generate_learning_summary(self, days: int = 7, format: str = "markdown") -> str:
         """生成学习摘要
-        
+
         Args:
             days: 过去多少天的数据
             format: 输出格式 (markdown, json, text)
-            
+
         Returns:
             学习摘要
         """
         cutoff_date = datetime.now() - timedelta(days=days)
-        
+
         recent_entries = []
         for entry in self._experiences.values():
             if entry.last_seen >= cutoff_date:
                 recent_entries.append(entry)
-                
+
         # 按类型分组统计
         stats = {}
         for entry in recent_entries:
@@ -519,7 +534,7 @@ class AutoCaptureEngine:
             if entry_type not in stats:
                 stats[entry_type] = 0
             stats[entry_type] += 1
-            
+
         if format == "markdown":
             summary = f"""# ClawTeam 学习摘要 ({days}天)
 
@@ -527,36 +542,37 @@ class AutoCaptureEngine:
 """
             for entry_type, count in sorted(stats.items()):
                 summary += f"- **{entry_type}**: {count} 条\n"
-                
+
             summary += "\n## 重点经验\n"
-            
+
             # 按优先级排序
             high_priority = [e for e in recent_entries if e.priority in ["high", "critical"]]
             high_priority.sort(key=lambda e: e.count, reverse=True)
-            
+
             for entry in high_priority[:10]:
                 summary += f"""
 ### {entry.summary}
 - **类型**: {entry.entry_type.value}
 - **优先级**: {entry.priority}
 - **出现次数**: {entry.count}
-- **最后出现**: {entry.last_seen.strftime('%Y-%m-%d %H:%M:%S')}
+- **最后出现**: {entry.last_seen.strftime("%Y-%m-%d %H:%M:%S")}
 - **领域**: {entry.area}
-- **解决状态**: {'✅ 已解决' if entry.resolved else '⚠️ 待处理'}
+- **解决状态**: {"✅ 已解决" if entry.resolved else "⚠️ 待处理"}
 
 """
-                
+
             summary += f"\n**总计经验条目**: {len(recent_entries)} 条"
-            
+
             return summary
-            
+
         elif format == "json":
             import json as json_module
+
             data = {
                 "period_days": days,
                 "total_entries": len(recent_entries),
                 "statistics": stats,
-                "entries": [entry.model_dump(mode='json') for entry in recent_entries]
+                "entries": [entry.model_dump(mode="json") for entry in recent_entries],
             }
             return json_module.dumps(data, ensure_ascii=False, indent=2)
         else:
@@ -572,25 +588,23 @@ class AutoCaptureEngine:
             for entry in sorted(recent_entries, key=lambda e: e.count, reverse=True)[:5]:
                 lines.append(f"  - {entry.summary} ({entry.entry_type.value}, 出现{entry.count}次)")
             return "\n".join(lines)
-    
-    def get_context_for_task(self,
-                           task_description: str,
-                           max_entries: int = 5) -> str:
+
+    def get_context_for_task(self, task_description: str, max_entries: int = 5) -> str:
         """为新任务生成相关经验上下文
-        
+
         Args:
             task_description: 任务描述
             max_entries: 最多返回多少条相关经验
-            
+
         Returns:
             格式化后的经验上下文
         """
         # 搜索相关经验
         related_entries = self.search_experiences(task_description, limit=max_entries)
-        
+
         if not related_entries:
             return ""
-            
+
         context = "## 相关经验参考\n"
         for i, entry in enumerate(related_entries, 1):
             context += f"""
@@ -598,27 +612,29 @@ class AutoCaptureEngine:
    - 类型: {entry.entry_type.value}
    - 优先级: {entry.priority}
    - 出现次数: {entry.count}
-   - 详情: {entry.details[:200]}{'...' if len(entry.details) > 200 else ''}
-   - {'✅ 已解决' if entry.resolved else '⚠️ 待处理'}
+   - 详情: {entry.details[:200]}{"..." if len(entry.details) > 200 else ""}
+   - {"✅ 已解决" if entry.resolved else "⚠️ 待处理"}
 """
         return context
-    
-    def list_experiences(self,
-                        entry_type: Optional[LearningType] = None,
-                        resolved: Optional[bool] = None,
-                        area: Optional[str] = None) -> List[ExperienceEntry]:
+
+    def list_experiences(
+        self,
+        entry_type: Optional[LearningType] = None,
+        resolved: Optional[bool] = None,
+        area: Optional[str] = None,
+    ) -> List[ExperienceEntry]:
         """列出经验条目
-        
+
         Args:
             entry_type: 过滤类型
             resolved: 过滤解决状态
             area: 过滤领域
-            
+
         Returns:
             经验条目列表
         """
         results = []
-        
+
         for entry in self._experiences.values():
             if entry_type and entry.entry_type != entry_type:
                 continue
@@ -626,34 +642,32 @@ class AutoCaptureEngine:
                 continue
             if area and entry.area != area:
                 continue
-                
+
             results.append(entry)
-            
+
         # 按最后出现时间排序
         results.sort(key=lambda e: e.last_seen, reverse=True)
         return results
-    
-    def mark_as_resolved(self,
-                        entry_id: str,
-                        resolution: Optional[str] = None) -> bool:
+
+    def mark_as_resolved(self, entry_id: str, resolution: Optional[str] = None) -> bool:
         """标记经验条目为已解决
-        
+
         Args:
             entry_id: 经验条目ID
             resolution: 解决方案描述
-            
+
         Returns:
             是否成功
         """
         if entry_id not in self._experiences:
             logger.warning(f"Experience entry {entry_id} not found")
             return False
-            
+
         entry = self._experiences[entry_id]
         entry.resolved = True
         if resolution:
             entry.resolution = resolution
         self._save_experience(entry)
-        
+
         logger.info(f"Marked experience {entry_id} as resolved")
         return True

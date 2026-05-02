@@ -23,12 +23,15 @@ def get_transport(name: str, team_name: str, **kwargs) -> Transport:
     """
     if name == "p2p":
         from clawteam.transport.p2p import P2PTransport
+
         return P2PTransport(team_name, **kwargs)
     if name == "redis":
         from clawteam.transport.redis import RedisTransport
+
         return RedisTransport(team_name, **kwargs)
     # Default to FileTransport
     from clawteam.transport.file import FileTransport
+
     return FileTransport(team_name)
 
 

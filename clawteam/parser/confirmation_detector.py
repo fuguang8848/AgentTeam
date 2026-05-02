@@ -37,14 +37,14 @@ DEFAULT_MEDIUM_PATTERNS = [
 @dataclass
 class ProviderConfirmationConfig:
     """Configuration for provider-specific confirmation patterns."""
-    
+
     high_patterns: list[str] = field(default_factory=list)
     medium_patterns: list[str] = field(default_factory=list)
 
 
 class ConfirmationDetector:
     """Detects confirmation requests in AI output lines."""
-    
+
     def __init__(
         self,
         high_patterns: list[re.Pattern] | None = None,
@@ -52,7 +52,7 @@ class ConfirmationDetector:
     ):
         self.high_patterns = high_patterns or DEFAULT_HIGH_PATTERNS
         self.medium_patterns = medium_patterns or DEFAULT_MEDIUM_PATTERNS
-    
+
     @classmethod
     def from_config(cls, config: ProviderConfirmationConfig) -> ConfirmationDetector:
         """Create detector from provider configuration."""
@@ -62,23 +62,23 @@ class ConfirmationDetector:
                 high.append(re.compile(pattern_str, re.IGNORECASE))
             except re.error:
                 pass
-        
+
         medium = []
         for pattern_str in config.medium_patterns:
             try:
                 medium.append(re.compile(pattern_str, re.IGNORECASE))
             except re.error:
                 pass
-        
+
         # Merge with defaults
         return cls(
             high_patterns=high + DEFAULT_HIGH_PATTERNS,
             medium_patterns=medium + DEFAULT_MEDIUM_PATTERNS,
         )
-    
+
     def detect(self, line: str) -> ConfirmationDetection | None:
         """Detect confirmation request in a line.
-        
+
         Returns ConfirmationDetection if found, None otherwise.
         """
         # Check high-confidence patterns first
@@ -92,7 +92,7 @@ class ConfirmationDetector:
                     prompt_text=prompt_text,
                     original_line=line,
                 )
-        
+
         # Check medium-confidence patterns
         for pattern in self.medium_patterns:
             if pattern.search(line):
@@ -101,7 +101,7 @@ class ConfirmationDetector:
                     prompt_text=line.strip(),
                     original_line=line,
                 )
-        
+
         return None
 
 

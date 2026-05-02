@@ -51,7 +51,9 @@ def _openclaw_supports_agent_flag() -> bool:
     try:
         result = subprocess.run(
             [openclaw_bin, "tui", "--help"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         return "--agent" in result.stdout
     except (subprocess.TimeoutExpired, OSError):
@@ -117,14 +119,16 @@ class TmuxBackend(SpawnBackend):
         # normalize TERM to a sensible value before exporting it into the pane.
         if env_vars.get("TERM", "").lower() == "dumb":
             env_vars["TERM"] = "xterm-256color"
-        env_vars.update({
-            "CLAWTEAM_AGENT_ID": agent_id,
-            "CLAWTEAM_AGENT_NAME": agent_name,
-            "CLAWTEAM_AGENT_TYPE": agent_type,
-            "CLAWTEAM_TEAM_NAME": team_name,
-            "CLAWTEAM_AGENT_LEADER": "0",
-            "CLAWTEAM_MEMORY_SCOPE": f"custom:team-{team_name}",
-        })
+        env_vars.update(
+            {
+                "CLAWTEAM_AGENT_ID": agent_id,
+                "CLAWTEAM_AGENT_NAME": agent_name,
+                "CLAWTEAM_AGENT_TYPE": agent_type,
+                "CLAWTEAM_TEAM_NAME": team_name,
+                "CLAWTEAM_AGENT_LEADER": "0",
+                "CLAWTEAM_MEMORY_SCOPE": f"custom:team-{team_name}",
+            }
+        )
         if parent_agent:
             env_vars["CLAWTEAM_PARENT_AGENT"] = parent_agent
         # Propagate user if set
@@ -147,7 +151,7 @@ class TmuxBackend(SpawnBackend):
             if is_openclaw_command(command):
                 print(
                     f"Hint: OpenClaw 4.2+ requires absolute paths in exec allowlist. "
-                    f"Run: openclaw approvals allowlist add --agent \"*\" \"{clawteam_bin}\"",
+                    f'Run: openclaw approvals allowlist add --agent "*" "{clawteam_bin}"',
                     file=sys.stderr,
                 )
 
@@ -178,7 +182,11 @@ class TmuxBackend(SpawnBackend):
                 final_command.append("--dangerously-skip-permissions")
             elif is_codex_command(normalized_command):
                 final_command.append("--dangerously-bypass-approvals-and-sandbox")
-            elif is_gemini_command(normalized_command) or is_kimi_command(normalized_command) or is_opencode_command(normalized_command):
+            elif (
+                is_gemini_command(normalized_command)
+                or is_kimi_command(normalized_command)
+                or is_opencode_command(normalized_command)
+            ):
                 final_command.append("--yolo")
 
         # Claude Code: pass --model if specified
@@ -226,7 +234,9 @@ class TmuxBackend(SpawnBackend):
             final_command.append(prompt)
         elif prompt and is_gemini_command(normalized_command):
             final_command.extend(["-p", prompt])
-        elif prompt and (is_qwen_command(normalized_command) or is_opencode_command(normalized_command)):
+        elif prompt and (
+            is_qwen_command(normalized_command) or is_opencode_command(normalized_command)
+        ):
             final_command.extend(["-p", prompt])
 
         cmd_str = " ".join(shlex.quote(c) for c in final_command)
@@ -240,9 +250,9 @@ class TmuxBackend(SpawnBackend):
         # don't refuse to start when the leader is itself a session.
         unset_clause = "unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT CLAUDE_CODE_SESSION OPENCLAW_NESTED 2>/dev/null; "
         if cwd:
-            full_cmd = f"{unset_clause}{export_str}; cd {shlex.quote(cwd)} && trap \"{exit_hook}\" EXIT; {cmd_str}"
+            full_cmd = f'{unset_clause}{export_str}; cd {shlex.quote(cwd)} && trap "{exit_hook}" EXIT; {cmd_str}'
         else:
-            full_cmd = f"{unset_clause}{export_str}; trap \"{exit_hook}\" EXIT; {cmd_str}"
+            full_cmd = f'{unset_clause}{export_str}; trap "{exit_hook}" EXIT; {cmd_str}'
 
         # Check if tmux session exists
         check = subprocess.run(
@@ -302,7 +312,16 @@ class TmuxBackend(SpawnBackend):
                 fallback_delay=cfg.spawn_prompt_delay,
             )
             _inject_prompt_via_buffer(target, agent_name, prompt)
-        elif prompt and not is_codex_command(normalized_command) and not is_openclaw_command(normalized_command) and not is_nanobot_command(normalized_command) and not is_gemini_command(normalized_command) and not is_kimi_command(normalized_command) and not is_qwen_command(normalized_command) and not is_opencode_command(normalized_command):
+        elif (
+            prompt
+            and not is_codex_command(normalized_command)
+            and not is_openclaw_command(normalized_command)
+            and not is_nanobot_command(normalized_command)
+            and not is_gemini_command(normalized_command)
+            and not is_kimi_command(normalized_command)
+            and not is_qwen_command(normalized_command)
+            and not is_opencode_command(normalized_command)
+        ):
             # Generic command: append prompt via send-keys
             _wait_for_tui_ready(
                 target,
@@ -321,7 +340,8 @@ class TmuxBackend(SpawnBackend):
         pane_pid = 0
         pid_result = subprocess.run(
             ["tmux", "list-panes", "-t", target, "-F", "#{pane_pid}"],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         if pid_result.returncode == 0 and pid_result.stdout.strip():
             try:
@@ -331,6 +351,7 @@ class TmuxBackend(SpawnBackend):
 
         # Persist spawn info for liveness checking
         from clawteam.spawn.registry import register_agent
+
         register_agent(
             team_name=team_name,
             agent_name=agent_name,
@@ -397,14 +418,16 @@ class TmuxBackend(SpawnBackend):
         # Count current panes in window 0
         pane_count = subprocess.run(
             ["tmux", "list-panes", "-t", f"{session}:0"],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         num_panes = len(pane_count.stdout.strip().splitlines()) if pane_count.returncode == 0 else 0
 
         # Get windows
         result = subprocess.run(
             ["tmux", "list-windows", "-t", session, "-F", "#{window_index}"],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         if result.returncode != 0:
             return f"Error: failed to list windows: {result.stderr.strip()}"
@@ -420,19 +443,24 @@ class TmuxBackend(SpawnBackend):
             for w in windows[1:]:
                 subprocess.run(
                     ["tmux", "join-pane", "-s", f"{session}:{w}", "-t", f"{session}:{first}", "-h"],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                 )
             subprocess.run(
                 ["tmux", "select-layout", "-t", f"{session}:{first}", "tiled"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
             )
 
         # Recount
         pane_count = subprocess.run(
             ["tmux", "list-panes", "-t", f"{session}:0"],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
-        final_panes = len(pane_count.stdout.strip().splitlines()) if pane_count.returncode == 0 else 0
+        final_panes = (
+            len(pane_count.stdout.strip().splitlines()) if pane_count.returncode == 0 else 0
+        )
         return f"Tiled {final_panes} panes in {session}"
 
     @staticmethod
@@ -536,7 +564,9 @@ def _looks_like_workspace_trust_prompt(command: list[str], pane_text: str) -> bo
 
     if is_claude_command(command):
         return ("trust this folder" in pane_text or "trust the contents" in pane_text) and (
-            "enter to confirm" in pane_text or "press enter" in pane_text or "enter to continue" in pane_text
+            "enter to confirm" in pane_text
+            or "press enter" in pane_text
+            or "enter to continue" in pane_text
         )
 
     if is_codex_command(command):
@@ -683,7 +713,17 @@ def _wait_for_tui_ready(
     injection. When readiness is not detected before ``timeout``, we keep the
     previous fallback behaviour and sleep for ``fallback_delay`` seconds.
     """
-    ready_hints = ("\u256d", "\u2554", "\u250c", "\u2502", "\u2551", "\u2713", ">", "\u276f", "\u203a")
+    ready_hints = (
+        "\u256d",
+        "\u2554",
+        "\u250c",
+        "\u2502",
+        "\u2551",
+        "\u2713",
+        ">",
+        "\u276f",
+        "\u203a",
+    )
     time.sleep(0.5)
 
     deadline = time.time() + timeout
@@ -750,6 +790,7 @@ def _inject_prompt_via_buffer(
         )
     finally:
         os.unlink(tmp_path)
+
 
 def _render_runtime_notification(envelope) -> str:
     summary = str(getattr(envelope, "summary", "") or "").strip()

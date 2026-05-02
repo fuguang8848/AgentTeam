@@ -11,35 +11,35 @@ from typing import Any, Callable, Optional
 
 class ActivityEventType(str, Enum):
     """Types of activity events detected from AI provider outputs."""
-    
+
     # File operations
     FILE_READ = "file_read"
     FILE_WRITE = "file_write"
     FILE_CREATED = "file_created"
     FILE_MODIFIED = "file_modified"
     FILE_DELETED = "file_deleted"
-    
+
     # Command execution
     COMMAND_EXECUTED = "command_executed"
-    
+
     # Search operations
     SEARCH = "search"
-    
+
     # Tool usage
     TOOL_USE = "tool_use"
-    
+
     # AI output
     AI_MESSAGE = "ai_message"
-    
+
     # Status events
     THINKING = "thinking"
     WAITING_CONFIRMATION = "waiting_confirmation"
     CONTEXT_SUMMARY = "context_summary"
-    
+
     # Task lifecycle
     TASK_COMPLETE = "task_complete"
     ERROR = "error"
-    
+
     # Confirmation
     CONFIRMATION = "confirmation"
 
@@ -47,7 +47,7 @@ class ActivityEventType(str, Enum):
 @dataclass
 class ActivityEvent:
     """A single activity event detected from AI output."""
-    
+
     event_id: str
     event_type: ActivityEventType
     timestamp: str
@@ -57,11 +57,11 @@ class ActivityEvent:
     confidence: str = "high"  # high, medium, low
     raw_line: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
-    
+
     def __post_init__(self):
         if not self.event_id:
             self.event_id = uuid.uuid4().hex
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         result = {
@@ -78,7 +78,7 @@ class ActivityEvent:
         if self.metadata:
             result["metadata"] = self.metadata
         return result
-    
+
     @classmethod
     def create(
         cls,
@@ -107,7 +107,7 @@ class ActivityEvent:
 @dataclass
 class ParserState:
     """Parser state for a single session."""
-    
+
     session_id: str
     last_event_type: ActivityEventType | None = None
     last_output_time: float = 0.0
@@ -120,27 +120,28 @@ class ParserState:
 @dataclass
 class ParserRule:
     """A parsing rule for detecting events from output lines."""
-    
+
     type: ActivityEventType
     priority: int
     provider_id: str | None = None  # None = applies to all providers
     patterns: list[Any] = field(default_factory=list)  # Regex patterns
     extract_detail: Callable[[str], str] | None = None
-    
+
     def matches(self, line: str, provider_id: str | None = None) -> bool:
         """Check if this rule matches the given line."""
         # Provider-specific check
         if self.provider_id and provider_id and self.provider_id != provider_id:
             return False
-        
+
         import re
+
         for pattern in self.patterns:
             if isinstance(pattern, str):
                 pattern = re.compile(pattern, re.IGNORECASE)
             if pattern.search(line):
                 return True
         return False
-    
+
     def get_detail(self, line: str) -> str:
         """Extract detail from the matched line."""
         if self.extract_detail:
@@ -151,7 +152,7 @@ class ParserRule:
 @dataclass
 class ConfirmationDetection:
     """Result of confirmation request detection."""
-    
+
     confidence: str  # high, medium
     prompt_text: str
     original_line: str
@@ -160,7 +161,7 @@ class ConfirmationDetection:
 @dataclass
 class UsageSummary:
     """Token usage summary."""
-    
+
     total_tokens: int = 0
     total_minutes: int = 0
     today_tokens: int = 0

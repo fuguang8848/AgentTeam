@@ -1,4 +1,5 @@
 """Database schema types and models."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -9,6 +10,7 @@ import json
 
 class DatabaseTask(BaseModel):
     """Task entity for database storage."""
+
     id: str
     title: str
     description: str = ""
@@ -20,7 +22,7 @@ class DatabaseTask(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     completed_at: Optional[datetime] = None
-    
+
     def model_dump_jsonable(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict."""
         result = self.model_dump()
@@ -30,7 +32,7 @@ class DatabaseTask(BaseModel):
             result["completed_at"] = self.completed_at.isoformat()
         result["tags"] = json.dumps(self.tags)
         return result
-    
+
     @classmethod
     def from_db_row(cls, row: Dict[str, Any]) -> DatabaseTask:
         """Create from database row."""
@@ -53,6 +55,7 @@ class DatabaseTask(BaseModel):
 
 class DatabaseSession(BaseModel):
     """Session entity for database storage."""
+
     id: str
     name: str
     task_id: Optional[str] = None
@@ -63,7 +66,7 @@ class DatabaseSession(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     terminated_at: Optional[datetime] = None
-    
+
     def model_dump_jsonable(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict."""
         result = self.model_dump()
@@ -76,6 +79,7 @@ class DatabaseSession(BaseModel):
 
 class DatabaseAgent(BaseModel):
     """Agent entity for database storage."""
+
     id: str
     name: str
     team_id: Optional[str] = None
@@ -85,7 +89,7 @@ class DatabaseAgent(BaseModel):
     last_seen_at: datetime = Field(default_factory=datetime.now)
     created_at: datetime = Field(default_factory=datetime.now)
     result_data: Optional[Dict[str, Any]] = None
-    
+
     def model_dump_jsonable(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict."""
         result = self.model_dump()
@@ -98,6 +102,7 @@ class DatabaseAgent(BaseModel):
 
 class DatabaseMessage(BaseModel):
     """Message entity for database storage."""
+
     id: str
     sender: str
     recipient: str
@@ -108,7 +113,7 @@ class DatabaseMessage(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     expires_at: Optional[datetime] = None
     delivered: bool = False
-    
+
     def model_dump_jsonable(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict."""
         result = self.model_dump()
@@ -120,6 +125,7 @@ class DatabaseMessage(BaseModel):
 
 class DatabaseAlert(BaseModel):
     """Alert entity for database storage."""
+
     id: str
     title: str
     message: str
@@ -130,7 +136,7 @@ class DatabaseAlert(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     acknowledged_at: Optional[datetime] = None
     resolved_at: Optional[datetime] = None
-    
+
     def model_dump_jsonable(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict."""
         result = self.model_dump()
@@ -144,6 +150,7 @@ class DatabaseAlert(BaseModel):
 
 class DatabaseUsage(BaseModel):
     """Usage/token statistics entity."""
+
     id: str
     session_id: str
     team_id: Optional[str] = None
@@ -154,7 +161,7 @@ class DatabaseUsage(BaseModel):
     total_tokens: int = 0
     estimated_cost: float = 0.0
     timestamp: datetime = Field(default_factory=datetime.now)
-    
+
     def model_dump_jsonable(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict."""
         result = self.model_dump()

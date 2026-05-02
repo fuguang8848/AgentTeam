@@ -55,6 +55,7 @@ def normalize_spawn_command(command: list[str]) -> list[str]:
 # Command type detection helpers (shared by tmux and subprocess backends)
 # ---------------------------------------------------------------------------
 
+
 def _cmd_basename(command: list[str]) -> str:
     """Extract the basename of the first element of a command list."""
     if not command:

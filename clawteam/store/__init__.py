@@ -16,10 +16,12 @@ def get_task_store(team_name: str, backend: str = "") -> BaseTaskStore:
     name = backend or os.environ.get("CLAWTEAM_TASK_STORE", "")
     if not name:
         from clawteam.config import load_config
+
         name = load_config().task_store or ""
 
     # only "file" for now; redis/sql can be added later
     from clawteam.store.file import FileTaskStore
+
     return FileTaskStore(team_name)
 
 

@@ -102,6 +102,7 @@ class InboxWatcher:
             "CLAWTEAM_MSG_JSON": msg.model_dump_json(by_alias=True, exclude_none=True),
         }
         import os
+
         full_env = {**os.environ, **env_extra}
         try:
             subprocess.run(

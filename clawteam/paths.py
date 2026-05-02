@@ -17,9 +17,7 @@ def validate_identifier(value: str, kind: str = "identifier", allow_empty: bool 
     if value in (".", ".."):
         raise ValueError(f"Invalid {kind}: '.' and '..' are not allowed")
     if not _IDENTIFIER_RE.fullmatch(value):
-        raise ValueError(
-            f"Invalid {kind}: only letters, digits, '.', '_' and '-' are allowed"
-        )
+        raise ValueError(f"Invalid {kind}: only letters, digits, '.', '_' and '-' are allowed")
     return value
 
 

@@ -1,4 +1,5 @@
 """Database manager with SQLite + memory fallback."""
+
 from __future__ import annotations
 
 import os
@@ -29,10 +30,10 @@ logger = logging.getLogger(__name__)
 
 class DatabaseManager:
     """Database manager with SQLite + memory fallback."""
-    
+
     def __init__(self, db_path: Optional[str] = None):
         """Initialize database manager.
-        
+
         Args:
             db_path: SQLite database file path. If None, uses default path
                      ~/.clawteam/clawteam.db
@@ -40,7 +41,7 @@ class DatabaseManager:
         self.db: Optional[sqlite3.Connection] = None
         self.using_sqlite: bool = False
         self.db_path: str = db_path or self._default_db_path()
-        
+
         # Repositories
         self.task_repo: TaskRepository
         self.session_repo: SessionRepository
@@ -48,21 +49,21 @@ class DatabaseManager:
         self.message_repo: MessageRepository
         self.alert_repo: AlertRepository
         self.usage_repo: UsageRepository
-        
+
         # Initialize
         self._initialize()
-    
+
     def _default_db_path(self) -> str:
         """Get default database path."""
         env_path = os.environ.get("CLAWTEAM_DB_PATH")
         if env_path:
             return env_path
-        
+
         # Default: ~/.clawteam/clawteam.db
         data_dir = os.path.join(Path.home(), ".clawteam")
         os.makedirs(data_dir, exist_ok=True)
         return os.path.join(data_dir, "clawteam.db")
-    
+
     def _initialize(self) -> None:
         """Initialize database connection and schema."""
         try:
@@ -70,29 +71,29 @@ class DatabaseManager:
             db_dir = os.path.dirname(self.db_path)
             if db_dir:
                 os.makedirs(db_dir, exist_ok=True)
-            
+
             # Connect to SQLite
             self.db = sqlite3.connect(self.db_path, check_same_thread=False)
             self.db.row_factory = sqlite3.Row
             self.using_sqlite = True
-            
+
             # Set pragmas
             self.db.execute("PRAGMA journal_mode = WAL")
             self.db.execute("PRAGMA foreign_keys = ON")
             self.db.execute("PRAGMA busy_timeout = 5000")
-            
+
             # Initialize schema
             self._initialize_schema()
             # Run migrations
             migrations.run_migrations(self.db)
-            
+
             logger.info(f"SQLite database initialized at {self.db_path}")
-            
+
         except Exception as e:
             logger.warning(f"SQLite unavailable, using in-memory fallback: {e}")
             self.using_sqlite = False
             self.db = None
-        
+
         # Initialize repositories
         self.task_repo = TaskRepository(self.db, self.using_sqlite)
         self.session_repo = SessionRepository(self.db, self.using_sqlite)
@@ -100,12 +101,12 @@ class DatabaseManager:
         self.message_repo = MessageRepository(self.db, self.using_sqlite)
         self.alert_repo = AlertRepository(self.db, self.using_sqlite)
         self.usage_repo = UsageRepository(self.db, self.using_sqlite)
-    
+
     def _initialize_schema(self) -> None:
         """Initialize database schema (create tables)."""
         if not self.db:
             return
-        
+
         # Create tables
         schema = """
         -- Tasks table
@@ -210,44 +211,44 @@ class DatabaseManager:
         CREATE INDEX IF NOT EXISTS idx_alerts_team_status ON alerts(team_id, level, resolved_at);
         CREATE INDEX IF NOT EXISTS idx_usage_session ON usage_stats(session_id);
         """
-        
+
         self.db.executescript(schema)
         self.db.commit()
-    
+
     # ----- Task operations -----
-    
+
     def create_task(self, task: DatabaseTask) -> DatabaseTask:
         """Create a new task."""
         return self.task_repo.create(task)
-    
+
     def get_task(self, task_id: str) -> Optional[DatabaseTask]:
         """Get a task by ID."""
         return self.task_repo.get(task_id)
-    
+
     def update_task(self, task_id: str, updates: Dict[str, Any]) -> Optional[DatabaseTask]:
         """Update a task."""
         return self.task_repo.update(task_id, updates)
-    
+
     def delete_task(self, task_id: str) -> bool:
         """Delete a task."""
         return self.task_repo.delete(task_id)
-    
-    def list_tasks(self, team_id: Optional[str] = None, 
-                  status: Optional[str] = None,
-                  limit: int = 100) -> List[DatabaseTask]:
+
+    def list_tasks(
+        self, team_id: Optional[str] = None, status: Optional[str] = None, limit: int = 100
+    ) -> List[DatabaseTask]:
         """List tasks with optional filters."""
         return self.task_repo.list(team_id=team_id, status=status, limit=limit)
-    
-    def get_tasks(self, team_id: Optional[str] = None,
-                  status: Optional[str] = None,
-                  limit: int = 100) -> List[DatabaseTask]:
+
+    def get_tasks(
+        self, team_id: Optional[str] = None, status: Optional[str] = None, limit: int = 100
+    ) -> List[DatabaseTask]:
         """Alias for list_tasks (backwards compatibility)."""
         return self.list_tasks(team_id=team_id, status=status, limit=limit)
-    
+
     def count_tasks(self, team_id: Optional[str] = None) -> int:
         """Count tasks with optional team filter."""
         return self.task_repo.count(team_id=team_id)
-    
+
     def close(self) -> None:
         """Close database connection."""
         if self.db:
@@ -256,39 +257,39 @@ class DatabaseManager:
             except Exception:
                 pass
             self.db = None
-    
+
     # ----- Session operations -----
-    
+
     def create_session(self, session: DatabaseSession) -> DatabaseSession:
         """Create a new session."""
         return self.session_repo.create(session)
-    
+
     def get_session(self, session_id: str) -> Optional[DatabaseSession]:
         """Get a session by ID."""
         return self.session_repo.get(session_id)
-    
+
     def update_session(self, session_id: str, updates: Dict[str, Any]) -> Optional[DatabaseSession]:
         """Update a session."""
         return self.session_repo.update(session_id, updates)
-    
+
     def terminate_session(self, session_id: str) -> Optional[DatabaseSession]:
         """Terminate a session."""
         return self.session_repo.update(session_id, {"status": "terminated"})
-    
+
     # ----- Agent operations -----
-    
+
     def create_agent(self, agent: DatabaseAgent) -> DatabaseAgent:
         """Create a new agent."""
         return self.agent_repo.create(agent)
-    
+
     def get_agent(self, agent_id: str) -> Optional[DatabaseAgent]:
         """Get an agent by ID."""
         return self.agent_repo.get(agent_id)
-    
+
     def update_agent(self, agent_id: str, updates: Dict[str, Any]) -> Optional[DatabaseAgent]:
         """Update an agent."""
         return self.agent_repo.update(agent_id, updates)
-    
+
     def update_last_seen(self, agent_id: str) -> bool:
         """Update agent's last_seen timestamp."""
         return self.agent_repo.update_last_seen(agent_id)

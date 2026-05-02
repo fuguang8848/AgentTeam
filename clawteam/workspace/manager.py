@@ -46,6 +46,7 @@ _SENSITIVE_FILE_SUFFIXES = (
 
 def _workspaces_root() -> Path:
     from clawteam.team.models import get_data_dir
+
     p = get_data_dir() / "workspaces"
     p.mkdir(parents=True, exist_ok=True)
     return p
@@ -121,7 +122,10 @@ class WorkspaceManager:
                 pass
 
         git.create_worktree(
-            self.repo_root, wt_path, branch, base_ref=self.base_branch,
+            self.repo_root,
+            wt_path,
+            branch,
+            base_ref=self.base_branch,
         )
 
         if self.repo_subpath:
@@ -141,9 +145,7 @@ class WorkspaceManager:
 
         registry = _load_registry(team_name, str(self.repo_root))
         # Remove stale entry for the same agent, if any
-        registry.workspaces = [
-            w for w in registry.workspaces if w.agent_name != agent_name
-        ]
+        registry.workspaces = [w for w in registry.workspaces if w.agent_name != agent_name]
         registry.workspaces.append(info)
         _save_registry(registry)
 
@@ -196,9 +198,7 @@ class WorkspaceManager:
             logger.warning("branch delete failed: %s", e)
 
         registry = _load_registry(team_name, str(self.repo_root))
-        registry.workspaces = [
-            w for w in registry.workspaces if w.agent_name != agent_name
-        ]
+        registry.workspaces = [w for w in registry.workspaces if w.agent_name != agent_name]
         _save_registry(registry)
         return True
 
@@ -231,7 +231,9 @@ class WorkspaceManager:
 
         target = target_branch or info.base_branch
         success, output = git.merge_branch(
-            self.repo_root, info.branch_name, target,
+            self.repo_root,
+            info.branch_name,
+            target,
         )
 
         if success and cleanup_after:

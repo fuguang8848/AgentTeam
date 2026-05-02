@@ -56,14 +56,16 @@ class SubprocessBackend(SpawnBackend):
 
         spawn_env = os.environ.copy()
         clawteam_bin = resolve_clawteam_executable()
-        spawn_env.update({
-            "CLAWTEAM_AGENT_ID": agent_id,
-            "CLAWTEAM_AGENT_NAME": agent_name,
-            "CLAWTEAM_AGENT_TYPE": agent_type,
-            "CLAWTEAM_TEAM_NAME": team_name,
-            "CLAWTEAM_AGENT_LEADER": "0",
-            "CLAWTEAM_MEMORY_SCOPE": f"custom:team-{team_name}",
-        })
+        spawn_env.update(
+            {
+                "CLAWTEAM_AGENT_ID": agent_id,
+                "CLAWTEAM_AGENT_NAME": agent_name,
+                "CLAWTEAM_AGENT_TYPE": agent_type,
+                "CLAWTEAM_TEAM_NAME": team_name,
+                "CLAWTEAM_AGENT_LEADER": "0",
+                "CLAWTEAM_MEMORY_SCOPE": f"custom:team-{team_name}",
+            }
+        )
         if parent_agent:
             spawn_env["CLAWTEAM_PARENT_AGENT"] = parent_agent
         # Propagate user if set
@@ -98,7 +100,11 @@ class SubprocessBackend(SpawnBackend):
                 final_command.append("--dangerously-skip-permissions")
             elif is_codex_command(normalized_command):
                 final_command.append("--dangerously-bypass-approvals-and-sandbox")
-            elif is_gemini_command(normalized_command) or is_kimi_command(normalized_command) or is_opencode_command(normalized_command):
+            elif (
+                is_gemini_command(normalized_command)
+                or is_kimi_command(normalized_command)
+                or is_opencode_command(normalized_command)
+            ):
                 final_command.append("--yolo")
         # Claude Code: pass --model if specified
         # Pass --model if specified (claude, openclaw)
@@ -136,7 +142,7 @@ class SubprocessBackend(SpawnBackend):
             f"{exit_cmd} lifecycle on-exit --team {shlex.quote(team_name)} "
             f"--agent {shlex.quote(agent_name)}"
         )
-        shell_cmd = f"trap \"{exit_hook}\" EXIT; {cmd_str}"
+        shell_cmd = f'trap "{exit_hook}" EXIT; {cmd_str}'
 
         process = subprocess.Popen(
             shell_cmd,
@@ -151,6 +157,7 @@ class SubprocessBackend(SpawnBackend):
 
         # Persist spawn info for liveness checking
         from clawteam.spawn.registry import register_agent
+
         register_agent(
             team_name=team_name,
             agent_name=agent_name,

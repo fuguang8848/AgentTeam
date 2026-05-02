@@ -34,7 +34,9 @@ def _now_iso() -> str:
 
 def _attribution_root(team_name: str) -> Path:
     """Get the attribution data directory for a team."""
-    d = ensure_within_root(get_data_dir() / "attribution", validate_identifier(team_name, "team name"))
+    d = ensure_within_root(
+        get_data_dir() / "attribution", validate_identifier(team_name, "team name")
+    )
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -151,9 +153,7 @@ class ChangeAttributor:
             if session_id in self._active_sessions:
                 session = self._active_sessions.pop(session_id)
                 # Clear file claims for this session
-                self._file_claims = {
-                    p: s for p, s in self._file_claims.items() if s != session_id
-                }
+                self._file_claims = {p: s for p, s in self._file_claims.items() if s != session_id}
                 logger.info(f"Unregistered session: {session.agent_name} ({session_id})")
 
     def claim_file(self, session_id: str, file_path: str) -> None:
@@ -261,7 +261,9 @@ class ChangeAttributor:
             recent_threshold = time.time() - 5
             for session_id, session in self._active_sessions.items():
                 try:
-                    last_activity = datetime.fromisoformat(session.last_activity_at.replace("Z", "+00:00"))
+                    last_activity = datetime.fromisoformat(
+                        session.last_activity_at.replace("Z", "+00:00")
+                    )
                     if last_activity.timestamp() > recent_threshold:
                         return AttributionResult(
                             success=True,
@@ -309,7 +311,7 @@ class ChangeAttributor:
             self._change_buffer.append(record)
             # Trim buffer if too large
             if len(self._change_buffer) > self._buffer_size:
-                self._change_buffer = self._change_buffer[-self._buffer_size:]
+                self._change_buffer = self._change_buffer[-self._buffer_size :]
 
         return record
 
@@ -419,6 +421,7 @@ def create_change_handler(
     Returns:
         A handler function for FileWatcher
     """
+
     def handler(event: WatchEvent) -> None:
         # Skip directory events
         if event.is_directory:

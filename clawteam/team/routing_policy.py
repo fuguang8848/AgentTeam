@@ -357,11 +357,17 @@ class DefaultRoutingPolicy(RoutingPolicy):
     def _build_aggregate_envelope(self, route: dict[str, Any], now_dt: datetime) -> RuntimeEnvelope:
         pending = [RuntimeEnvelope.from_dict(item) for item in route.get("pendingEnvelopes", [])]
         count = len(pending)
-        evidence = [f"- {item.summary}" for item in pending[:_PENDING_SUMMARY_LIMIT] if item.summary]
+        evidence = [
+            f"- {item.summary}" for item in pending[:_PENDING_SUMMARY_LIMIT] if item.summary
+        ]
         if count > _PENDING_SUMMARY_LIMIT:
             evidence.append(f"- ... {count - _PENDING_SUMMARY_LIMIT} more update(s)")
         latest_action = next(
-            (item.recommended_next_action for item in reversed(pending) if item.recommended_next_action),
+            (
+                item.recommended_next_action
+                for item in reversed(pending)
+                if item.recommended_next_action
+            ),
             None,
         )
         return RuntimeEnvelope(

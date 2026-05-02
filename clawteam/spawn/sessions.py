@@ -65,9 +65,7 @@ class SessionStore:
         )
         path = _sessions_root(self.team_name) / f"{agent_name}.json"
         tmp = path.with_suffix(".tmp")
-        tmp.write_text(
-            session.model_dump_json(indent=2, by_alias=True), encoding="utf-8"
-        )
+        tmp.write_text(session.model_dump_json(indent=2, by_alias=True), encoding="utf-8")
         os.replace(str(tmp), str(path))
         return session
 

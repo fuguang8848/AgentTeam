@@ -48,7 +48,7 @@ def _get_redis_db() -> int:
 
 def _get_redis_ssl() -> bool:
     """Get Redis SSL/TLS setting from environment.
-    
+
     Returns:
         True if CLAWTEAM_REDIS_SSL is set to 'true', '1', or 'yes' (case-insensitive).
     """
@@ -58,7 +58,7 @@ def _get_redis_ssl() -> bool:
 
 def _get_redis_ca_certs() -> str | None:
     """Get Redis CA certificates path from environment.
-    
+
     Returns:
         Path to CA certificates file, or None if not set.
     """
@@ -199,7 +199,7 @@ class RedisTransport(Transport):
 
         Uses LPUSH to add message to the left of the list.
         Messages are consumed from the right (RPOP) for FIFO order.
-        
+
         TTL Support:
         If CLAWTEAM_MESSAGE_TTL is set (>0), the inbox key will be set to
         expire after the TTL duration. This ensures old messages are
@@ -210,13 +210,15 @@ class RedisTransport(Transport):
         # Add timestamp prefix for ordering verification
         ts = int(time.time() * 1000)
         uid = uuid.uuid4().hex[:8]
-        envelope = json.dumps({
-            "timestamp": ts,
-            "uid": uid,
-            "data": data.decode("utf-8", errors="replace") if isinstance(data, bytes) else data,
-        }).encode("utf-8")
+        envelope = json.dumps(
+            {
+                "timestamp": ts,
+                "uid": uid,
+                "data": data.decode("utf-8", errors="replace") if isinstance(data, bytes) else data,
+            }
+        ).encode("utf-8")
         self._client.lpush(key, envelope)
-        
+
         # Set TTL on the inbox key if enabled
         ttl = get_message_ttl()
         if ttl > 0:
@@ -319,7 +321,12 @@ class RedisTransport(Transport):
         """
         self._reconnect_on_error()
         key = _peer_key(self.team_name, agent_name)
-        self._client.hset(key, mapping={k: json.dumps(v) if not isinstance(v, str) else v for k, v in metadata.items()})
+        self._client.hset(
+            key,
+            mapping={
+                k: json.dumps(v) if not isinstance(v, str) else v for k, v in metadata.items()
+            },
+        )
 
     def deregister_peer(self, agent_name: str) -> None:
         """Deregister a peer agent."""
@@ -387,13 +394,15 @@ class RedisTransport(Transport):
         key = _dead_letter_key(self.team_name, agent_name)
         ts = int(time.time() * 1000)
         uid = uuid.uuid4().hex[:8]
-        dead_entry = json.dumps({
-            "timestamp": ts,
-            "uid": uid,
-            "data": data.decode("utf-8", errors="replace") if isinstance(data, bytes) else data,
-            "error": error,
-            "quarantinedAtMs": ts,
-        }).encode("utf-8")
+        dead_entry = json.dumps(
+            {
+                "timestamp": ts,
+                "uid": uid,
+                "data": data.decode("utf-8", errors="replace") if isinstance(data, bytes) else data,
+                "error": error,
+                "quarantinedAtMs": ts,
+            }
+        ).encode("utf-8")
         self._client.lpush(key, dead_entry)
 
     def get_dead_letters(self, agent_name: str, limit: int = 10) -> list[dict[str, Any]]:
@@ -420,11 +429,11 @@ class RedisTransport(Transport):
 
     def set_inbox_ttl(self, agent_name: str, ttl_seconds: int | None = None) -> bool:
         """Set TTL on an agent's inbox key.
-        
+
         Args:
             agent_name: Agent whose inbox to set TTL on.
             ttl_seconds: TTL in seconds. If None, uses CLAWTEAM_MESSAGE_TTL.
-            
+
         Returns:
             True if TTL was set, False if key doesn't exist or TTL disabled.
         """
@@ -438,17 +447,17 @@ class RedisTransport(Transport):
             self._client.expire(key, ttl_seconds)
             return True
         return False
-    
+
     def cleanup_expired_messages(self, agent_name: str) -> int:
         """Clean up expired messages from an agent's inbox.
-        
+
         Note: Redis automatically handles TTL expiration, but this method
         can be used to manually check and remove expired messages based on
         their internal timestamp.
-        
+
         Args:
             agent_name: Agent whose inbox to clean up.
-            
+
         Returns:
             Number of expired messages removed.
         """
@@ -456,11 +465,11 @@ class RedisTransport(Transport):
         ttl = get_message_ttl()
         if ttl <= 0:
             return 0  # TTL disabled
-        
+
         key = _inbox_key(self.team_name, agent_name)
         messages = self._client.lrange(key, 0, -1)
         expired_count = 0
-        
+
         for msg in messages:
             try:
                 data = json.loads(msg)
@@ -475,7 +484,7 @@ class RedisTransport(Transport):
                         expired_count += 1
             except (json.JSONDecodeError, KeyError):
                 continue
-        
+
         return expired_count
 
     def __enter__(self) -> "RedisTransport":

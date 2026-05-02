@@ -31,7 +31,7 @@ def _router_root(team_name: str) -> Path:
 
 
 # Simple keyword extraction for topic matching
-_TOPIC_KEYWORDS = re.compile(r'[a-zA-Z]{3,}|[\u4e00-\u9fff]')
+_TOPIC_KEYWORDS = re.compile(r"[a-zA-Z]{3,}|[\u4e00-\u9fff]")
 
 
 def _extract_keywords(text: str) -> set[str]:
@@ -118,16 +118,19 @@ class TaskRouter:
     def save_profiles(self) -> None:
         """Save agent profiles to disk."""
         path = _router_root(self.team_name) / "profiles.json"
-        data = {name: {
-            "name": p.name,
-            "total_tasks": p.total_tasks,
-            "completed_tasks": p.completed_tasks,
-            "failed_tasks": p.failed_tasks,
-            "total_score": p.total_score,
-            "score_count": p.score_count,
-            "topics": p.topics,
-            "current_load": p.current_load,
-        } for name, p in self._profiles.items()}
+        data = {
+            name: {
+                "name": p.name,
+                "total_tasks": p.total_tasks,
+                "completed_tasks": p.completed_tasks,
+                "failed_tasks": p.failed_tasks,
+                "total_score": p.total_score,
+                "score_count": p.score_count,
+                "topics": p.topics,
+                "current_load": p.current_load,
+            }
+            for name, p in self._profiles.items()
+        }
         atomic_write_text(path, json.dumps(data, ensure_ascii=False, indent=2))
 
     def update_profile(self, task: TaskItem) -> None:
@@ -159,9 +162,11 @@ class TaskRouter:
 
         self.save_profiles()
 
-    def route(self, subject: str, description: str, available_agents: list[str] | None = None) -> RouteCandidate | None:
+    def route(
+        self, subject: str, description: str, available_agents: list[str] | None = None
+    ) -> RouteCandidate | None:
         """Find the best agent for a task.
-        
+
         Args:
             subject: Task subject
             description: Task description
@@ -203,20 +208,24 @@ class TaskRouter:
 
             total_score = topic_match + success_score + quality_score - load_penalty
 
-            candidates_list.append(RouteCandidate(
-                name=name,
-                match_score=round(total_score, 2),
-                success_rate=profile.success_rate,
-                avg_score=profile.avg_score,
-                current_load=profile.current_load,
-                matching_topics=list(matching_topics),
-            ))
+            candidates_list.append(
+                RouteCandidate(
+                    name=name,
+                    match_score=round(total_score, 2),
+                    success_rate=profile.success_rate,
+                    avg_score=profile.avg_score,
+                    current_load=profile.current_load,
+                    matching_topics=list(matching_topics),
+                )
+            )
 
         # Sort by match score descending
         candidates_list.sort(key=lambda c: c.match_score, reverse=True)
         return candidates_list[0] if candidates_list else None
 
-    def get_all_candidates(self, subject: str, description: str, available_agents: list[str] | None = None) -> list[RouteCandidate]:
+    def get_all_candidates(
+        self, subject: str, description: str, available_agents: list[str] | None = None
+    ) -> list[RouteCandidate]:
         """Get all candidates sorted by match score."""
         task_keywords = _extract_keywords(subject + " " + description)
         if not task_keywords:
@@ -236,14 +245,16 @@ class TaskRouter:
             load_penalty = min(profile.current_load * 5, 15)
             total_score = topic_match + success_score + quality_score - load_penalty
 
-            result.append(RouteCandidate(
-                name=name,
-                match_score=round(total_score, 2),
-                success_rate=profile.success_rate,
-                avg_score=profile.avg_score,
-                current_load=profile.current_load,
-                matching_topics=list(matching_topics),
-            ))
+            result.append(
+                RouteCandidate(
+                    name=name,
+                    match_score=round(total_score, 2),
+                    success_rate=profile.success_rate,
+                    avg_score=profile.avg_score,
+                    current_load=profile.current_load,
+                    matching_topics=list(matching_topics),
+                )
+            )
 
         result.sort(key=lambda c: c.match_score, reverse=True)
         return result

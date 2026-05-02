@@ -55,6 +55,7 @@ def _base_branch(team_name: str, agent_name: str, mgr: WorkspaceManager) -> str:
 # agent_diff
 # ---------------------------------------------------------------------------
 
+
 def agent_diff(team_name: str, agent_name: str, repo: str | None = None) -> dict:
     """Return diff statistics for an agent's branch vs. its base.
 
@@ -68,7 +69,9 @@ def agent_diff(team_name: str, agent_name: str, repo: str | None = None) -> dict
     # numstat gives machine-readable per-file stats
     try:
         numstat_raw = git._run(
-            ["diff", "--numstat", f"{base}...{branch}"], cwd=root, check=False,
+            ["diff", "--numstat", f"{base}...{branch}"],
+            cwd=root,
+            check=False,
         )
     except Exception:
         numstat_raw = ""
@@ -89,7 +92,9 @@ def agent_diff(team_name: str, agent_name: str, repo: str | None = None) -> dict
     # Stat for human display
     try:
         diff_stat = git._run(
-            ["diff", "--stat", f"{base}...{branch}"], cwd=root, check=False,
+            ["diff", "--stat", f"{base}...{branch}"],
+            cwd=root,
+            check=False,
         )
     except Exception:
         diff_stat = ""
@@ -97,7 +102,9 @@ def agent_diff(team_name: str, agent_name: str, repo: str | None = None) -> dict
     # Commit count
     try:
         count_raw = git._run(
-            ["rev-list", "--count", f"{base}..{branch}"], cwd=root, check=False,
+            ["rev-list", "--count", f"{base}..{branch}"],
+            cwd=root,
+            check=False,
         )
         commit_count = int(count_raw) if count_raw.strip().isdigit() else 0
     except Exception:
@@ -120,6 +127,7 @@ def agent_diff(team_name: str, agent_name: str, repo: str | None = None) -> dict
 # ---------------------------------------------------------------------------
 # file_owners
 # ---------------------------------------------------------------------------
+
 
 def file_owners(team_name: str, repo: str | None = None) -> dict[str, list[str]]:
     """Map each modified file to the list of agents that touched it."""
@@ -152,8 +160,11 @@ def file_owners(team_name: str, repo: str | None = None) -> dict[str, list[str]]
 # cross_branch_log
 # ---------------------------------------------------------------------------
 
+
 def cross_branch_log(
-    team_name: str, limit: int = 50, repo: str | None = None,
+    team_name: str,
+    limit: int = 50,
+    repo: str | None = None,
 ) -> list[dict]:
     """Unified commit log across all agent branches, newest first."""
     mgr = _ws_manager(team_name, repo)
@@ -204,6 +215,7 @@ def cross_branch_log(
 # agent_summary
 # ---------------------------------------------------------------------------
 
+
 def agent_summary(team_name: str, agent_name: str, repo: str | None = None) -> str:
     """Human-readable summary of an agent's git activity."""
     diff = agent_diff(team_name, agent_name, repo)
@@ -225,8 +237,11 @@ def agent_summary(team_name: str, agent_name: str, repo: str | None = None) -> s
 # inject_context
 # ---------------------------------------------------------------------------
 
+
 def inject_context(
-    team_name: str, target_agent: str, repo: str | None = None,
+    team_name: str,
+    target_agent: str,
+    repo: str | None = None,
 ) -> str:
     """Build a context block for injection into an agent's prompt.
 
@@ -293,9 +308,7 @@ def inject_context(
                 dep_lines = ["## Upstream Dependency Changes"]
                 for dep_agent in sorted(dep_agents):
                     dep_diff = agent_diff(team_name, dep_agent, repo)
-                    dep_lines.append(
-                        f"- {dep_agent}: {dep_diff['summary']}"
-                    )
+                    dep_lines.append(f"- {dep_agent}: {dep_diff['summary']}")
                 sections.append("\n".join(dep_lines))
     except Exception:
         pass  # Tasks may not exist yet

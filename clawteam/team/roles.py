@@ -35,6 +35,7 @@ def _roles_path(team: str) -> Path:
 
 class AgentRole(str, Enum):
     """Available roles an agent can be assigned."""
+
     developer = "developer"
     reviewer = "reviewer"
     tester = "tester"
@@ -145,12 +146,14 @@ def assign_role(
             break
 
     if not replaced:
-        assignments.append(RoleAssignment(
-            agent_name=agent_name,
-            role=role,
-            assigned_at=_now_iso(),
-            expires_at=expires_at,
-        ))
+        assignments.append(
+            RoleAssignment(
+                agent_name=agent_name,
+                role=role,
+                assigned_at=_now_iso(),
+                expires_at=expires_at,
+            )
+        )
 
     _save_roles(team, store)
 
@@ -275,29 +278,88 @@ def get_all_assignments(team: str) -> dict[str, list[RoleAssignment]]:
 # Keyword hints for automatic role suggestion
 _ROLE_KEYWORDS: dict[AgentRole, list[str]] = {
     AgentRole.developer: [
-        "implement", "code", "develop", "build", "feature", "function",
-        "class", "module", "api", "backend", "frontend", "write",
-        "重构", "实现", "开发", "编码", "编写",
+        "implement",
+        "code",
+        "develop",
+        "build",
+        "feature",
+        "function",
+        "class",
+        "module",
+        "api",
+        "backend",
+        "frontend",
+        "write",
+        "重构",
+        "实现",
+        "开发",
+        "编码",
+        "编写",
     ],
     AgentRole.reviewer: [
-        "review", "audit", "check", "verify", "inspect", "evaluate",
-        "code review", "pr review", "pull request",
-        "审查", "评审", "检查", "评估",
+        "review",
+        "audit",
+        "check",
+        "verify",
+        "inspect",
+        "evaluate",
+        "code review",
+        "pr review",
+        "pull request",
+        "审查",
+        "评审",
+        "检查",
+        "评估",
     ],
     AgentRole.tester: [
-        "test", "unit test", "integration test", "e2e", "qa", "quality",
-        "coverage", "assert", "mock", "fixture", "spec",
-        "测试", "单元测试", "集成测试", "质量",
+        "test",
+        "unit test",
+        "integration test",
+        "e2e",
+        "qa",
+        "quality",
+        "coverage",
+        "assert",
+        "mock",
+        "fixture",
+        "spec",
+        "测试",
+        "单元测试",
+        "集成测试",
+        "质量",
     ],
     AgentRole.architect: [
-        "design", "architecture", "plan", "structure", "system design",
-        "pattern", "blueprint", "specification", "schema",
-        "设计", "架构", "规划", "蓝图", "方案",
+        "design",
+        "architecture",
+        "plan",
+        "structure",
+        "system design",
+        "pattern",
+        "blueprint",
+        "specification",
+        "schema",
+        "设计",
+        "架构",
+        "规划",
+        "蓝图",
+        "方案",
     ],
     AgentRole.coordinator: [
-        "coordinate", "manage", "organize", "schedule", "delegate",
-        "communicate", "report", "status", "sync", "standup",
-        "协调", "管理", "组织", "同步", "汇报",
+        "coordinate",
+        "manage",
+        "organize",
+        "schedule",
+        "delegate",
+        "communicate",
+        "report",
+        "status",
+        "sync",
+        "standup",
+        "协调",
+        "管理",
+        "组织",
+        "同步",
+        "汇报",
     ],
 }
 

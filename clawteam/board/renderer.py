@@ -121,11 +121,13 @@ class BoardRenderer:
             row = [m["name"]]
             if has_user:
                 row.append(m.get("user", ""))
-            row.extend([
-                m["agentType"],
-                m["joinedAt"][:19],
-                f"[{inbox_style}]{m['inboxCount']}[/{inbox_style}]",
-            ])
+            row.extend(
+                [
+                    m["agentType"],
+                    m["joinedAt"][:19],
+                    f"[{inbox_style}]{m['inboxCount']}[/{inbox_style}]",
+                ]
+            )
             mem_table.add_row(*row)
         parts.append(mem_table)
 

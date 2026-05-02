@@ -77,9 +77,7 @@ class WorktreeManager:
                 )
                 self.repo_path = Path(result.stdout.strip()).absolute()
             except subprocess.CalledProcessError:
-                raise ValueError(
-                    "Could not find git repository. Please provide repo_path."
-                )
+                raise ValueError("Could not find git repository. Please provide repo_path.")
 
         self.worktrees_dir = get_data_dir() / "worktrees"
         self.worktrees_dir.mkdir(parents=True, exist_ok=True)
@@ -93,9 +91,7 @@ class WorktreeManager:
             try:
                 with open(self._metadata_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    self._worktrees = [
-                        WorktreeInfo(**item) for item in data.get("worktrees", [])
-                    ]
+                    self._worktrees = [WorktreeInfo(**item) for item in data.get("worktrees", [])]
             except (json.JSONDecodeError, Exception) as e:
                 logger.warning("Failed to load worktree metadata: %s", e)
                 self._worktrees = []
@@ -215,9 +211,7 @@ class WorktreeManager:
         )
         return worktree_info
 
-    def list_worktrees(
-        self, status_filter: Optional[WorktreeStatus] = None
-    ) -> List[WorktreeInfo]:
+    def list_worktrees(self, status_filter: Optional[WorktreeStatus] = None) -> List[WorktreeInfo]:
         """
         List worktrees.
 
@@ -236,9 +230,7 @@ class WorktreeManager:
                 wt.status = WorktreeStatus.ABANDONED
             elif wt.status == WorktreeStatus.ACTIVE:
                 # Check if branch still exists
-                returncode, stdout, stderr = self._run_git(
-                    ["branch", "--list", wt.branch_name]
-                )
+                returncode, stdout, stderr = self._run_git(["branch", "--list", wt.branch_name])
                 if returncode == 0 and wt.branch_name not in stdout:
                     wt.status = WorktreeStatus.MERGED
 
@@ -279,14 +271,10 @@ class WorktreeManager:
             returncode, stdout, stderr = self._run_git(
                 ["branch", "--list", wt.branch_name], cwd=wt_path
             )
-            status["branch_exists"] = (
-                returncode == 0 and wt.branch_name in stdout
-            )
+            status["branch_exists"] = returncode == 0 and wt.branch_name in stdout
 
             # Check uncommitted changes
-            returncode, stdout, stderr = self._run_git(
-                ["status", "--porcelain"], cwd=wt_path
-            )
+            returncode, stdout, stderr = self._run_git(["status", "--porcelain"], cwd=wt_path)
             status["has_uncommitted_changes"] = len(stdout.strip()) > 0
 
             # Check ahead/behind base branch
@@ -349,13 +337,9 @@ class WorktreeManager:
 
         # Merge or rebase
         if strategy == "merge":
-            returncode, stdout, stderr = self._run_git(
-                ["merge", "--no-ff", wt.branch_name]
-            )
+            returncode, stdout, stderr = self._run_git(["merge", "--no-ff", wt.branch_name])
         else:  # rebase
-            returncode, stdout, stderr = self._run_git(
-                ["rebase", wt.branch_name]
-            )
+            returncode, stdout, stderr = self._run_git(["rebase", wt.branch_name])
 
         if returncode != 0:
             result["error"] = f"Merge failed: {stderr}"
@@ -394,9 +378,7 @@ class WorktreeManager:
         if not wt_path.exists():
             return []
 
-        returncode, stdout, stderr = self._run_git(
-            ["status", "--porcelain"], cwd=wt_path
-        )
+        returncode, stdout, stderr = self._run_git(["status", "--porcelain"], cwd=wt_path)
         if returncode != 0:
             return []
 
@@ -413,9 +395,7 @@ class WorktreeManager:
 
         return conflicts
 
-    def cleanup_worktrees(
-        self, max_age_hours: int = 168, auto_merge: bool = False
-    ) -> List[str]:
+    def cleanup_worktrees(self, max_age_hours: int = 168, auto_merge: bool = False) -> List[str]:
         """
         Clean up stale worktrees.
 

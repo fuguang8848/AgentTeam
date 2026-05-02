@@ -11,6 +11,7 @@ def __getattr__(name: str):
     # Lazy import to avoid circular dependency with clawteam.store
     if name == "TaskStore":
         from clawteam.team.tasks import TaskStore
+
         return TaskStore
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 

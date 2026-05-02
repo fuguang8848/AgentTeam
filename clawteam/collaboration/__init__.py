@@ -14,7 +14,7 @@ from clawteam.collaboration.mentions import MentionParser, Mention
 
 __all__ = [
     "PresenceStatus",
-    "PresenceManager", 
+    "PresenceManager",
     "ContextBoard",
     "ContextEntry",
     "ContextCategory",

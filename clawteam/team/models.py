@@ -17,6 +17,7 @@ def get_data_dir() -> Path:
     custom = os.environ.get("CLAWTEAM_DATA_DIR")
     if not custom:
         from clawteam.config import load_config
+
         custom = load_config().data_dir or None
     p = Path(custom) if custom else Path.home() / ".clawteam"
     p.mkdir(parents=True, exist_ok=True)
@@ -163,11 +164,14 @@ class QualityScore(BaseModel):
             "innovation": 0.10,
         }
         return round(
-            (self.completeness * weights["completeness"]
-            + self.accuracy * weights["accuracy"]
-            + self.quality * weights["quality"]
-            + self.规范性 * weights["规范性"]
-            + self.innovation * weights["innovation"]) * 10,
+            (
+                self.completeness * weights["completeness"]
+                + self.accuracy * weights["accuracy"]
+                + self.quality * weights["quality"]
+                + self.规范性 * weights["规范性"]
+                + self.innovation * weights["innovation"]
+            )
+            * 10,
             1,
         )
 

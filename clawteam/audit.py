@@ -24,6 +24,7 @@ def _now_iso() -> str:
 def _audit_log_path(team_name: str) -> Path:
     """Get the audit log file path for a team."""
     from clawteam.team.models import get_data_dir
+
     root = ensure_within_root(get_data_dir() / "audit", validate_identifier(team_name, "team name"))
     root.mkdir(parents=True, exist_ok=True)
     return root / "audit.log"
@@ -31,7 +32,7 @@ def _audit_log_path(team_name: str) -> Path:
 
 class AuditEventType(str, Enum):
     """Types of auditable events in ClawTeam."""
-    
+
     TASK_CREATED = "task_created"
     TASK_ASSIGNED = "task_assigned"
     TASK_STARTED = "task_started"
@@ -56,7 +57,7 @@ class AuditEventType(str, Enum):
 @dataclass
 class AuditEvent:
     """A single audit log entry."""
-    
+
     event_id: str
     event_type: AuditEventType
     timestamp: str
@@ -65,7 +66,7 @@ class AuditEvent:
     target: str | None = None
     details: dict[str, Any] | None = None
     context: dict[str, Any] | None = None
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         result = {
@@ -82,7 +83,7 @@ class AuditEvent:
         if self.context is not None:
             result["context"] = self.context
         return result
-    
+
     def to_json(self) -> str:
         """Serialize to JSON string."""
         return json.dumps(self.to_dict(), ensure_ascii=False, separators=(",", ":"))
@@ -97,10 +98,10 @@ def log_audit_event(
     context: dict[str, Any] | None = None,
 ) -> str:
     """Log an audit event to the team's audit log file.
-    
+
     This function uses append-only mode - it never modifies existing log entries.
     Each event is written as a separate JSON line.
-    
+
     Args:
         team: Team name
         event_type: Type of audit event
@@ -108,13 +109,14 @@ def log_audit_event(
         target: Optional target entity (e.g., task ID, agent name)
         details: Optional event-specific details
         context: Optional additional contextual information
-        
+
     Returns:
         The event ID of the logged event
     """
     import uuid
+
     event_id = uuid.uuid4().hex
-    
+
     event = AuditEvent(
         event_id=event_id,
         event_type=event_type,
@@ -125,30 +127,30 @@ def log_audit_event(
         details=details or {},
         context=context or {},
     )
-    
+
     # Append to audit log file (never modify existing content)
     log_path = _audit_log_path(team)
     with log_path.open("a", encoding="utf-8") as f:
         f.write(event.to_json())
         f.write("\n")
-    
+
     return event_id
 
 
 def read_audit_log(team: str, limit: int | None = None) -> list[AuditEvent]:
     """Read audit log entries for a team.
-    
+
     Args:
         team: Team name
         limit: Optional maximum number of entries to return (most recent first)
-        
+
     Returns:
         List of audit events, most recent first if limit is specified
     """
     log_path = _audit_log_path(team)
     if not log_path.exists():
         return []
-    
+
     events = []
     with log_path.open("r", encoding="utf-8") as f:
         for line in f:
@@ -170,18 +172,18 @@ def read_audit_log(team: str, limit: int | None = None) -> list[AuditEvent]:
                 except (json.JSONDecodeError, KeyError, ValueError):
                     # Skip malformed lines
                     continue
-    
+
     if limit is not None:
         events = events[-limit:]
         events.reverse()  # Most recent first
-    
+
     return events
 
 
 def get_audit_summary(team: str) -> dict[str, Any]:
     """Get a summary of audit activity for a team."""
     events = read_audit_log(team)
-    
+
     if not events:
         return {
             "total_events": 0,
@@ -190,14 +192,14 @@ def get_audit_summary(team: str) -> dict[str, Any]:
             "first_event": None,
             "last_event": None,
         }
-    
+
     event_types = {}
     active_agents = set()
-    
+
     for event in events:
         event_types[event.event_type] = event_types.get(event.event_type, 0) + 1
         active_agents.add(event.actor)
-    
+
     return {
         "total_events": len(events),
         "event_types": event_types,

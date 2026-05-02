@@ -184,9 +184,7 @@ class HermesSyncEngine:
 
         return None
 
-    def _detect_project_change(
-        self, user_msg: str, assistant_msg: str
-    ) -> Optional[str]:
+    def _detect_project_change(self, user_msg: str, assistant_msg: str) -> Optional[str]:
         """检测项目状态变更"""
         content = user_msg + " " + assistant_msg
         project_keywords = ["进度", "完成", "done", "finished", "更新了", "changed"]
@@ -195,9 +193,7 @@ class HermesSyncEngine:
                 return content[:300]
         return None
 
-    def _detect_lesson(
-        self, user_msg: str, assistant_msg: str
-    ) -> Optional[Dict[str, Any]]:
+    def _detect_lesson(self, user_msg: str, assistant_msg: str) -> Optional[Dict[str, Any]]:
         """检测教训（犯错、纠正、更好的方法）"""
         content = (user_msg + " " + assistant_msg).lower()
 
@@ -309,9 +305,7 @@ class HermesSyncEngine:
                 entries.append(entry)
 
         if result.has_user_correction:
-            entry = self._write_learning_entry(
-                result.correction_summary, task_result, "correction"
-            )
+            entry = self._write_learning_entry(result.correction_summary, task_result, "correction")
             if entry:
                 entries.append(entry)
 
@@ -348,41 +342,59 @@ class HermesSyncEngine:
 
         # 问题1: 遇到新问题了吗？
         error_indicators = [
-            "error", "failed", "exception", "崩溃", "报错", "出错",
-            "新问题", "unexpected", "bug", "无法", "不能",
+            "error",
+            "failed",
+            "exception",
+            "崩溃",
+            "报错",
+            "出错",
+            "新问题",
+            "unexpected",
+            "bug",
+            "无法",
+            "不能",
         ]
         for indicator in error_indicators:
             if indicator in eval_text:
                 result.has_new_problem = True
-                result.new_problem_summary = self._extract_summary(
-                    eval_text, indicator
-                )
+                result.new_problem_summary = self._extract_summary(eval_text, indicator)
                 break
 
         # 问题2: 用户纠正我了吗？
         correction_indicators = [
-            "不对", "错了", "wrong", "incorrect", "应该是",
-            "纠正", "correction", "不是", "no, ", "no.",
+            "不对",
+            "错了",
+            "wrong",
+            "incorrect",
+            "应该是",
+            "纠正",
+            "correction",
+            "不是",
+            "no, ",
+            "no.",
         ]
         for indicator in correction_indicators:
             if indicator in eval_text:
                 result.has_user_correction = True
-                result.correction_summary = self._extract_summary(
-                    eval_text, indicator
-                )
+                result.correction_summary = self._extract_summary(eval_text, indicator)
                 break
 
         # 问题3: 发现更好的方法了吗？
         improvement_indicators = [
-            "更好", "better", "improved", "优化", "更高效",
-            "改进", "optimize", "more efficient", "下次",
+            "更好",
+            "better",
+            "improved",
+            "优化",
+            "更高效",
+            "改进",
+            "optimize",
+            "more efficient",
+            "下次",
         ]
         for indicator in improvement_indicators:
             if indicator in eval_text:
                 result.has_better_method = True
-                result.better_method_summary = self._extract_summary(
-                    eval_text, indicator
-                )
+                result.better_method_summary = self._extract_summary(eval_text, indicator)
                 break
 
         return result
@@ -413,10 +425,7 @@ class HermesSyncEngine:
                 errors_file.write_text("# ERRORS.md — 错误记录\n\n", encoding="utf-8")
 
             with open(errors_file, "a", encoding="utf-8") as f:
-                f.write(
-                    f"- [{entry['timestamp']}] {entry['summary']}"
-                    f" (task: {entry['task_id']})\n"
-                )
+                f.write(f"- [{entry['timestamp']}] {entry['summary']} (task: {entry['task_id']})\n")
             return entry
         except Exception as e:
             logger.error(f"Failed to write error entry: {e}")
@@ -439,9 +448,7 @@ class HermesSyncEngine:
 
         try:
             if not learnings_file.exists():
-                learnings_file.write_text(
-                    "# LEARNINGS.md — 学习记录\n\n", encoding="utf-8"
-                )
+                learnings_file.write_text("# LEARNINGS.md — 学习记录\n\n", encoding="utf-8")
 
             with open(learnings_file, "a", encoding="utf-8") as f:
                 prefix = "💡" if entry_type == "best_practice" else "🔧"
@@ -489,11 +496,13 @@ class HermesSyncEngine:
                 # 检查重复
                 for key, occ_lines in summaries.items():
                     if len(occ_lines) >= 3:
-                        promoted.append({
-                            "pattern": key,
-                            "count": len(occ_lines),
-                            "source": target_doc,
-                        })
+                        promoted.append(
+                            {
+                                "pattern": key,
+                                "count": len(occ_lines),
+                                "source": target_doc,
+                            }
+                        )
 
             except Exception as e:
                 logger.warning(f"Failed to check promotions in {source_file}: {e}")
@@ -525,12 +534,16 @@ class HermesSyncEngine:
         # 1. 回顾最近 2 天的 memory 文件
         recent_memories = self._review_recent_memories(days=2)
         if recent_memories:
-            reflection["actions_taken"].append(f"Reviewed {len(recent_memories)} recent memory files")
+            reflection["actions_taken"].append(
+                f"Reviewed {len(recent_memories)} recent memory files"
+            )
 
         # 2. 检查 .learnings 晋升
         promoted = self._check_and_promote()
         if promoted:
-            reflection["actions_taken"].append(f"Found {len(promoted)} patterns eligible for promotion")
+            reflection["actions_taken"].append(
+                f"Found {len(promoted)} patterns eligible for promotion"
+            )
 
         # 3. 清理过期条目（简单实现）
         cleaned = self._cleanup_old_entries()

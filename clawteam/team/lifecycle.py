@@ -91,6 +91,7 @@ class LifecycleManager:
         # Best-effort cleanup of git workspaces
         try:
             from clawteam.workspace import get_workspace_manager
+
             ws_mgr = get_workspace_manager()
             if ws_mgr:
                 ws_mgr.cleanup_team(team_name)
@@ -185,12 +186,14 @@ class LifecycleManager:
                 ]
             }
         """
+
         def build_tree(name: str) -> dict:
             children = ParentChildRegistry.get_children(self.team_name, name)
             return {
                 "agent": name,
                 "children": [build_tree(c) for c in children],
             }
+
         return build_tree(agent_name)
 
     def get_parent(self, agent_name: str) -> str | None:

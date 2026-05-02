@@ -11,7 +11,7 @@ from typing import Any, Optional
 
 class NotificationType(str, Enum):
     """Types of notifications."""
-    
+
     CONFIRMATION = "confirmation"
     TASK_COMPLETE = "taskComplete"
     ERROR = "error"
@@ -22,7 +22,7 @@ class NotificationType(str, Enum):
 
 class NotificationPriority(str, Enum):
     """Priority levels for notifications."""
-    
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -32,7 +32,7 @@ class NotificationPriority(str, Enum):
 @dataclass
 class Notification:
     """A single notification entry."""
-    
+
     notification_id: str
     notification_type: NotificationType
     title: str
@@ -44,11 +44,11 @@ class Notification:
     acknowledged: bool = False
     acknowledged_at: str | None = None
     details: dict[str, Any] = field(default_factory=dict)
-    
+
     def __post_init__(self):
         if not self.notification_id:
             self.notification_id = uuid.uuid4().hex
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         result = {
@@ -68,7 +68,7 @@ class Notification:
         if self.details:
             result["details"] = self.details
         return result
-    
+
     @classmethod
     def create(
         cls,
@@ -97,14 +97,14 @@ class Notification:
 @dataclass
 class NotificationEvent:
     """Event emitted when a notification is sent or acknowledged."""
-    
+
     event_type: str  # "notification-sent", "notification-acknowledged"
     notification_type: NotificationType
     session_id: str
     session_name: str | None = None
     notification_id: str | None = None
     error_msg: str | None = None
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         result = {
@@ -124,28 +124,32 @@ class NotificationEvent:
 @dataclass
 class NotificationConfig:
     """Configuration for the notification manager."""
-    
+
     enabled: bool = True
     sound: bool = True
     websocket_push: bool = True
-    
+
     # Do-not-disturb period
-    do_not_disturb: dict[str, Any] = field(default_factory=lambda: {
-        "enabled": False,
-        "start": "22:00",
-        "end": "08:00",
-    })
-    
+    do_not_disturb: dict[str, Any] = field(
+        default_factory=lambda: {
+            "enabled": False,
+            "start": "22:00",
+            "end": "08:00",
+        }
+    )
+
     # Per-type configuration
-    types: dict[str, Any] = field(default_factory=lambda: {
-        "confirmation": {"enabled": True},
-        "taskComplete": {"enabled": True},
-        "error": {"enabled": True},
-        "stuck": {"enabled": True},
-        "info": {"enabled": True},
-        "warning": {"enabled": True},
-    })
-    
+    types: dict[str, Any] = field(
+        default_factory=lambda: {
+            "confirmation": {"enabled": True},
+            "taskComplete": {"enabled": True},
+            "error": {"enabled": True},
+            "stuck": {"enabled": True},
+            "info": {"enabled": True},
+            "warning": {"enabled": True},
+        }
+    )
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
@@ -155,7 +159,7 @@ class NotificationConfig:
             "do_not_disturb": self.do_not_disturb,
             "types": self.types,
         }
-    
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> NotificationConfig:
         """Create from dictionary."""
@@ -163,17 +167,23 @@ class NotificationConfig:
             enabled=data.get("enabled", True),
             sound=data.get("sound", True),
             websocket_push=data.get("websocket_push", True),
-            do_not_disturb=data.get("do_not_disturb", {
-                "enabled": False,
-                "start": "22:00",
-                "end": "08:00",
-            }),
-            types=data.get("types", {
-                "confirmation": {"enabled": True},
-                "taskComplete": {"enabled": True},
-                "error": {"enabled": True},
-                "stuck": {"enabled": True},
-                "info": {"enabled": True},
-                "warning": {"enabled": True},
-            }),
+            do_not_disturb=data.get(
+                "do_not_disturb",
+                {
+                    "enabled": False,
+                    "start": "22:00",
+                    "end": "08:00",
+                },
+            ),
+            types=data.get(
+                "types",
+                {
+                    "confirmation": {"enabled": True},
+                    "taskComplete": {"enabled": True},
+                    "error": {"enabled": True},
+                    "stuck": {"enabled": True},
+                    "info": {"enabled": True},
+                    "warning": {"enabled": True},
+                },
+            ),
         )

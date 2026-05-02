@@ -164,7 +164,6 @@ class TaskWaiter:
             signal.signal(signal.SIGINT, prev_sigint)
             signal.signal(signal.SIGTERM, prev_sigterm)
 
-
     def _check_dead_agents(self) -> None:
         """Detect dead agents and mark their in_progress tasks as pending."""
         try:
@@ -181,8 +180,7 @@ class TaskWaiter:
             # Find this agent's in_progress tasks and reset them
             tasks = self.task_store.list_tasks()
             abandoned = [
-                t for t in tasks
-                if t.owner == agent_name and t.status == TaskStatus.in_progress
+                t for t in tasks if t.owner == agent_name and t.status == TaskStatus.in_progress
             ]
             for t in abandoned:
                 self.task_store.update(t.id, status=TaskStatus.pending)

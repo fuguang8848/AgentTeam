@@ -56,9 +56,7 @@ class BoardCollector:
             td = json.loads(t.model_dump_json(by_alias=True, exclude_none=True))
             grouped[t.status.value].append(td)
 
-        summary = {
-            s: len(grouped[s]) for s in grouped
-        }
+        summary = {s: len(grouped[s]) for s in grouped}
         summary["total"] = len(all_tasks)
 
         # Find leader name
@@ -83,6 +81,7 @@ class BoardCollector:
         cost_data = {}
         try:
             from clawteam.team.costs import CostStore
+
             cost_store = CostStore(team_name)
             cost_summary = cost_store.summary()
             cost_data = {
@@ -126,27 +125,31 @@ class BoardCollector:
                 total_inbox = sum(m["inboxCount"] for m in data["members"])
                 leader = data["team"].get("leaderName", "")
                 alive_count = sum(1 for m in data["members"] if m.get("alive"))
-                result.append({
-                    "name": name,
-                    "description": meta.get("description", ""),
-                    "leader": leader,
-                    "members": len(data["members"]),
-                    "tasks": data["taskSummary"]["total"],
-                    "pendingMessages": total_inbox,
-                    "session_count": len(data["members"]),
-                    "active_sessions": alive_count,
-                })
+                result.append(
+                    {
+                        "name": name,
+                        "description": meta.get("description", ""),
+                        "leader": leader,
+                        "members": len(data["members"]),
+                        "tasks": data["taskSummary"]["total"],
+                        "pendingMessages": total_inbox,
+                        "session_count": len(data["members"]),
+                        "active_sessions": alive_count,
+                    }
+                )
             except Exception:
-                result.append({
-                    "name": name,
-                    "description": meta.get("description", ""),
-                    "leader": "",
-                    "members": meta.get("memberCount", 0),
-                    "tasks": 0,
-                    "pendingMessages": 0,
-                    "session_count": meta.get("memberCount", 0),
-                    "active_sessions": 0,
-                })
+                result.append(
+                    {
+                        "name": name,
+                        "description": meta.get("description", ""),
+                        "leader": "",
+                        "members": meta.get("memberCount", 0),
+                        "tasks": 0,
+                        "pendingMessages": 0,
+                        "session_count": meta.get("memberCount", 0),
+                        "active_sessions": 0,
+                    }
+                )
         return result
 
     def collect_profiler_stats(self) -> dict:
@@ -161,34 +164,39 @@ class BoardCollector:
         profiles = profiler.get_all_profiles()
         profile_list = []
         for p in profiles[-10:]:  # Last 10 profiles
-            profile_list.append({
-                "name": p.name,
-                "duration_ms": round(p.duration_ms, 2),
-                "cpu_percent": round(p.cpu_percent, 1),
-                "memory_mb": round(p.memory_mb, 1),
-                "memory_percent": round(p.memory_percent, 2),
-                "start_time": p.start_time,
-            })
+            profile_list.append(
+                {
+                    "name": p.name,
+                    "duration_ms": round(p.duration_ms, 2),
+                    "cpu_percent": round(p.cpu_percent, 1),
+                    "memory_mb": round(p.memory_mb, 1),
+                    "memory_percent": round(p.memory_percent, 2),
+                    "start_time": p.start_time,
+                }
+            )
 
         # Get latency statistics
         latency_stats = profiler.get_all_latency_stats()
         latency_list = []
         for ls in latency_stats:
-            latency_list.append({
-                "operation": ls.operation,
-                "count": ls.count,
-                "total_ms": round(ls.total_ms, 2),
-                "avg_ms": round(ls.avg_ms, 2),
-                "min_ms": round(ls.min_ms, 2),
-                "max_ms": round(ls.max_ms, 2),
-                "p50_ms": round(ls.p50_ms, 2),
-                "p95_ms": round(ls.p95_ms, 2),
-                "p99_ms": round(ls.p99_ms, 2),
-            })
+            latency_list.append(
+                {
+                    "operation": ls.operation,
+                    "count": ls.count,
+                    "total_ms": round(ls.total_ms, 2),
+                    "avg_ms": round(ls.avg_ms, 2),
+                    "min_ms": round(ls.min_ms, 2),
+                    "max_ms": round(ls.max_ms, 2),
+                    "p50_ms": round(ls.p50_ms, 2),
+                    "p95_ms": round(ls.p95_ms, 2),
+                    "p99_ms": round(ls.p99_ms, 2),
+                }
+            )
 
         # Get system metrics
         try:
             from clawteam.profiler import ResourceMonitor
+
             monitor = ResourceMonitor(interval=0.01)
             current = monitor.get_current_usage()
             system_metrics = {

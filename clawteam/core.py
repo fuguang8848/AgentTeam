@@ -35,6 +35,7 @@ from enum import Enum
 
 class AgentState(Enum):
     """Agent State"""
+
     PENDING = "pending"
     RUNNING = "running"
     WAITING = "waiting"
@@ -46,6 +47,7 @@ class AgentState(Enum):
 
 class TaskState(Enum):
     """Task State"""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -56,6 +58,7 @@ class TaskState(Enum):
 @dataclass
 class CTAgent:
     """Team Agent - runs in OpenClaw Session"""
+
     name: str
     agent_type: str  # "coder", "reviewer", "leader", etc.
     session_key: str
@@ -65,7 +68,7 @@ class CTAgent:
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
     metadata: dict = field(default_factory=dict)
-    
+
     def to_dict(self) -> dict:
         return {
             "name": self.name,
@@ -78,7 +81,7 @@ class CTAgent:
             "updated_at": self.updated_at,
             "metadata": self.metadata,
         }
-    
+
     @classmethod
     def from_dict(cls, data: dict) -> "CTAgent":
         return cls(
@@ -94,9 +97,10 @@ class CTAgent:
         )
 
 
-@dataclass 
+@dataclass
 class CTTask:
     """Team Task"""
+
     id: str
     title: str
     description: str
@@ -108,7 +112,7 @@ class CTTask:
     completed_at: Optional[float] = None
     result: Optional[str] = None
     error: Optional[str] = None
-    
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,
@@ -123,7 +127,7 @@ class CTTask:
             "result": self.result,
             "error": self.error,
         }
-    
+
     @classmethod
     def from_dict(cls, data: dict) -> "CTTask":
         return cls(
@@ -141,9 +145,10 @@ class CTTask:
         )
 
 
-@dataclass 
+@dataclass
 class CTMessage:
     """Inbox Message"""
+
     id: str
     from_agent: str
     to_agent: str
@@ -151,7 +156,7 @@ class CTMessage:
     msg_type: str = "text"  # "text", "task", "alert", "result"
     timestamp: float = field(default_factory=time.time)
     read: bool = False
-    
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,
@@ -167,25 +172,25 @@ class CTMessage:
 class CTTeam:
     """
     CTTeam - Team container for multi-agent collaboration
-    
+
     Example:
         team = CTTeam("my-project")
         team.spawn("coder", "写一个 Web 服务器")
         team.spawn("reviewer", "审查代码")
         team.wait_all()
     """
-    
+
     def __init__(self, name: str, data_dir: Path | None = None):
         self.name = name
         self.data_dir = data_dir or Path(f"~/.clawteam/teams/{name}").expanduser()
         self.data_dir.mkdir(parents=True, exist_ok=True)
-        
+
         self.agents: dict[str, CTAgent] = {}
         self.tasks: dict[str, CTTask] = {}
         self.inbox: list[CTMessage] = []
-        
+
         self._load_state()
-    
+
     def _load_state(self) -> None:
         """Load state from disk"""
         # Load agents
@@ -196,7 +201,7 @@ class CTTeam:
                 self.agents = {n: CTAgent.from_dict(i) for n, i in data.items()}
             except Exception:
                 pass
-        
+
         # Load tasks
         tasks_file = self.data_dir / "tasks.json"
         if tasks_file.exists():
@@ -205,7 +210,7 @@ class CTTeam:
                 self.tasks = {tid: CTTask.from_dict(t) for tid, t in data.items()}
             except Exception:
                 pass
-        
+
         # Load inbox
         inbox_file = self.data_dir / "inbox.json"
         if inbox_file.exists():
@@ -214,27 +219,25 @@ class CTTeam:
                 self.inbox = [CTMessage(**m) for m in data]
             except Exception:
                 pass
-    
+
     def _save_state(self) -> None:
         """Save state to disk"""
         agents_file = self.data_dir / "agents.json"
         agents_file.write_text(
-            json.dumps({n: a.to_dict() for n, a in self.agents.items()}, indent=2),
-            encoding="utf-8"
+            json.dumps({n: a.to_dict() for n, a in self.agents.items()}, indent=2), encoding="utf-8"
         )
-        
+
         tasks_file = self.data_dir / "tasks.json"
         tasks_file.write_text(
             json.dumps({tid: t.to_dict() for tid, t in self.tasks.items()}, indent=2),
-            encoding="utf-8"
+            encoding="utf-8",
         )
-        
+
         inbox_file = self.data_dir / "inbox.json"
         inbox_file.write_text(
-            json.dumps([m.to_dict() for m in self.inbox], indent=2),
-            encoding="utf-8"
+            json.dumps([m.to_dict() for m in self.inbox], indent=2), encoding="utf-8"
         )
-    
+
     def spawn(
         self,
         name: str,
@@ -246,7 +249,7 @@ class CTTeam:
         Spawn an agent (uses OpenClaw SDK Backend)
         """
         from clawteam.spawn import get_backend
-        
+
         backend = get_backend("openclaw_sdk")
         result = backend.spawn(
             command=["openclaw"],
@@ -257,10 +260,10 @@ class CTTeam:
             prompt=task,
             model=model,
         )
-        
+
         if result.startswith("Error"):
             raise RuntimeError(result)
-        
+
         agent = CTAgent(
             name=name,
             agent_type=agent_type,
@@ -268,16 +271,16 @@ class CTTeam:
             state=AgentState.RUNNING,
             team_name=self.name,
         )
-        
+
         if "session=" in result:
             session_key = result.split("session=")[1].rstrip(")")
             agent.session_key = session_key
-        
+
         self.agents[name] = agent
         self._save_state()
-        
+
         return agent
-    
+
     def create_task(
         self,
         title: str,
@@ -286,6 +289,7 @@ class CTTeam:
     ) -> CTTask:
         """Create a task"""
         import uuid
+
         task = CTTask(
             id=str(uuid.uuid4())[:8],
             title=title,
@@ -295,31 +299,31 @@ class CTTeam:
         self.tasks[task.id] = task
         self._save_state()
         return task
-    
+
     def assign_task(self, task_id: str, to_agent: str) -> None:
         """Assign task to agent"""
         task = self.tasks.get(task_id)
         if not task:
             raise ValueError(f"Task {task_id} not found")
-        
+
         task.assignee = to_agent
         task.state = TaskState.IN_PROGRESS
         task.updated_at = time.time()
-        
+
         agent = self.agents.get(to_agent)
         if agent:
             agent.task_id = task_id
             agent.state = AgentState.RUNNING
-        
+
         self._save_state()
-        
+
         self.send_message(
             from_agent="leader",
             to_agent=to_agent,
             content=f"New task: {task.title}\n\n{task.description}",
             msg_type="task",
         )
-    
+
     def send_message(
         self,
         from_agent: str,
@@ -329,6 +333,7 @@ class CTTeam:
     ) -> CTMessage:
         """Send a message"""
         import uuid
+
         msg = CTMessage(
             id=str(uuid.uuid4())[:8],
             from_agent=from_agent,
@@ -339,21 +344,21 @@ class CTTeam:
         self.inbox.append(msg)
         self._save_state()
         return msg
-    
+
     def get_messages(self, agent_name: str, unread_only: bool = False) -> list[CTMessage]:
         """Get messages for an agent"""
         msgs = [m for m in self.inbox if m.to_agent in (agent_name, "all")]
         if unread_only:
             msgs = [m for m in msgs if not m.read]
         return msgs
-    
+
     def mark_read(self, message_id: str) -> None:
         """Mark message as read"""
         for msg in self.inbox:
             if msg.id == message_id:
                 msg.read = True
         self._save_state()
-    
+
     def complete_task(self, task_id: str, result: str) -> None:
         """Mark task as completed"""
         task = self.tasks.get(task_id)
@@ -362,14 +367,14 @@ class CTTeam:
             task.result = result
             task.completed_at = time.time()
             task.updated_at = time.time()
-            
+
             if task.assignee:
                 agent = self.agents.get(task.assignee)
                 if agent:
                     agent.state = AgentState.COMPLETED
-            
+
             self._save_state()
-    
+
     def get_status(self) -> dict:
         """Get team status"""
         return {
@@ -381,14 +386,16 @@ class CTTeam:
             "tasks": {
                 "total": len(self.tasks),
                 "completed": sum(1 for t in self.tasks.values() if t.state == TaskState.COMPLETED),
-                "in_progress": sum(1 for t in self.tasks.values() if t.state == TaskState.IN_PROGRESS),
+                "in_progress": sum(
+                    1 for t in self.tasks.values() if t.state == TaskState.IN_PROGRESS
+                ),
             },
             "inbox": {
                 "total": len(self.inbox),
                 "unread": sum(1 for m in self.inbox if not m.read),
             },
         }
-    
+
     def wait_all(self, timeout: int = 3600) -> dict:
         """Wait for all agents to complete"""
         start = time.time()
@@ -409,4 +416,6 @@ AgentStatus = AgentState
 TaskStatus = TaskState
 
 create_team = lambda name: CTTeam(name)
-get_team = lambda name: CTTeam(name) if Path(f"~/.clawteam/teams/{name}").expanduser().exists() else None
+get_team = lambda name: (
+    CTTeam(name) if Path(f"~/.clawteam/teams/{name}").expanduser().exists() else None
+)

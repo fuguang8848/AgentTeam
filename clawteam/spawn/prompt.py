@@ -58,11 +58,13 @@ def build_agent_prompt(
     ]
     if user:
         lines.append(f"- User: {user}")
-    lines.extend([
-        f"- Type: {agent_type}",
-        f"- Team: {team_name}",
-        f"- Leader: {leader_name}",
-    ])
+    lines.extend(
+        [
+            f"- Type: {agent_type}",
+            f"- Team: {team_name}",
+            f"- Leader: {leader_name}",
+        ]
+    )
     # Mission section (Auftragstaktik: intent + end_state + constraints)
     if intent or end_state or constraints:
         lines.extend(["", "## Mission\n"])
@@ -75,42 +77,48 @@ def build_agent_prompt(
             for c in constraints:
                 lines.append(f"- {c}")
     if workspace_dir:
-        lines.extend([
-            "",
-            "## Workspace",
-            f"- Working directory: {workspace_dir}",
-            f"- Branch: {workspace_branch}",
-            "- This is an isolated git worktree. Your changes do not affect the main branch.",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Workspace",
+                f"- Working directory: {workspace_dir}",
+                f"- Branch: {workspace_branch}",
+                "- This is an isolated git worktree. Your changes do not affect the main branch.",
+            ]
+        )
     if memory_scope:
-        lines.extend([
-            "",
-            "## Shared Memory",
-            f"- Your team shares memory scope `{memory_scope}`.",
-            f"- Use `memory_store` with scope `{memory_scope}` for team-shared knowledge.",
-            "- Use `memory_recall` to access memories stored by other team members in this scope.",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Shared Memory",
+                f"- Your team shares memory scope `{memory_scope}`.",
+                f"- Use `memory_store` with scope `{memory_scope}` for team-shared knowledge.",
+                "- Use `memory_recall` to access memories stored by other team members in this scope.",
+            ]
+        )
     if team_size > 1:
         lines.extend(["", BOIDS_RULES])
-    lines.extend([
-        "",
-        "## Task\n",
-        task,
-        "",
-        "## Coordination Protocol\n",
-        "- IMPORTANT: spawned OpenClaw workers run under exec allowlist mode. Use only the allowlisted executable path from $CLAWTEAM_BIN, not arbitrary shell commands.",
-        f"- First action: run `clawteam task list {team_name} --owner {agent_name}` to discover your task ID.",
-        f"- Starting a task: `clawteam task update {team_name} [TASK_ID] --status in_progress`",
-        f"- Finishing a task: `clawteam task update {team_name} [TASK_ID] --status completed`",
-        "- When you finish all tasks, send a summary to the leader:",
-        f'  `clawteam inbox send {team_name} {leader_name} "All tasks completed. [BRIEF_SUMMARY]"',
-        "- If you are blocked or any clawteam command is denied/fails, message the leader immediately with the exact error text:",
-        f'  `clawteam inbox send {team_name} {leader_name} "Blocked: [EXACT_ERROR]"`',
-        f"- After finishing work, report your costs: `clawteam cost report {team_name} --input-tokens [N] --output-tokens [N] --cost-cents [N]`",
-        f"- Before finishing, save your session: `clawteam session save {team_name} --session-id [ID]`",
-        "- When you finish all tasks, type `exit` to terminate this session.",
-        "",
-        METACOGNITION_BLOCK,
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Task\n",
+            task,
+            "",
+            "## Coordination Protocol\n",
+            "- IMPORTANT: spawned OpenClaw workers run under exec allowlist mode. Use only the allowlisted executable path from $CLAWTEAM_BIN, not arbitrary shell commands.",
+            f"- First action: run `clawteam task list {team_name} --owner {agent_name}` to discover your task ID.",
+            f"- Starting a task: `clawteam task update {team_name} [TASK_ID] --status in_progress`",
+            f"- Finishing a task: `clawteam task update {team_name} [TASK_ID] --status completed`",
+            "- When you finish all tasks, send a summary to the leader:",
+            f'  `clawteam inbox send {team_name} {leader_name} "All tasks completed. [BRIEF_SUMMARY]"',
+            "- If you are blocked or any clawteam command is denied/fails, message the leader immediately with the exact error text:",
+            f'  `clawteam inbox send {team_name} {leader_name} "Blocked: [EXACT_ERROR]"`',
+            f"- After finishing work, report your costs: `clawteam cost report {team_name} --input-tokens [N] --output-tokens [N] --cost-cents [N]`",
+            f"- Before finishing, save your session: `clawteam session save {team_name} --session-id [ID]`",
+            "- When you finish all tasks, type `exit` to terminate this session.",
+            "",
+            METACOGNITION_BLOCK,
+            "",
+        ]
+    )
     return "\n".join(lines)

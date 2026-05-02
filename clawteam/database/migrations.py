@@ -1,4 +1,5 @@
 """Database migration system."""
+
 from __future__ import annotations
 
 import logging
@@ -10,12 +11,12 @@ logger = logging.getLogger(__name__)
 
 class Migration:
     """Single migration definition."""
-    
+
     def __init__(self, version: int, description: str, up_func):
         self.version = version
         self.description = description
         self.up_func = up_func
-    
+
     def up(self, db: sqlite3.Connection) -> None:
         """Execute migration."""
         self.up_func(db)
@@ -25,8 +26,7 @@ class Migration:
 def table_exists(db: sqlite3.Connection, table_name: str) -> bool:
     """Check if a table exists."""
     cursor = db.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-        (table_name,)
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,)
     )
     return cursor.fetchone() is not None
 
@@ -37,8 +37,9 @@ def get_column_names(db: sqlite3.Connection, table_name: str) -> List[str]:
     return [row[1] for row in cursor.fetchall()]
 
 
-def add_column_if_not_exists(db: sqlite3.Connection, table: str, 
-                            column: str, definition: str) -> bool:
+def add_column_if_not_exists(
+    db: sqlite3.Connection, table: str, column: str, definition: str
+) -> bool:
     """Add column if it doesn't exist."""
     cols = get_column_names(db, table)
     if column not in cols:
@@ -57,9 +58,8 @@ MIGRATIONS: List[Migration] = [
     Migration(
         version=1,
         description="Initial database schema",
-        up_func=lambda db: None  # Schema created by manager
+        up_func=lambda db: None,  # Schema created by manager
     ),
-    
     # Version 2: Add indexes for performance
     Migration(
         version=2,
@@ -69,34 +69,25 @@ MIGRATIONS: List[Migration] = [
             CREATE INDEX IF NOT EXISTS idx_sessions_created ON sessions(created_at);
             CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at);
             CREATE INDEX IF NOT EXISTS idx_agents_last_seen ON agents(last_seen_at);
-        """)
+        """),
     ),
-    
     # Version 3: Add message_ttl column to messages table
     Migration(
         version=3,
         description="Add message_ttl column to messages table",
-        up_func=lambda db: add_column_if_not_exists(
-            db, "messages", "message_ttl", "INTEGER"
-        )
+        up_func=lambda db: add_column_if_not_exists(db, "messages", "message_ttl", "INTEGER"),
     ),
-    
     # Version 4: Add token_limit column to usage_stats
     Migration(
         version=4,
         description="Add token_limit column to usage_stats",
-        up_func=lambda db: add_column_if_not_exists(
-            db, "usage_stats", "token_limit", "INTEGER"
-        )
+        up_func=lambda db: add_column_if_not_exists(db, "usage_stats", "token_limit", "INTEGER"),
     ),
-    
     # Version 5: Add session_type column to sessions
     Migration(
         version=5,
         description="Add session_type column to sessions",
-        up_func=lambda db: add_column_if_not_exists(
-            db, "sessions", "session_type", "TEXT"
-        )
+        up_func=lambda db: add_column_if_not_exists(db, "sessions", "session_type", "TEXT"),
     ),
 ]
 
@@ -104,9 +95,7 @@ MIGRATIONS: List[Migration] = [
 def get_current_version(db: sqlite3.Connection) -> int:
     """Get current database version."""
     try:
-        cursor = db.execute(
-            "SELECT version FROM schema_version ORDER BY version DESC LIMIT 1"
-        )
+        cursor = db.execute("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1")
         row = cursor.fetchone()
         return row[0] if row else 0
     except sqlite3.OperationalError:
@@ -124,11 +113,11 @@ def set_version(db: sqlite3.Connection, version: int) -> None:
             description TEXT
         )
     """)
-    
+
     # Insert or update version
     db.execute(
         "INSERT OR REPLACE INTO schema_version (version, description) VALUES (?, ?)",
-        (version, f"Migration to version {version}")
+        (version, f"Migration to version {version}"),
     )
     db.commit()
 
@@ -137,12 +126,12 @@ def run_migrations(db: sqlite3.Connection) -> None:
     """Run all pending migrations."""
     if not db:
         return
-    
+
     current_version = get_current_version(db)
-    
+
     # Sort migrations by version
     sorted_migrations = sorted(MIGRATIONS, key=lambda m: m.version)
-    
+
     applied = 0
     for migration in sorted_migrations:
         if migration.version > current_version:
@@ -158,16 +147,18 @@ def run_migrations(db: sqlite3.Connection) -> None:
                 db.rollback()
                 logger.error(f"Failed to apply migration {migration.version}: {e}")
                 raise
-    
+
     if applied > 0:
-        logger.info(f"Applied {applied} migration(s), current version: {sorted_migrations[-1].version}")
+        logger.info(
+            f"Applied {applied} migration(s), current version: {sorted_migrations[-1].version}"
+        )
     else:
         logger.info(f"Database is up to date at version {current_version}")
 
 
 def rollback_migration(db: sqlite3.Connection, target_version: int) -> bool:
     """Rollback to specific version (basic implementation).
-    
+
     Note: Full rollback requires down migrations which we don't implement yet.
     """
     logger.warning("Rollback not fully implemented - requires down migrations")

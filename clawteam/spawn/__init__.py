@@ -27,10 +27,9 @@ def get_backend(name: str = "auto") -> SpawnBackend:
             # Falls back to openclaw_api or subprocess if SDK not available
             try:
                 import subprocess
+
                 result = subprocess.run(
-                    ["cmd", "/c", "openclaw", "gateway", "health"],
-                    capture_output=True,
-                    timeout=5
+                    ["cmd", "/c", "openclaw", "gateway", "health"], capture_output=True, timeout=5
                 )
                 if result.returncode == 0:
                     name = "openclaw_sdk"
@@ -47,18 +46,24 @@ def get_backend(name: str = "auto") -> SpawnBackend:
 
     if name == "subprocess":
         from clawteam.spawn.subprocess_backend import SubprocessBackend
+
         return SubprocessBackend()
     elif name == "tmux":
         from clawteam.spawn.tmux_backend import TmuxBackend
+
         return TmuxBackend()
     elif name == "openclaw_api":
         from clawteam.spawn.openclaw_api_backend import OpenClawAPIBackend
+
         return OpenClawAPIBackend()
     elif name == "openclaw_sdk":
         from clawteam.spawn.openclaw_sdk_backend import OpenClawSDKBackend
+
         return OpenClawSDKBackend()
     else:
-        raise ValueError(f"Unknown spawn backend: {name}. Available: auto, subprocess, tmux, openclaw_api, openclaw_sdk")
+        raise ValueError(
+            f"Unknown spawn backend: {name}. Available: auto, subprocess, tmux, openclaw_api, openclaw_sdk"
+        )
 
 
 def spawn_with_retry(
@@ -79,10 +84,13 @@ def spawn_with_retry(
             return result
         last_result = result
         if attempt < max_retries:
-            delay = min(backoff_base * (2 ** attempt), backoff_max)
+            delay = min(backoff_base * (2**attempt), backoff_max)
             logger.warning(
                 "Spawn attempt %d/%d failed: %s — retrying in %.1fs",
-                attempt + 1, max_retries + 1, result, delay,
+                attempt + 1,
+                max_retries + 1,
+                result,
+                delay,
             )
             time.sleep(delay)
     return last_result

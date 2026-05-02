@@ -14,6 +14,7 @@ def _now_iso() -> str:
 def _get_dashboard():
     """Get the CommandCenterDashboard instance."""
     from clawteam.board.dashboard import CommandCenterDashboard
+
     return CommandCenterDashboard.get_instance()
 
 

@@ -36,17 +36,14 @@ __all__ = [
     "WatchEvent",
     "ChangeType",
     "watch_directory",
-    
     # Change attribution
     "ChangeRecord",
     "ChangeAttributor",
     "ActiveSession",
-    
     # Diff tracker
     "DiffTracker",
     "DiffEntry",
     "FileSnapshot",
-    
     # File change tracker
     "FileChange",
     "FileChangeTracker",
@@ -54,7 +51,6 @@ __all__ = [
     "get_file_change_tracker",
     "track_file_change",
     "get_recent_file_changes",
-    
     # Token stats
     "UsageEstimator",
     "UsageSummary",

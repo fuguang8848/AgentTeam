@@ -15,15 +15,15 @@ from clawteam.events.models import ClawTeamEvent, EventType, EventSeverity, Even
 
 class EventAPI:
     """API for event tracking system."""
-    
+
     def __init__(self, tracker: Optional[EventTracker] = None):
         """Initialize the Event API.
-        
+
         Args:
             tracker: Optional EventTracker instance. Uses global tracker if not provided.
         """
         self.tracker = tracker or get_tracker()
-    
+
     def get_events(
         self,
         team_name: Optional[str] = None,
@@ -39,7 +39,7 @@ class EventAPI:
         offset: int = 0,
     ) -> Dict[str, Any]:
         """Get events with filters.
-        
+
         Returns:
             Dictionary with events list and metadata.
         """
@@ -56,7 +56,7 @@ class EventAPI:
             limit=limit,
             offset=offset,
         )
-        
+
         return {
             "events": events,
             "count": len(events),
@@ -64,93 +64,93 @@ class EventAPI:
             "offset": offset,
             "has_more": len(events) == limit,
         }
-    
+
     def get_dashboard_events(
         self,
         team_name: str,
         limit: int = 50,
     ) -> Dict[str, Any]:
         """Get events for team dashboard.
-        
+
         Returns:
             Dictionary with events list for dashboard display.
         """
         events = self.tracker.get_events_for_dashboard(team_name, limit)
-        
+
         # Group by time buckets for display
         return {
             "events": events,
             "count": len(events),
             "team_name": team_name,
         }
-    
+
     def get_agent_timeline(
         self,
         agent_name: str,
         limit: int = 100,
     ) -> Dict[str, Any]:
         """Get event timeline for an agent.
-        
+
         Returns:
             Dictionary with agent timeline events.
         """
         events = self.tracker.get_agent_timeline(agent_name, limit)
-        
+
         return {
             "events": events,
             "count": len(events),
             "agent_name": agent_name,
         }
-    
+
     def get_task_history(
         self,
         task_id: str,
         limit: int = 50,
     ) -> Dict[str, Any]:
         """Get event history for a task.
-        
+
         Returns:
             Dictionary with task history events.
         """
         events = self.tracker.get_task_events(task_id, limit)
-        
+
         return {
             "events": events,
             "count": len(events),
             "task_id": task_id,
         }
-    
+
     def get_stats(
         self,
         team_name: Optional[str] = None,
         since: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Get event statistics.
-        
+
         Returns:
             Dictionary with event statistics.
         """
         return self.tracker.get_event_stats(team_name, since)
-    
+
     def record_event(
         self,
         event: ClawTeamEvent,
     ) -> Dict[str, Any]:
         """Record a new event.
-        
+
         Args:
             event: The event to record.
-            
+
         Returns:
             Dictionary with recorded event info.
         """
         self.tracker.track(event)
-        
+
         return {
             "success": True,
             "event_id": event.id,
         }
-    
+
     def record_team_created(
         self,
         team_name: str,
@@ -166,7 +166,7 @@ class EventAPI:
             message=message or f"Team '{team_name}' created",
         )
         return self.record_event(event)
-    
+
     def record_member_joined(
         self,
         team_name: str,
@@ -184,7 +184,7 @@ class EventAPI:
             message=message or f"Agent '{agent_name}' joined team",
         )
         return self.record_event(event)
-    
+
     def record_task_created(
         self,
         task_id: str,
@@ -204,7 +204,7 @@ class EventAPI:
             data=data or {},
         )
         return self.record_event(event)
-    
+
     def record_task_completed(
         self,
         task_id: str,
@@ -224,7 +224,7 @@ class EventAPI:
             data=data or {},
         )
         return self.record_event(event)
-    
+
     def record_turn_complete(
         self,
         agent_name: str,
@@ -235,7 +235,7 @@ class EventAPI:
         data: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Record a turn_complete event (SpectrAI-inspired).
-        
+
         This event marks the completion of an agent's turn,
         enabling real-time tracking of agent activity.
         """
@@ -250,7 +250,7 @@ class EventAPI:
             data=data or {},
         )
         return self.record_event(event)
-    
+
     def record_agent_spawned(
         self,
         agent_name: str,
@@ -272,7 +272,7 @@ class EventAPI:
             data=data or {},
         )
         return self.record_event(event)
-    
+
     def record_agent_terminated(
         self,
         agent_name: str,
@@ -294,7 +294,7 @@ class EventAPI:
             data=data or {},
         )
         return self.record_event(event)
-    
+
     def record_session_started(
         self,
         session_id: str,
@@ -314,7 +314,7 @@ class EventAPI:
             data=data or {},
         )
         return self.record_event(event)
-    
+
     def record_session_ended(
         self,
         session_id: str,
@@ -334,7 +334,7 @@ class EventAPI:
             data=data or {},
         )
         return self.record_event(event)
-    
+
     def record_alert(
         self,
         team_name: Optional[str],
@@ -355,7 +355,7 @@ class EventAPI:
             data=data or {"alert_type": alert_type},
         )
         return self.record_event(event)
-    
+
     def record_usage(
         self,
         team_name: str,

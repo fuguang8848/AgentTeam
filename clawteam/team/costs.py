@@ -127,23 +127,15 @@ def _normalize_cost(value: float) -> float:
     return 0.0 if abs(value) < 1e-12 else value
 
 
-def _add_cache_entry(
-    cache: _CostSummaryCache, filename: str, entry: _CostCacheEntry
-) -> None:
+def _add_cache_entry(cache: _CostSummaryCache, filename: str, entry: _CostCacheEntry) -> None:
     cache.total_cost_cents += entry.cost_cents
     cache.total_input_tokens += entry.input_tokens
     cache.total_output_tokens += entry.output_tokens
-    cache.by_agent[entry.agent_name] = (
-        cache.by_agent.get(entry.agent_name, 0.0) + entry.cost_cents
-    )
+    cache.by_agent[entry.agent_name] = cache.by_agent.get(entry.agent_name, 0.0) + entry.cost_cents
     if entry.model:
-        cache.by_model[entry.model] = (
-            cache.by_model.get(entry.model, 0.0) + entry.cost_cents
-        )
+        cache.by_model[entry.model] = cache.by_model.get(entry.model, 0.0) + entry.cost_cents
     if entry.task_id:
-        cache.by_task[entry.task_id] = (
-            cache.by_task.get(entry.task_id, 0.0) + entry.cost_cents
-        )
+        cache.by_task[entry.task_id] = cache.by_task.get(entry.task_id, 0.0) + entry.cost_cents
     cache.files[filename] = entry
     cache.event_count = len(cache.files)
 
@@ -283,9 +275,7 @@ class CostStore:
         filename = f"cost-{ts}-{event.id}.json"
         path = _costs_root(self.team_name) / filename
         tmp = path.with_suffix(".tmp")
-        tmp.write_text(
-            event.model_dump_json(indent=2, by_alias=True), encoding="utf-8"
-        )
+        tmp.write_text(event.model_dump_json(indent=2, by_alias=True), encoding="utf-8")
         tmp.replace(path)
         try:
             _record_event_in_summary_cache(self.team_name, path, event)

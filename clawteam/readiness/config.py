@@ -9,13 +9,14 @@ from dataclasses import dataclass
 @dataclass
 class DetectorConfig:
     """Configuration for AgentReadinessDetector.
-    
+
     Args:
         prompt_markers: Provider-specific regex patterns for prompt markers.
         max_wait_ms: Maximum time to wait for readiness (milliseconds).
         quiescence_threshold_ms: Output stability threshold (milliseconds).
         post_reset_cooldown_ms: Cooldown after reset to prevent echo misdetection.
     """
+
     prompt_markers: Optional[list[str]] = None
     max_wait_ms: int = 180_000  # 3 minutes
     quiescence_threshold_ms: int = 3_000  # 3 seconds

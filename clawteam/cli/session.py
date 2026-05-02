@@ -54,16 +54,18 @@ def list_sessions(
         context = tracker.get_context()
         inactive_minutes = int((datetime.now() - context.last_activity).total_seconds() / 60)
 
-        rows.append([
-            tracker.session_id[:8] + "...",
-            tracker.agent_name,
-            context.status.value,
-            context.activity_level.value,
-            str(context.message_count),
-            str(context.file_change_count),
-            (context.current_task[:20] + "...") if context.current_task else "None",
-            f"{inactive_minutes}m",
-        ])
+        rows.append(
+            [
+                tracker.session_id[:8] + "...",
+                tracker.agent_name,
+                context.status.value,
+                context.activity_level.value,
+                str(context.message_count),
+                str(context.file_change_count),
+                (context.current_task[:20] + "...") if context.current_task else "None",
+                f"{inactive_minutes}m",
+            ]
+        )
 
     # Print table
     typer.echo(f"\nSessions in team '{team}':")
@@ -110,7 +112,7 @@ def session_info(
     typer.echo(f"Current task:   {summary['current_task'] or 'None'}")
     typer.echo(f"Current file:   {summary['current_file'] or 'None'}")
 
-    if summary['tags']:
+    if summary["tags"]:
         typer.echo(f"Tags:           {', '.join(summary['tags'])}")
 
     typer.echo("=" * 60)
@@ -141,10 +143,10 @@ def team_summary_cmd(
     typer.echo(f"File changes:      {summary['total_file_changes']}")
     typer.echo("=" * 60)
 
-    if summary['sessions']:
+    if summary["sessions"]:
         typer.echo("\nActive sessions:")
-        for session in summary['sessions']:
-            if session['status'] == 'active':
+        for session in summary["sessions"]:
+            if session["status"] == "active":
                 typer.echo(f"  * {session['agent_name']}: {session['current_task'] or 'No task'}")
 
 
@@ -171,7 +173,7 @@ def find_collaborators(
         typer.echo(f"     Score: {c['score']} | Activity: {c['activity_level']}")
         typer.echo(f"     Task: {c['current_task'] or 'None'}")
         typer.echo(f"     File: {c['current_file'] or 'None'}")
-        if c['tags']:
+        if c["tags"]:
             typer.echo(f"     Tags: {', '.join(c['tags'])}")
         typer.echo()
 

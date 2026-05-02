@@ -108,10 +108,7 @@ class LearningsIntegrator:
         promoted = []
 
         # 检查晋升候选
-        candidates = self.engine.check_for_promotion(
-            min_occurrences=3,
-            min_confidence=0.8
-        )
+        candidates = self.engine.check_for_promotion(min_occurrences=3, min_confidence=0.8)
 
         for entry in candidates:
             # 优先晋升到 AGENTS.md
@@ -120,9 +117,7 @@ class LearningsIntegrator:
             success = self.engine.promote_to_documentation(entry, target)
             if success:
                 promoted.append(entry.entry_id)
-                logger.info(
-                    f"Promoted experience {entry.entry_id} to {target}"
-                )
+                logger.info(f"Promoted experience {entry.entry_id} to {target}")
 
         return promoted
 

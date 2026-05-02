@@ -3,6 +3,7 @@ ClawTeam Structured Logging
 
 Provides structured JSON logging with context propagation and log aggregation support.
 """
+
 import os
 import sys
 import json
@@ -25,6 +26,7 @@ agent_id: ContextVar[str] = ContextVar("agent_id", default="")
 @dataclass
 class LogEntry:
     """Structured log entry"""
+
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     level: str = "INFO"
     message: str = ""
@@ -149,10 +151,14 @@ class StructuredLogger:
 
     # Convenience methods for common logging patterns
     def agent_spawned(self, agent_id: str, team: str, **metadata):
-        self.info(f"Agent {agent_id} spawned in team {team}", agent_id=agent_id, team=team, **metadata)
+        self.info(
+            f"Agent {agent_id} spawned in team {team}", agent_id=agent_id, team=team, **metadata
+        )
 
     def agent_completed(self, agent_id: str, duration_ms: float, **metadata):
-        self.info(f"Agent {agent_id} completed", agent_id=agent_id, duration_ms=duration_ms, **metadata)
+        self.info(
+            f"Agent {agent_id} completed", agent_id=agent_id, duration_ms=duration_ms, **metadata
+        )
 
     def agent_failed(self, agent_id: str, error: Exception, **metadata):
         self.error(f"Agent {agent_id} failed", error=error, agent_id=agent_id, **metadata)
