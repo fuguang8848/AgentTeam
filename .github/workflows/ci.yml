@@ -32,13 +32,17 @@ jobs:
         run: |
           pip install ruff
 
+      - name: Install test dependencies
+        run: |
+          pip install pytest pytest-asyncio
+
       - name: Run linter
         run: |
           poetry run ruff check clawteam/
 
       - name: Run tests
         run: |
-          poetry run pytest tests/ -v --tb=short
+          python -m pytest tests/ -v --tb=short
 
       - name: Upload coverage
         if: matrix.python-version == '3.12'
