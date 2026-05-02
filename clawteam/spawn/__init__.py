@@ -22,9 +22,25 @@ def get_backend(name: str = "auto") -> SpawnBackend:
         import shutil
         import sys
 
-        if sys.platform == "win32" or not shutil.which("tmux"):
-            # Windows or tmux not available - use subprocess backend
-            name = "subprocess"
+        if sys.platform == "win32":
+            # Windows - prefer openclaw_sdk for true multi-agent collaboration
+            # Falls back to openclaw_api or subprocess if SDK not available
+            try:
+                import subprocess
+                result = subprocess.run(
+                    ["cmd", "/c", "openclaw", "gateway", "health"],
+                    capture_output=True,
+                    timeout=5
+                )
+                if result.returncode == 0:
+                    name = "openclaw_sdk"
+                else:
+                    name = "subprocess"
+            except Exception:
+                name = "subprocess"
+        elif not shutil.which("tmux"):
+            # Unix but tmux not available - try openclaw_sdk
+            name = "openclaw_sdk"
         else:
             # Unix with tmux available - prefer tmux for better observability
             name = "tmux"
@@ -35,8 +51,14 @@ def get_backend(name: str = "auto") -> SpawnBackend:
     elif name == "tmux":
         from clawteam.spawn.tmux_backend import TmuxBackend
         return TmuxBackend()
+    elif name == "openclaw_api":
+        from clawteam.spawn.openclaw_api_backend import OpenClawAPIBackend
+        return OpenClawAPIBackend()
+    elif name == "openclaw_sdk":
+        from clawteam.spawn.openclaw_sdk_backend import OpenClawSDKBackend
+        return OpenClawSDKBackend()
     else:
-        raise ValueError(f"Unknown spawn backend: {name}. Available: auto, subprocess, tmux")
+        raise ValueError(f"Unknown spawn backend: {name}. Available: auto, subprocess, tmux, openclaw_api, openclaw_sdk")
 
 
 def spawn_with_retry(

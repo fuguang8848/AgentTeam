@@ -1,6 +1,18 @@
 """ClawTeam - Framework-agnostic multi-agent coordination CLI."""
 
-__version__ = "0.3.0+openclaw1"
+__version__ = "0.5.0+sdk1"
+
+# Core multi-agent framework (SDK-style)
+from clawteam.core import (
+    CTTeam as Team,
+    CTAgent as Agent,
+    CTTask as Task,
+    CTMessage as Message,
+    AgentState as AgentStatus,
+    TaskState as TaskStatus,
+    create_team,
+    get_team,
+)
 
 from clawteam.alerts import (
     Alert,
@@ -125,6 +137,15 @@ from clawteam.insights import (
 from clawteam.skill.engine import SkillEngine
 
 __all__ = [
+    # Core multi-agent framework
+    "Team",
+    "Agent",
+    "Task",
+    "Message",
+    "AgentStatus",
+    "TaskStatus",
+    "create_team",
+    "get_team",
     # Alerts module
     "Alert",
     "AlertType",

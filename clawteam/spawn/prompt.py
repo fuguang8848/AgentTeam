@@ -30,7 +30,7 @@ METACOGNITION_BLOCK = """## Self-Evaluation
 
 After completing each task, include a confidence assessment:
 - Tag your output with `[confidence: 0.X]` where X is 0-10 (e.g., `[confidence: 0.8]`).
-- If confidence < 0.6, explain what you are uncertain about and recommend human review.
+- If confidence is below 0.6, explain what you are uncertain about and recommend human review.
 - If you encounter something outside your expertise, say so and suggest escalation rather than guessing."""
 
 
@@ -100,14 +100,14 @@ def build_agent_prompt(
         "## Coordination Protocol\n",
         "- IMPORTANT: spawned OpenClaw workers run under exec allowlist mode. Use only the allowlisted executable path from $CLAWTEAM_BIN, not arbitrary shell commands.",
         f"- First action: run `clawteam task list {team_name} --owner {agent_name}` to discover your task ID.",
-        f"- Starting a task: `clawteam task update {team_name} <task-id> --status in_progress`",
-        f"- Finishing a task: `clawteam task update {team_name} <task-id> --status completed`",
+        f"- Starting a task: `clawteam task update {team_name} [TASK_ID] --status in_progress`",
+        f"- Finishing a task: `clawteam task update {team_name} [TASK_ID] --status completed`",
         "- When you finish all tasks, send a summary to the leader:",
-        f'  `clawteam inbox send {team_name} {leader_name} "All tasks completed. <brief summary>"`',
+        f'  `clawteam inbox send {team_name} {leader_name} "All tasks completed. [BRIEF_SUMMARY]"',
         "- If you are blocked or any clawteam command is denied/fails, message the leader immediately with the exact error text:",
-        f'  `clawteam inbox send {team_name} {leader_name} "Blocked: <exact error>"`',
-        f"- After finishing work, report your costs: `clawteam cost report {team_name} --input-tokens <N> --output-tokens <N> --cost-cents <N>`",
-        f"- Before finishing, save your session: `clawteam session save {team_name} --session-id <id>`",
+        f'  `clawteam inbox send {team_name} {leader_name} "Blocked: [EXACT_ERROR]"`',
+        f"- After finishing work, report your costs: `clawteam cost report {team_name} --input-tokens [N] --output-tokens [N] --cost-cents [N]`",
+        f"- Before finishing, save your session: `clawteam session save {team_name} --session-id [ID]`",
         "- When you finish all tasks, type `exit` to terminate this session.",
         "",
         METACOGNITION_BLOCK,
