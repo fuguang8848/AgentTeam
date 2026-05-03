@@ -2844,11 +2844,39 @@
             const fromLabel = escapeHtml(m.fromLabel || m.from || 'SYS');
             const toLabel = escapeHtml(m.toLabel || m.to || 'ALL');
             const content = escapeHtml(m.content || m.text || '');
+
+            // P30: render inline image if present
+            let imageHtml = '';
+            if (m.image_url) {
+                imageHtml = `<img src="${escapeHtml(m.image_url)}" alt="image" style="max-width:100%;max-height:200px;border-radius:6px;margin-top:8px;cursor:pointer;" onclick="window.open(this.src)" loading="lazy" />`;
+            } else if (m.image_data) {
+                // P30: base64 inline image (small images only)
+                imageHtml = `<img src="data:${escapeHtml(m.image_mime_type || 'image/png')};base64,${escapeHtml(m.image_data)}" alt="image" style="max-width:100%;max-height:200px;border-radius:6px;margin-top:8px;cursor:pointer;" onclick="window.open(this.src)" />`;
+            }
+
+            // P31: render file attachments if present
+            let attachmentsHtml = '';
+            if (m.attachments && m.attachments.length > 0) {
+                const attItems = m.attachments.map(a => {
+                    const attName = escapeHtml(a.name || 'file');
+                    const attSize = a.size || 0;
+                    const attUrl = a.url ? escapeHtml(a.url) : '#';
+                    const isImage = a.mime_type && a.mime_type.startsWith('image/');
+                    if (isImage && a.url) {
+                        return `<div style="margin-top:4px;"><img src="${attUrl}" alt="${attName}" style="max-width:200px;max-height:120px;border-radius:4px;" loading="lazy" /></div>`;
+                    }
+                    return `<div style="margin-top:4px;font-size:0.85em;">📎 <a href="${attUrl}" target="_blank">${attName}</a> (${(attSize/1024).toFixed(1)}KB)</div>`;
+                }).join('');
+                attachmentsHtml = `<div class="attachments" style="margin-top:6px;">${attItems}</div>`;
+            }
+
             return `<div class="chat-message">
                 <div class="avatar">${name.charAt(0).toUpperCase()}</div>
                 <div class="content">
                     <div class="author">${name} <span class="agent-tag">${agentType}</span></div>
                     <div class="text">${content}</div>
+                    ${imageHtml}
+                    ${attachmentsHtml}
                     <div class="meta">From: ${fromLabel} → To: ${toLabel}</div>
                     <div class="time">${m.timestamp || ''}</div>
                 </div>

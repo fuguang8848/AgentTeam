@@ -40,31 +40,34 @@
   - `TeamMessage` 新增: `image_url`, `image_data`, `image_mime_type`, `image_width`, `image_height`, `attachments: list[FileAttachment]`
   - `Notification` 新增: `image_url`
   - 新增 `FileAttachment` 模型类
-- **待完成**: CLI inbox 图片渲染、Web board 富媒体展示、Streaming 消息支持
+  - CLI inbox 图片渲染: `clawteam/cli/inbox.py` - iTerm2 inline images + URL fallback
+  - Web board 富媒体: `index.html` renderMessage() 支持 image_url/base64/attachments 渲染
+  - Streaming/SSE: `board/server.py` _serve_sse() + polling fallback
 
-#### P34: Dashboard 监控面板 🔄
+#### P34: Dashboard 监控面板 ✅
 - **新增文件**:
   - `clawteam/api/monitor.py`
   - `clawteam/board/dashboard.py`
-- **状态**: 实现中
-- **目标**: 实时会话监控、Token 使用统计、风险评估
+- **状态**: 已完成
+- **功能**: 实时会话监控、Token 使用统计、风险评估、collector + renderer
 
-#### P35: 事件追踪系统 🔄
+#### P35: 事件追踪系统 ✅
 - **目录**: `clawteam/events/`
-- **状态**: 创建中
+- **状态**: 已完成
 - **目标**: 40+ 事件类型、SQLite 持久化、事件查询 API
 
-#### P36: 实时 SSE 推送 🔄
+#### P36: 实时 SSE 推送 ✅
 - **修改文件**:
   - `clawteam/board/server.py`
   - `clawteam/board/static/index.html`
-- **状态**: 修改中
+- **状态**: 已完成
 - **目标**: Server-Sent Events、实时日志推送
 
-#### P37: 组件集成 🔄
-- **状态**: 未开始（p37-integrator specialist 因 Windows subprocess 环境限制未能执行）
-- **目标**: 连接 lifecycle/collaboration/events/dashboard 模块，修复 Dashboard 侧边栏导航 bug
-- **TODO**: 需在 Linux/macOS 环境或使用 tmux backend 重新派发 specialist
+#### P37: 组件集成 ✅
+- **commit**: `0e7b0f8`
+- **Board 接入**: EventAPI/NotificationManager
+- **状态**: 已完成
+- **说明**: Windows subprocess 限制由 OpenClaw SDK backend 解决（parent_agent 参数修复）
 
 ### 已实现的核心功能（v0.4.0 确认）
 
