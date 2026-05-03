@@ -84,6 +84,47 @@
   - "What is Python?" → FAST tier (score=3) → gpt-4o-mini
   - "设计分布式缓存系统" → POWERFUL tier (score=9) → o1
 
+#### P3: 数据库连接池 ✅
+- **commit**: `9464edd` perf(database): P3 database connection pooling + WAL mode
+- **文件**: `clawteam/database/manager.py`
+- **状态**: 已完成
+- **功能**:
+  - `DatabaseConnectionPool`: 基于 `queue.Queue` 的连接池，线程本地连接
+  - `_get_conn()` / `_release_conn()` 显式管理，连接复用
+  - WAL 模式：`_enable_wal_mode()` 提升并发读写性能
+  - 事务支持：`begin()` / `commit()` / `rollback()`
+  - 预编译语句缓存：`prepared_stmts` 字典
+
+#### P4: 查询预编译缓存 ✅
+- **commit**: `dcfacb3` perf(events): P4 prepared statement caching for EventTracker.query()
+- **文件**: `clawteam/events/tracker.py`
+- **状态**: 已完成
+- **功能**:
+  - `_stmt_cache: OrderedDict` 缓存预编译语句模板
+  - LRU 驱逐策略（`maxsize=32`）
+  - `track()`, `query()`, `get_stats()` 全部使用缓存
+  - 查询性能提升：避免重复编译 SQL
+
+#### P5: 异步订阅者通知 ✅
+- **commit**: `541c707` feat(events): P5 async subscriber notification with timeout
+- **文件**: `clawteam/events/tracker.py`
+- **状态**: 已完成
+- **功能**:
+  - `_notify_subscribers_async()` 使用 `ThreadPoolExecutor` 异步通知
+  - `wait([future], timeout=5.0)` 超时保护，防止订阅者阻塞主线程
+  - 事件追踪不受订阅者故障影响
+  - `notify()` 返回 `bool` 指示是否全部成功
+
+#### P6: 内存配置可调参数 ✅
+- **commit**: `e36ebc7` feat(board): P6 Memory Config Tunables
+- **文件**: `clawteam/board/server.py`
+- **状态**: 已完成
+- **功能**:
+  - `_event_queue` / `_chat_event_queue` 队列大小可配置
+  - `CLAWTEAM_MAX_EVENT_QUEUE` / `CLAWTEAM_MAX_CHAT_QUEUE` 环境变量
+  - 默认值：1000 事件 / 500 聊天，超出后丢弃最旧的
+  - `CLAWTEAM_EVENT_TTL_HOURS` 控制事件过期时间
+
 ### 已实现的核心功能（v0.4.0 确认）
 
 | 模块 | 文件 | 功能 | 状态 |
@@ -113,6 +154,10 @@
 | p37-integrator | 组件集成（P37） | SDK backend（Windows） | ✅ 已完成 | `14d1d74` Board SSE → EventAPI |
 | p30-multimodal | 多模态代码（P30-P33） | subprocess（Windows） | ✅ 部分完成 | `bd32e9c` models.py + types.py |
 | p38-model-router | 智能模型路由 | 本地 | ✅ 已完成 | `2f102db` model_router.py |
+| arch-dbpool | P3 数据库连接池 | perf-squad/arch-dbpool | ✅ 已完成 | `9464edd` + WAL 模式 |
+| arch-querycache | P4 查询预编译缓存 | perf-squad/arch-querycache | ✅ 已完成 | `dcfacb3` + LRU 驱逐 |
+| arch-async | P5 异步订阅者通知 | perf-squad/arch-async | ✅ 已完成 | `541c707` + 超时保护 |
+| arch-memconfig | P6 内存配置可调 | perf-squad/arch-memconfig | ✅ 已完成 | `e36ebc7` + 环境变量 |
 
 ---
 
