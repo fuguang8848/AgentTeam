@@ -17,6 +17,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from clawteam.board.collector import BoardCollector
+from clawteam.auth import auth_manager, AuthManager
 
 # Thread-safe chat event broadcaster for SSE
 _chat_event_queue = deque(maxlen=100)  # Last 100 events
@@ -212,8 +213,53 @@ class BoardHandler(BaseHTTPRequestHandler):
     interval: float = 2.0
     team_cache: TeamSnapshotCache
 
+    # Public endpoints that don't require authentication
+    _PUBLIC_ENDPOINTS = frozenset(["/", "/index.html", "/chat.html", "/api/health"])
+
+    def _check_auth(self) -> bool:
+        """
+        Check authentication for the current request.
+
+        Returns True if the request is authenticated or auth is not required.
+        Returns False and sends 401 error if authentication fails.
+        """
+        # Check if auth is required
+        if not auth_manager.is_auth_required():
+            return True
+
+        # Check for API key in X-API-Key header
+        api_key = self.headers.get("X-API-Key", "")
+        if api_key and auth_manager.verify_api_key(api_key):
+            return True
+
+        # Check for Bearer token in Authorization header
+        auth_header = self.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+            payload = auth_manager.verify_token(token)
+            if payload and not payload.is_expired():
+                return True
+
+        # Authentication failed - send 401
+        self.send_error(401, "Unauthorized")
+        return False
+
+    def _is_public_endpoint(self, path: str) -> bool:
+        """Check if the path is a public endpoint that doesn't require auth."""
+        if path in self._PUBLIC_ENDPOINTS:
+            return True
+        # Static files are public
+        if not path.startswith("/api/"):
+            return True
+        return False
+
     def do_GET(self):
         path = self.path.split("?")[0]
+
+        # Check authentication for protected endpoints
+        if not self._is_public_endpoint(path):
+            if not self._check_auth():
+                return
 
         if path == "/" or path == "/index.html":
             self._serve_static("index.html", "text/html")
@@ -409,6 +455,11 @@ class BoardHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = self.path.split("?")[0]
+
+        # All POST endpoints require authentication
+        if not self._check_auth():
+            return
+
         if path == "/api/providers":
             # Providers configuration
             self._serve_providers()
@@ -1315,6 +1366,11 @@ class BoardHandler(BaseHTTPRequestHandler):
     def do_PATCH(self):
         """Handle PATCH requests for task status updates."""
         path = self.path.split("?")[0]
+
+        # All PATCH endpoints require authentication
+        if not self._check_auth():
+            return
+
         # Pattern: /api/team/{team_name}/task/{task_id}
         if path.startswith("/api/team/") and "/task/" in path:
             parts = path.strip("/").split("/")
@@ -1352,6 +1408,10 @@ class BoardHandler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         """Handle DELETE requests."""
         path = self.path.split("?")[0]
+
+        # All DELETE endpoints require authentication
+        if not self._check_auth():
+            return
 
         if path.startswith("/api/providers/"):
             # Delete a provider: /api/providers/{name}
