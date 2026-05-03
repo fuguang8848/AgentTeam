@@ -1999,15 +1999,22 @@ class BoardHandler(BaseHTTPRequestHandler):
 
             # Stream events as they come in
             heartbeat_count = 0
+            idle_cycles = 0
+            active_heartbeat_interval = 10  # seconds when active
+            idle_heartbeat_interval = 30  # seconds when idle (>3 cycles no events)
+            current_timeout = active_heartbeat_interval
+            
             while True:
-                # Wait for event or timeout (10 seconds)
-                acquired = subscriber_lock.acquire(timeout=10)
+                # Wait for event or timeout (adaptive based on activity)
+                acquired = subscriber_lock.acquire(timeout=current_timeout)
                 if acquired:
                     subscriber_lock.release()
 
                 # Send any new events
+                has_new_events = False
                 with _event_broadcaster_lock:
                     while len(_event_queue) > last_event_idx:
+                        has_new_events = True
                         event_data = _event_queue[last_event_idx]
                         # Filter by team/agent if specified
                         if team is None or event_data.get("team_name") == team:
@@ -2020,10 +2027,20 @@ class BoardHandler(BaseHTTPRequestHandler):
                                 self.wfile.flush()
                         last_event_idx += 1
 
-                # Send heartbeat
+                # Adaptive heartbeat: track idle cycles
+                if has_new_events:
+                    idle_cycles = 0
+                    current_timeout = active_heartbeat_interval  # Active: use shorter interval
+                else:
+                    idle_cycles += 1
+                    # After 3 idle cycles (30s), switch to longer interval
+                    if idle_cycles > 3:
+                        current_timeout = idle_heartbeat_interval
+
+                # Send heartbeat (less frequently when idle)
                 heartbeat_count += 1
                 self.wfile.write(
-                    f"data: {json.dumps({'type': 'heartbeat', 'count': heartbeat_count, 'timestamp': _now_iso()}, ensure_ascii=False)}\n\n".encode(
+                    f"data: {json.dumps({'type': 'heartbeat', 'count': heartbeat_count, 'timestamp': _now_iso(), 'idle_cycles': idle_cycles}, ensure_ascii=False)}\n\n".encode(
                         "utf-8"
                     )
                 )

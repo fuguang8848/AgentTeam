@@ -127,20 +127,27 @@ class AgentSessionTracker:
     def update_activity(self, message: Optional[str] = None) -> None:
         """Update session activity timestamp."""
         with self._lock:
-            self.context.last_activity = datetime.now()
-            if message:
-                self.context.message_count += 1
+            self._update_activity_unsafe(message)
 
-            # Update activity level
-            self._update_activity_level()
+    def _update_activity_unsafe(self, message: Optional[str] = None) -> None:
+        """Update session activity - MUST be called while holding _lock."""
+        self.context.last_activity = datetime.now()
+        if message:
+            self.context.message_count += 1
+        self._update_activity_level_unsafe()
 
     def _update_activity_level(self) -> None:
         """Update activity level based on recent activity."""
+        with self._lock:
+            self._update_activity_level_unsafe()
+
+    def _update_activity_level_unsafe(self) -> None:
+        """Update activity level - MUST be called while holding _lock."""
         now = datetime.now()
         time_since_activity = now - self.context.last_activity
 
         # Check for high activity (multiple messages in last minute)
-        recent_messages = self._get_recent_message_count(self._high_activity_window)
+        recent_messages = self._get_recent_message_count_unsafe(self._high_activity_window)
 
         if time_since_activity < timedelta(minutes=1) and recent_messages >= 3:
             self.context.activity_level = SessionActivityLevel.HIGH
@@ -159,13 +166,17 @@ class AgentSessionTracker:
 
     def _get_recent_message_count(self, window: timedelta) -> int:
         """Get number of messages in recent window."""
+        with self._lock:
+            return self._get_recent_message_count_unsafe(window)
+
+    def _get_recent_message_count_unsafe(self, window: timedelta) -> int:
+        """Get number of messages in recent window - MUST be called while holding _lock."""
         # TODO: Implement message history tracking
         # For now, return a simple estimate
-        with self._lock:
-            if window <= self._high_activity_window:
-                # Assume high activity if we just got a message
-                return 1 if self.context.message_count > 0 else 0
-            return self.context.message_count
+        if window <= self._high_activity_window:
+            # Assume high activity if we just got a message
+            return 1 if self.context.message_count > 0 else 0
+        return self.context.message_count
 
     def track_file_change(
         self,
@@ -187,14 +198,15 @@ class AgentSessionTracker:
                     session_id=self.session_id,
                 )
 
-            # Update activity
-            self.update_activity()
+            # Update activity (use unsafe version since we hold the lock)
+            self._update_activity_unsafe()
 
     def set_current_task(self, task: str) -> None:
         """Set the current task being worked on."""
         with self._lock:
             self.context.current_task = task
-            self.update_activity()
+            # Update activity (use unsafe version since we hold the lock)
+            self._update_activity_unsafe()
 
     def set_working_directory(self, directory: str) -> None:
         """Set the current working directory."""
