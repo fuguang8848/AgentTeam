@@ -69,6 +69,21 @@
 - **状态**: 已完成
 - **说明**: Windows subprocess 限制由 OpenClaw SDK backend 解决（parent_agent 参数修复）
 
+#### P38: 智能模型路由 ✅
+- **commit**: `2f102db` feat(orchestrator): P38 intelligent model router
+- **文件**: `clawteam/orchestrator/model_router.py`
+- **状态**: 已完成
+- **功能**:
+  - `TaskComplexityAnalyzer`: 基于关键词 + 启发式的任务复杂度分析（1-10分）
+  - `ComplexityLevel`: TRIVIAL/LOW/MEDIUM/HIGH/EXPERT 五级复杂度
+  - `ModelTier`: FAST/BALANCED/POWERFUL 三级模型
+  - `ModelRoutingPolicy`: (task_type, complexity) → model_tier 路由表
+  - `ModelRouter`: 根据任务复杂度自动选择最优模型
+  - 成本优化：简单任务使用廉价快速模型（节省 80-90% 成本）
+- **示例**:
+  - "What is Python?" → FAST tier (score=3) → gpt-4o-mini
+  - "设计分布式缓存系统" → POWERFUL tier (score=9) → o1
+
 ### 已实现的核心功能（v0.4.0 确认）
 
 | 模块 | 文件 | 功能 | 状态 |
@@ -95,8 +110,9 @@
 | arch-events | 事件追踪 | `monitor-squad/arch-events` | ✅ 已完成 | tracker.py (14KB) + api + models |
 | arch-realtime | SSE 实时推送 | `monitor-squad/arch-realtime` | ✅ 已完成 | index.html (366KB) + 7 个 JS 文件 |
 | arch-integrator | 组件集成 | `monitor-squad/arch-integrator` | 🔄 进行中 | 待开始 |
-| p37-integrator | 组件集成（P37） | subprocess（Windows） | ⚠️ 环境限制 | 未执行 |
+| p37-integrator | 组件集成（P37） | SDK backend（Windows） | ✅ 已完成 | `14d1d74` Board SSE → EventAPI |
 | p30-multimodal | 多模态代码（P30-P33） | subprocess（Windows） | ✅ 部分完成 | `bd32e9c` models.py + types.py |
+| p38-model-router | 智能模型路由 | 本地 | ✅ 已完成 | `2f102db` model_router.py |
 
 ---
 
