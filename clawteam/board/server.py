@@ -1887,16 +1887,18 @@ class BoardHandler(BaseHTTPRequestHandler):
 
             notifications = []
             for n in history:
-                notifications.append({
-                    "id": n.notification_id,
-                    "title": n.title,
-                    "message": n.body,
-                    "time": n.timestamp[:19] if n.timestamp else "",
-                    "unread": not n.acknowledged,
-                    "icon": icon_map.get(n.notification_type, "ℹ️"),
-                    # P30-P33: Include image_url for rich media display
-                    "image_url": n.image_url,
-                })
+                notifications.append(
+                    {
+                        "id": n.notification_id,
+                        "title": n.title,
+                        "message": n.body,
+                        "time": n.timestamp[:19] if n.timestamp else "",
+                        "unread": not n.acknowledged,
+                        "icon": icon_map.get(n.notification_type, "ℹ️"),
+                        # P30-P33: Include image_url for rich media display
+                        "image_url": n.image_url,
+                    }
+                )
 
             self._serve_json({"notifications": notifications})
         except Exception as e:

@@ -182,6 +182,7 @@ def console_print_image(
 # Exposed for use by clawteam.cli.commands
 # =============================================================================
 
+
 def patch_inbox_human_output():
     """Monkey-patch the inbox _human output functions to support images.
 
@@ -196,4 +197,4 @@ def patch_inbox_human_output():
     # The _human functions in inbox commands call console.print with formatted messages.
     # We expose render_message_image so commands.py can use it.
     cmds._render_inbox_image = render_message_image  # type: ignore[attr-defined]
-    cmds._console_print_image = console_print_image   # type: ignore[attr-defined]
+    cmds._console_print_image = console_print_image  # type: ignore[attr-defined]
