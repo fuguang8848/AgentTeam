@@ -63,6 +63,11 @@ class MessageType(str, Enum):
     shutdown_rejected = "shutdown_rejected"
     idle = "idle"
     broadcast = "broadcast"
+    # P33: streaming message types
+    stream_start = "stream_start"
+    stream_chunk = "stream_chunk"
+    stream_end = "stream_end"
+    activity = "activity"
 
 
 class TeamMember(BaseModel):
@@ -100,6 +105,22 @@ class FileAttachment(BaseModel):
     url: str | None = None
     path: str | None = None
     hash_sha256: str | None = None
+
+
+class AgentActivity(BaseModel):
+    """Real-time agent activity update (P33)."""
+
+    model_config = {"populate_by_name": True}
+
+    agent_id: str = Field(alias="agentId")
+    agent_name: str = Field(alias="agentName")
+    activity_type: str = Field(alias="activityType")
+    """Activity type: 'thinking', 'coding', 'waiting', 'idle', etc."""
+    message: str | None = None
+    """Activity description."""
+    progress: float | None = None
+    """Optional progress (0.0-1.0)."""
+    timestamp: str = Field(default_factory=_now_iso)
 
 
 class TeamMessage(BaseModel):
@@ -149,6 +170,12 @@ class TeamMessage(BaseModel):
     # P33: audio/video placeholder (not yet implemented)
     audio_url: str | None = None  # TODO: implement player
     video_url: str | None = None  # TODO: implement player
+    # P33: streaming message fields
+    stream_id: str | None = None  # ID for streaming sequence
+    chunk_index: int | None = None  # Index in stream
+    total_chunks: int | None = None  # Total chunks expected
+    is_final: bool = False  # Final chunk flag
+    progress: float | None = None  # 0.0-1.0 progress
 
 
 class QualityScore(BaseModel):

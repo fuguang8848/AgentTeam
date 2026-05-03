@@ -690,6 +690,8 @@
         .chat-message .author { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
         .chat-message .text { font-size: 13px; line-height: 1.6; }
         .chat-message .time { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+        .stream-indicator { font-size: 11px; margin-left: 6px; }
+        .activity-indicator { font-size: 11px; margin-left: 6px; }
 
         /* ===== Role Tag System (SpectrAI Style) ===== */
         .role-tag {
@@ -2844,6 +2846,22 @@
             const fromLabel = escapeHtml(m.fromLabel || m.from || 'SYS');
             const toLabel = escapeHtml(m.toLabel || m.to || 'ALL');
             const content = escapeHtml(m.content || m.text || '');
+            const msgType = m.type || 'message';
+
+            // P33: streaming message indicator
+            let streamIndicator = '';
+            if (msgType === 'stream_start') {
+                streamIndicator = '<span class="stream-indicator" style="color:var(--accent);">🔄 Starting stream...</span>';
+            } else if (msgType === 'stream_chunk') {
+                const progress = m.progress !== undefined ? `<span style="color:var(--text-tertiary);">(${Math.round(m.progress * 100)}%)</span>` : '';
+                const chunkIdx = m.chunk_index !== undefined ? `[${m.chunk_index}${m.total_chunks !== undefined ? '/' + m.total_chunks : ''}]` : '';
+                streamIndicator = `<span class="stream-indicator" style="color:var(--purple);">${chunkIdx} ${progress}</span>`;
+            } else if (msgType === 'stream_end') {
+                streamIndicator = '<span class="stream-indicator" style="color:var(--green);">✅ Stream complete</span>';
+            } else if (msgType === 'activity') {
+                const activityIcon = m.activityType === 'thinking' ? '🤔' : m.activityType === 'coding' ? '⌨️' : m.activityType === 'waiting' ? '⏳' : '📝';
+                streamIndicator = `<span class="activity-indicator" style="color:var(--yellow);">${activityIcon} ${escapeHtml(m.message || m.activityType)}</span>`;
+            }
 
             // P30: render inline image if present
             let imageHtml = '';
@@ -2873,7 +2891,7 @@
             return `<div class="chat-message">
                 <div class="avatar">${name.charAt(0).toUpperCase()}</div>
                 <div class="content">
-                    <div class="author">${name} <span class="agent-tag">${agentType}</span></div>
+                    <div class="author">${name} <span class="agent-tag">${agentType}</span> ${streamIndicator}</div>
                     <div class="text">${content}</div>
                     ${imageHtml}
                     ${attachmentsHtml}

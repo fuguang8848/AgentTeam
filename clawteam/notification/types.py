@@ -18,6 +18,11 @@ class NotificationType(str, Enum):
     STUCK = "stuck"
     INFO = "info"
     WARNING = "warning"
+    # P32: rich notification types
+    PROGRESS = "progress"  # Progress update
+    MEDIA = "media"  # Audio/video notification
+    FILE = "file"  # File shared notification
+    IMAGE = "image"  # Image shared notification
 
 
 class NotificationPriority(str, Enum):
@@ -46,6 +51,11 @@ class Notification:
     details: dict[str, Any] = field(default_factory=dict)
     # P30: image support in notifications
     image_url: str | None = None
+    # P32: rich notification fields
+    attachments: list[Any] = field(default_factory=list)  # List[FileAttachment]
+    metadata: dict[str, Any] = field(default_factory=dict)
+    action_url: str | None = None  # CTA button URL
+    progress: float | None = None  # 0.0-1.0 progress indicator
 
     def __post_init__(self):
         if not self.notification_id:
@@ -71,6 +81,14 @@ class Notification:
             result["details"] = self.details
         if self.image_url:
             result["image_url"] = self.image_url
+        if self.attachments:
+            result["attachments"] = self.attachments
+        if self.metadata:
+            result["metadata"] = self.metadata
+        if self.action_url:
+            result["action_url"] = self.action_url
+        if self.progress is not None:
+            result["progress"] = self.progress
         return result
 
     @classmethod
