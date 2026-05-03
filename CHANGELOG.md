@@ -19,15 +19,15 @@
     - `register-child` - 注册子 Agent
   - `--parent` flag for spawn command
 
-#### P28: 工具注册增强 🔄
+#### P28: 工具注册增强 ✅
 - **文件**: `clawteam/tools/registry.py`
-- **状态**: 修改中
-- **目标**: 增强工具注册表，支持动态工具发现
+- **状态**: 已完成
+- **功能**: 增强工具注册表，支持动态工具发现
 
-#### P29: 协作增强 🔄
+#### P29: 协作增强 ✅
 - **目录**: `clawteam/collaboration/`
-- **状态**: 创建中
-- **目标功能**:
+- **状态**: 已完成
+- **功能**:
   - Activity Feed（活动流）
   - Presence（在线状态）
   - Mentions（@提及）

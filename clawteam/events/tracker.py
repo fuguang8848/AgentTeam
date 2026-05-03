@@ -188,6 +188,7 @@ class EventTracker:
         task_id: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
+        order: str = "DESC",
     ) -> List[Dict[str, Any]]:
         """Query events with filters.
 
@@ -203,6 +204,7 @@ class EventTracker:
             task_id: Filter by task ID.
             limit: Maximum number of events to return.
             offset: Number of events to skip.
+            order: Sort order - "ASC" for oldest first, "DESC" for newest first (default).
 
         Returns:
             List of event dictionaries.
@@ -253,7 +255,7 @@ class EventTracker:
         query = f"""
             SELECT * FROM events
             WHERE {where_clause}
-            ORDER BY timestamp DESC
+            ORDER BY timestamp {order}
             LIMIT ? OFFSET ?
         """
         params.extend([limit, offset])
@@ -297,9 +299,10 @@ class EventTracker:
             limit: Maximum number of events.
 
         Returns:
-            List of event dictionaries sorted by timestamp.
+            List of event dictionaries sorted by timestamp (oldest first).
         """
-        return self.query(agent_name=agent_name, limit=limit)
+        # Override the default DESC order to get chronological timeline
+        return self.query(agent_name=agent_name, limit=limit, order="ASC")
 
     def get_task_events(
         self,

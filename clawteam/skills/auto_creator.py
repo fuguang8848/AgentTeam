@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +38,7 @@ class DetectedPattern(BaseModel):
     last_detected: datetime = Field(default_factory=datetime.now)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    class Config:
-        json_encoders = {datetime: lambda dt: dt.isoformat()}
+    model_config = ConfigDict(json_encoders={datetime: lambda dt: dt.isoformat()})
 
 
 class SkillSpec(BaseModel):
@@ -59,8 +58,7 @@ class SkillSpec(BaseModel):
     examples: List[Dict[str, Any]] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    class Config:
-        json_encoders = {datetime: lambda dt: dt.isoformat()}
+    model_config = ConfigDict(json_encoders={datetime: lambda dt: dt.isoformat()})
 
 
 class SkillUsageTracker:
@@ -242,7 +240,7 @@ class SkillAutoCreator:
             file_path = pattern_dir / f"pattern_{pattern.pattern_id}.json"
 
             with open(file_path, "w", encoding="utf-8") as f:
-                data = pattern.dict()
+                data = pattern.model_dump()
                 for key in ["first_detected", "last_detected"]:
                     if key in data and isinstance(data[key], datetime):
                         data[key] = data[key].isoformat()
@@ -640,7 +638,7 @@ class SkillAutoCreator:
             # 保存技能规范
             spec_path = skill_dir / "spec.json"
             with open(spec_path, "w", encoding="utf-8") as f:
-                spec_dict = spec.dict()
+                spec_dict = spec.model_dump()
                 # 处理 datetime 字段
                 for key in ["created_at"]:
                     if key in spec_dict and isinstance(spec_dict[key], datetime):
