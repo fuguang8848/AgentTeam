@@ -44,6 +44,8 @@ class Notification:
     acknowledged: bool = False
     acknowledged_at: str | None = None
     details: dict[str, Any] = field(default_factory=dict)
+    # P30: image support in notifications
+    image_url: str | None = None
 
     def __post_init__(self):
         if not self.notification_id:
@@ -67,6 +69,8 @@ class Notification:
             result["acknowledged_at"] = self.acknowledged_at
         if self.details:
             result["details"] = self.details
+        if self.image_url:
+            result["image_url"] = self.image_url
         return result
 
     @classmethod

@@ -91,6 +91,17 @@ class TeamConfig(BaseModel):
     budget_cents: float = Field(default=0.0, alias="budgetCents")
 
 
+class FileAttachment(BaseModel):
+    """A file attachment in a message."""
+
+    name: str
+    size: int
+    mime_type: str = "application/octet-stream"
+    url: str | None = None
+    path: str | None = None
+    hash_sha256: str | None = None
+
+
 class TeamMessage(BaseModel):
     """A message in the team mailbox system (aligned with teammate-tool).
 
@@ -127,6 +138,17 @@ class TeamMessage(BaseModel):
     confidence: float | None = None
     # idempotency: dedup key to prevent duplicate messages on retry
     idempotency_key: str | None = Field(default=None, alias="idempotencyKey")
+    # P30: image support
+    image_url: str | None = None
+    image_data: str | None = None  # Base64 encoded small image
+    image_mime_type: str = "image/png"
+    image_width: int | None = None
+    image_height: int | None = None
+    # P31: file attachment support
+    attachments: list[FileAttachment] = []
+    # P33: audio/video placeholder (not yet implemented)
+    audio_url: str | None = None  # TODO: implement player
+    video_url: str | None = None  # TODO: implement player
 
 
 class QualityScore(BaseModel):
