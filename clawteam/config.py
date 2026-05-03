@@ -303,7 +303,7 @@ class AppConfig(BaseConfig):
 
     # Model resolution (per-agent model selection)
     default_model: str = ""  # Fallback model when no other config applies
-    model_tiers: dict = {}  # Model tier aliases, e.g. {"strong": "claude-opus"}
+    model_tiers: dict = field(default_factory=dict)  # Model tier aliases, e.g. {"strong": "claude-opus"}
 
     # Nested configs
     database: Optional[DatabaseConfig] = None
