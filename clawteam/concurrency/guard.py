@@ -408,18 +408,18 @@ class ConcurrencyGuard:
         """
         memory_snapshot = self._get_memory_snapshot()
 
+        # 会话数警告（优先检查，会话超限比内存高更紧急）
+        if self._active_sessions >= self.config.max_sessions * self.config.warn_session_percent:
+            return {
+                "warn": True,
+                "message": f"Approaching session limit: {self._active_sessions}/{self.config.max_sessions}",
+            }
+
         # 内存警告
         if memory_snapshot["memory_usage_percent"] > self.config.warn_memory_percent:
             return {
                 "warn": True,
                 "message": f"High memory usage: {int(memory_snapshot['memory_usage_percent'])}%",
-            }
-
-        # 会话数警告
-        if self._active_sessions >= self.config.max_sessions * self.config.warn_session_percent:
-            return {
-                "warn": True,
-                "message": f"Approaching session limit: {self._active_sessions}/{self.config.max_sessions}",
             }
 
         return {"warn": False}
