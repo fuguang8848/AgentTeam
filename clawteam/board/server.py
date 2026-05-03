@@ -1991,9 +1991,7 @@ class BoardHandler(BaseHTTPRequestHandler):
                 initial_result = api.get_events(team_name=team, agent_name=agent, limit=limit)
                 for event in initial_result.get("events", []):
                     self.wfile.write(
-                        f"data: {json.dumps({'type': 'event', 'data': event}, ensure_ascii=False)}\n\n".encode(
-                            "utf-8"
-                        )
+                        f"data: {json.dumps({'type': 'event', 'data': event}, ensure_ascii=False)}\n\n".encode("utf-8")
                     )
                     self.wfile.flush()
             except Exception as e:
