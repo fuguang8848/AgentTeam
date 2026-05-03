@@ -16,11 +16,13 @@
 ## 📝 文档完善
 
 ### 文档更新
-- [x] `CAPABILITIES.md` - 完整能力清单
-- [x] `PLATFORM_COMPATIBILITY.md` - 平台兼容性报告
-- [ ] `API.md` - 更新 API 文档
-- [ ] `CLI.md` - 更新 CLI 参考
-- [ ] 更新多语言 README
+- [x] `CAPABILITIES.md` - 完整能力清单 ✅
+- [x] `PLATFORM_COMPATIBILITY.md` - 平台兼容性报告 ✅
+- [x] `API.md` - REST API 完整参考 ✅
+- [x] `CLI.md` - CLI 命令详解 ✅
+- [x] `CONTRIBUTING.md` - 贡献指南 ✅
+- [x] `DEPLOYMENT.md` - Docker / 裸机部署指南 ✅
+- [x] README 链接已更新 ✅
 
 ### GitHub 更新
 - [ ] Release v0.5.0 正式发布

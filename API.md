@@ -1,328 +1,444 @@
-# ClawTeam API Reference
+# ClawTeam-OpenClaw API Documentation
 
-## Board Server API
-
-The ClawTeam Board Server provides a REST API for managing teams, tasks, and sessions.
-
-**Base URL**: `http://localhost:8080`
-
-### Endpoints Overview
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/` | Serve web UI |
-| GET | `/api/overview` | Get system overview |
-| GET | `/api/team/{name}` | Get team details |
-| POST | `/api/team/{name}/task` | Create task |
-| PATCH | `/api/team/{name}/task/{id}` | Update task |
-| DELETE | `/api/team/{name}/task/{id}` | Delete task |
-| GET | `/api/team/{name}/events` | Get team events (SSE) |
-| POST | `/api/chat` | AI chat endpoint |
-| GET | `/api/usage/summary` | Token usage summary |
-| GET | `/api/usage/trend` | Token usage trend |
-| GET | `/api/usage/providers` | Provider usage breakdown |
+> **Version**: v0.5.1 | **Base URL**: `http://localhost:8080/api/v1`
 
 ---
 
-## Authentication
+## Overview
 
-Most endpoints don't require authentication. For AI features:
+ClawTeam provides a RESTful API for team management, agent orchestration, and monitoring. All endpoints require authentication via `X-ClawTeam-Token` header.
+
+### Authentication
 
 ```bash
-# Set gateway token in environment
-export OPENCLAW_GATEWAY_TOKEN="your-token"
-export OPENCLAW_GATEWAY_URL="http://localhost:18789"
+curl -H "X-ClawTeam-Token: your-token" http://localhost:8080/api/v1/teams
 ```
 
----
+### Response Format
 
-## Endpoints
+All responses are JSON:
 
-### GET /
-
-Serves the web UI HTML page.
-
-**Response**: HTML page
-
----
-
-### GET /api/overview
-
-Get system overview including all teams and their status.
-
-**Response**:
 ```json
 {
-  "teams": [
-    {
-      "name": "my-team",
-      "description": "My team",
-      "active_sessions": 2,
-      "session_count": 10,
-      "tasks": {
-        "total": 5,
-        "todo": 1,
-        "in_progress": 2,
-        "done": 2
-      },
-      "members": [
-        {
-          "name": "leader",
-          "status": "active",
-          "inbox_count": 0
-        }
-      ]
-    }
-  ],
-  "summary": {
-    "total_teams": 1,
-    "active_sessions": 2
+  "success": true,
+  "data": { ... },
+  "error": null
+}
+```
+
+### Error Format
+
+```json
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "TEAM_NOT_FOUND",
+    "message": "Team 'my-team' not found"
   }
 }
 ```
 
 ---
 
-### GET /api/team/{name}
+## Teams API
 
-Get detailed team information.
+### List Teams
 
-**Parameters**:
-- `name` (path): Team name
+```
+GET /api/v1/teams
+```
 
-**Response**:
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "name": "my-team",
+      "created_at": "2026-05-04T02:00:00Z",
+      "agents": ["agent-1", "agent-2"],
+      "status": "active"
+    }
+  ]
+}
+```
+
+### Create Team
+
+```
+POST /api/v1/teams
+```
+
+**Body:**
 ```json
 {
   "name": "my-team",
-  "description": "Team description",
-  "active_sessions": 2,
-  "session_count": 10,
-  "created_at": "2026-05-01T10:00:00Z",
-  "tasks": [...],
-  "members": [...],
-  "events": [...]
+  "backend": "tmux",
+  "transport": "file"
 }
 ```
 
----
-
-### POST /api/team/{name}/task
-
-Create a new task in a team.
-
-**Parameters**:
-- `name` (path): Team name
-
-**Request Body**:
+**Response:**
 ```json
 {
-  "title": "Task title",
-  "description": "Task description",
-  "priority": "medium",
-  "owner": "agent-name"
-}
-```
-
-**Response**:
-```json
-{
-  "id": "task-123",
-  "title": "Task title",
-  "status": "todo",
-  "priority": "medium",
-  "owner": "agent-name",
-  "created_at": "2026-05-01T10:00:00Z"
-}
-```
-
----
-
-### PATCH /api/team/{name}/task/{id}
-
-Update a task's status or attributes.
-
-**Parameters**:
-- `name` (path): Team name
-- `id` (path): Task ID
-
-**Request Body**:
-```json
-{
-  "status": "in_progress",
-  "owner": "new-owner"
-}
-```
-
-**Response**:
-```json
-{
-  "id": "task-123",
-  "status": "in_progress",
-  "owner": "new-owner"
-}
-```
-
----
-
-### DELETE /api/team/{name}/task/{id}
-
-Delete a task.
-
-**Parameters**:
-- `name` (path): Team name
-- `id` (path): Task ID
-
-**Response**:
-```json
-{
-  "status": "ok"
-}
-```
-
----
-
-### GET /api/team/{name}/events
-
-Server-Sent Events (SSE) endpoint for real-time team updates.
-
-**Parameters**:
-- `name` (path): Team name
-
-**Response**: SSE stream with events:
-```
-event: task_update
-data: {"task_id": "123", "status": "done"}
-
-event: member_joined
-data: {"member": "alice"}
-```
-
----
-
-### POST /api/chat
-
-AI chat endpoint for conversational interaction.
-
-**Request Body**:
-```json
-{
-  "message": "Hello, create a new team for me",
-  "history": [
-    {"role": "user", "text": "Hi"},
-    {"role": "assistant", "text": "Hello! How can I help?"}
-  ]
-}
-```
-
-**Response**:
-```json
-{
-  "response": "Sure, I can help you create a team. What would you like to name it?",
-  "message": "Hello, create a new team for me",
-  "timestamp": "2026-05-01T10:00:00Z"
-}
-```
-
----
-
-### GET /api/usage/summary
-
-Get token usage summary across all providers.
-
-**Response**:
-```json
-{
-  "total_tokens": 150000,
-  "total_cost": 0.45,
-  "by_provider": {
-    "minimax": {"tokens": 100000, "cost": 0.30},
-    "bailian": {"tokens": 50000, "cost": 0.15}
+  "success": true,
+  "data": {
+    "name": "my-team",
+    "created_at": "2026-05-04T02:00:00Z",
+    "agents": [],
+    "status": "active"
   }
 }
 ```
 
----
+### Get Team Details
 
-### GET /api/usage/trend
+```
+GET /api/v1/teams/{team_name}
+```
 
-Get token usage trend over time.
+### Delete Team
 
-**Query Parameters**:
-- `days` (optional): Number of days to look back (default: 7)
+```
+DELETE /api/v1/teams/{team_name}
+```
 
-**Response**:
+**Response:**
 ```json
 {
-  "trend": [
-    {"date": "2026-05-01", "tokens": 5000},
-    {"date": "2026-05-02", "tokens": 7500}
-  ]
+  "success": true,
+  "data": { "deleted": "my-team" }
 }
 ```
 
 ---
 
-### GET /api/usage/providers
+## Agents API
 
-Get detailed usage breakdown by provider.
+### List Agents
 
-**Response**:
+```
+GET /api/v1/teams/{team_name}/agents
+```
+
+**Response:**
 ```json
 {
-  "providers": {
-    "minimax": {
-      "calls": 150,
-      "tokens": 100000,
-      "cost": 0.30
+  "success": true,
+  "data": [
+    {
+      "name": "agent-1",
+      "agent_id": "agent-uuid",
+      "backend": "tmux",
+      "status": "running",
+      "started_at": "2026-05-04T02:00:00Z"
+    }
+  ]
+}
+```
+
+### Spawn Agent
+
+```
+POST /api/v1/teams/{team_name}/agents
+```
+
+**Body:**
+```json
+{
+  "agent_name": "worker",
+  "agent_type": "general-purpose",
+  "prompt": "Analyze code quality",
+  "model": "gpt-4",
+  "parent_agent": "leader-agent-id"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "agent_id": "agent-uuid",
+    "name": "worker",
+    "status": "spawned"
+  }
+}
+```
+
+### Send Message to Agent
+
+```
+POST /api/v1/teams/{team_name}/agents/{agent_name}/messages
+```
+
+**Body:**
+```json
+{
+  "content": "Analyze the code in /path/to/project",
+  "type": "task"
+}
+```
+
+### Get Agent Inbox
+
+```
+GET /api/v1/teams/{team_name}/agents/{agent_name}/inbox
+```
+
+### Terminate Agent
+
+```
+DELETE /api/v1/teams/{team_name}/agents/{agent_name}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": { "terminated": "worker" }
+}
+```
+
+### Terminate All Children
+
+```
+DELETE /api/v1/teams/{team_name}/agents/{agent_name}/children
+```
+
+---
+
+## Sessions API
+
+### List Sessions
+
+```
+GET /api/v1/sessions
+```
+
+**Query Parameters:**
+- `team`: Filter by team name
+- `status`: Filter by status (running/completed/failed)
+
+### Get Session Details
+
+```
+GET /api/v1/sessions/{session_id}
+```
+
+### Send Message to Session
+
+```
+POST /api/v1/sessions/{session_id}/messages
+```
+
+**Body:**
+```json
+{
+  "content": "Your task message here"
+}
+```
+
+---
+
+## Events API
+
+### List Events
+
+```
+GET /api/v1/teams/{team_name}/events
+```
+
+**Query Parameters:**
+- `type`: Filter by event type
+- `limit`: Max events to return (default: 100)
+- `offset`: Pagination offset
+
+**Event Types:**
+- `team.created`
+- `team.deleted`
+- `agent.spawned`
+- `agent.terminated`
+- `agent.message`
+- `agent.error`
+
+### Get Event Stream (SSE)
+
+```
+GET /api/v1/teams/{team_name}/events/stream
+```
+
+Returns Server-Sent Events stream for real-time updates.
+
+---
+
+## Board API
+
+### Get Board Status
+
+```
+GET /api/v1/board/status
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "active_sessions": 5,
+    "peak_concurrent": 10,
+    "concurrent_limit": 10,
+    "utilization_pct": 50
+  }
+}
+```
+
+### Get Active Sessions
+
+```
+GET /api/v1/board/sessions
+```
+
+### Get Board Logs
+
+```
+GET /api/v1/board/logs
+```
+
+**Query Parameters:**
+- `level`: Log level (debug/info/warning/error)
+- `limit`: Max logs to return
+
+---
+
+## Metrics API
+
+### Get Usage Metrics
+
+```
+GET /api/v1/metrics/usage
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "total_tokens": 1000000,
+    "total_cost_usd": 25.50,
+    "by_model": {
+      "gpt-4": { "tokens": 800000, "cost": 20.00 },
+      "gpt-4o-mini": { "tokens": 200000, "cost": 5.50 }
     }
   }
 }
 ```
 
+### Get Token Usage Trend
+
+```
+GET /api/v1/metrics/usage/trend
+```
+
+**Query Parameters:**
+- `period`: `daily` | `weekly` | `monthly`
+
 ---
 
-## Error Responses
+## Auth API
 
-All endpoints may return these error responses:
+### Get Auth Status
 
-### 400 Bad Request
+```
+GET /api/v1/auth/status
+```
+
+### Update Auth Token
+
+```
+PUT /api/v1/auth/token
+```
+
+**Body:**
 ```json
 {
-  "error": "Invalid request parameters",
-  "details": "Missing required field: name"
+  "token": "new-token-here"
 }
 ```
 
-### 404 Not Found
+---
+
+## Configuration API
+
+### Get Config
+
+```
+GET /api/v1/config
+```
+
+### Update Config
+
+```
+PUT /api/v1/config
+```
+
+**Body:**
 ```json
 {
-  "error": "Team not found",
-  "team": "nonexistent-team"
+  "agents": {
+    "max_concurrent": 10
+  },
+  "alerts": {
+    "enabled": true
+  }
 }
 ```
 
-### 500 Internal Server Error
+---
+
+## WebSocket API
+
+### Board WebSocket
+
+```
+ws://localhost:8080/ws/board
+```
+
+**Protocol:**
 ```json
-{
-  "error": "Internal server error",
-  "details": "Database connection failed"
-}
+// Client → Server
+{ "type": "subscribe", "channel": "sessions" }
+{ "type": "send_message", "to": "agent-1", "content": "Hello" }
+
+// Server → Client
+{ "type": "session_update", "data": { ... } }
+{ "type": "message", "from": "agent-1", "content": "Hello back" }
 ```
 
 ---
 
-## Rate Limiting
+## Rate Limits
 
-Currently no rate limiting is enforced. Future versions may implement per-IP or per-token rate limits.
-
----
-
-## WebSocket (Future)
-
-WebSocket support for bidirectional communication is planned for future versions.
+| Endpoint | Limit |
+|----------|-------|
+| `/api/v1/*` | 100 requests/minute |
+| `/ws/*` | 10 connections/minute |
 
 ---
 
-## CLI Reference
+## Error Codes
 
-For command-line usage, see [CLI.md](CLI.md).
+| Code | Description |
+|------|-------------|
+| `TEAM_NOT_FOUND` | Team does not exist |
+| `AGENT_NOT_FOUND` | Agent does not exist |
+| `SESSION_NOT_FOUND` | Session does not exist |
+| `AUTH_REQUIRED` | Authentication token missing or invalid |
+| `RATE_LIMITED` | Too many requests |
+| `VALIDATION_ERROR` | Request body validation failed |
+| `INTERNAL_ERROR` | Internal server error |
+
+---
+
+*Last updated: 2026-05-04*

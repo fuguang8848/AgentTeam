@@ -194,8 +194,9 @@ clawteam board serve --port 8080
 | [PLATFORM_COMPATIBILITY.md](PLATFORM_COMPATIBILITY.md) | 平台兼容性报告 |
 | [API.md](API.md) | REST API 完整参考 |
 | [CLI.md](CLI.md) | CLI 命令详解 |
-| [DEPLOY.md](DEPLOY.md) | Docker / 裸机部署指南 |
-| [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | 开发者指南 |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Docker / 裸机部署指南 |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | 贡献指南 |
+| [TODO.md](TODO.md) | 待办事项跟踪 |
 | [CHANGELOG.md](CHANGELOG.md) | 升级日志 |
 
 ---
