@@ -147,6 +147,7 @@ class OpenClawSDKBackend(SpawnBackend):
         skip_permissions: bool = False,
         openclaw_agent: str | None = None,
         model: str | None = None,
+        parent_agent: str = "",
     ) -> str:
         """
         通过 Gateway Sessions API 启动 OpenClaw Agent
