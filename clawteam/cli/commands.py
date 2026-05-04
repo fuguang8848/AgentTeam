@@ -2922,7 +2922,12 @@ def board_live(
 def board_monitor(
     team: str = typer.Argument(None, help="Team name (optional, monitors all teams if omitted)"),
     agent: Optional[str] = typer.Option(None, "--agent", "-a", help="Filter by agent name"),
+    status_filter: Optional[str] = typer.Option(None, "--status", "-s", help="Filter by status type (started/completed/terminated/error)"),
     port: int = typer.Option(8080, "--port", "-p", help="Board server port"),
+    reconnect: bool = typer.Option(False, "--reconnect", "-r", help="Auto-reconnect on disconnect"),
+    count: bool = typer.Option(False, "--count", "-c", help="Show event counts by status"),
+    no_color: bool = typer.Option(False, "--no-color", help="Disable colored output"),
+    tail: int = typer.Option(0, "--tail", "-t", help="Show last N events on connect"),
 ):
     """Real-time agent activity monitor - stream agent events as they happen.
 
@@ -2936,8 +2941,21 @@ def board_monitor(
     """
     import urllib.request
     import urllib.parse
+    import datetime
 
     base_url = f"http://127.0.0.1:{port}"
+
+    # Event counters for --count mode
+    event_counts = {
+        "started": 0,
+        "completed": 0,
+        "terminated": 0,
+        "error": 0,
+        "task_assigned": 0,
+        "heartbeat": 0,
+        "message": 0,
+        "other": 0,
+    } if count else None
 
     # Build SSE URL
     params = {}
@@ -2953,31 +2971,123 @@ def board_monitor(
     if not _json_output:
         console.print(f"[dim]Connecting to {url}...[/dim]")
         console.print("[dim]Press Ctrl+C to stop.[/dim]")
+        if reconnect:
+            console.print("[dim]Auto-reconnect enabled.[/dim]")
+        if tail > 0:
+            console.print(f"[dim]Showing last {tail} events on connect.[/dim]")
         console.print()
 
-    try:
-        req = urllib.request.Request(url, headers={"Accept": "text/event-stream"})
-        with urllib.request.urlopen(req, timeout=30) as response:
-            buffer = ""
-            for line in response:
-                line = line.decode("utf-8").strip()
-                if line.startswith("data: "):
-                    data = json.loads(line[6:])
-                    if data.get("type") == "connected":
-                        if not _json_output:
-                            console.print("[green]Connected![/green] Waiting for agent activity...")
-                            console.print("-" * 60)
-                    elif data.get("type") == "activity":
-                        activity = data["data"]
-                        _print_agent_activity(activity)
-                    elif data.get("type") == "heartbeat":
-                        pass  # Skip heartbeat comments
-    except KeyboardInterrupt:
+    def process_event(activity: dict) -> bool:
+        """Process an activity event. Returns True if it should be displayed."""
+        # Status filter
+        if status_filter and activity.get("status") != status_filter:
+            return False
+
+        # Update counts
+        if event_counts is not None:
+            s = activity.get("status", "other")
+            if s in event_counts:
+                event_counts[s] += 1
+            else:
+                event_counts["other"] += 1
+
+        return True
+
+    def print_activity(activity: dict):
+        """Print an agent activity in a formatted way."""
+        ts = activity.get("timestamp", "")
+        team = activity.get("team_name", "?")
+        agent = activity.get("agent_name", "?")
+        status = activity.get("status", "?")
+        message = activity.get("message", "")
+
+        # Format timestamp
+        try:
+            dt = datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            time_str = dt.strftime("%H:%M:%S")
+        except:
+            time_str = ts[11:19] if len(ts) > 19 else ts
+
+        if _json_output:
+            _output(activity)
+        elif no_color:
+            # No color mode
+            print(f"[{time_str}] [{team}/{agent}] [{status}]: {message}")
+        else:
+            # Color by status
+            status_colors = {
+                "started": "green",
+                "heartbeat": "blue",
+                "completed": "cyan",
+                "error": "red",
+                "idle": "yellow",
+                "message": "white",
+                "terminated": "magenta",
+                "task_assigned": "green",
+            }
+            color = status_colors.get(status, "white")
+            header = f"[dim][{time_str}][/dim] [{team}/{agent}]"
+            status_str = f"[{status}]"
+            if message:
+                console.print(f"{header} [bold {color}]{status_str}[/bold {color}]: {message}")
+            else:
+                console.print(f"{header} [bold {color}]{status_str}[/bold {color}]")
+
+    def connect_and_stream():
+        """Connect to SSE endpoint and stream events."""
+        try:
+            req = urllib.request.Request(url, headers={"Accept": "text/event-stream"})
+            with urllib.request.urlopen(req, timeout=30) as response:
+                for line in response:
+                    line = line.decode("utf-8").strip()
+                    if line.startswith("data: "):
+                        data = json.loads(line[6:])
+                        if data.get("type") == "connected":
+                            if not _json_output:
+                                console.print("[green]Connected![/green] Waiting for agent activity...")
+                                console.print("-" * 60)
+                        elif data.get("type") == "activity":
+                            activity = data["data"]
+                            if process_event(activity):
+                                print_activity(activity)
+                        elif data.get("type") == "heartbeat":
+                            pass  # Skip heartbeat comments
+                return True  # Connection closed normally
+        except Exception as e:
+            return str(e)  # Return error message
+
+    # Main loop with optional reconnect
+    while True:
+        result = connect_and_stream()
+
+        if isinstance(result, bool):
+            # Normal exit
+            break
+
+        # Error occurred
+        if not reconnect:
+            _output({"error": result}, lambda d: console.print(f"[red]Error: {d['error']}[/red]"))
+            break
+
+        # Reconnect mode
         if not _json_output:
-            console.print("\n[dim]Disconnected.[/dim]")
-    except Exception as e:
-        _output({"error": str(e)}, lambda d: console.print(f"[red]Error: {d['error']}[/red]"))
-        raise typer.Exit(1)
+            console.print(f"[yellow]Connection lost: {result}[/yellow]")
+            console.print("[dim]Reconnecting in 3 seconds...[/dim]")
+        import time
+        time.sleep(3)
+        if not _json_output:
+            console.print(f"[dim]Reconnecting to {url}...[/dim]")
+
+    # Print counts if requested
+    if event_counts and not _json_output:
+        console.print()
+        console.print("[bold]Event Summary:[/bold]")
+        for status_name, cnt in event_counts.items():
+            if cnt > 0:
+                console.print(f"  {status_name}: {cnt}")
+
+    if not _json_output:
+        console.print("\n[dim]Disconnected.[/dim]")
 
 
 def _print_agent_activity(activity: dict):
