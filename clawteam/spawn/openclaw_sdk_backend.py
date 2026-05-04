@@ -174,6 +174,49 @@ class OpenClawSDKBackend(SpawnBackend):
                 pass
         return "openclaw"  # 默认
 
+    def _broadcast_activity(
+        self,
+        agent_name: str,
+        team_name: str,
+        status: str,
+        message: str = "",
+        data: dict | None = None,
+    ) -> None:
+        """Broadcast agent activity to the board server for real-time monitoring.
+
+        This sends activity to the board server's SSE stream so users can
+        monitor agent progress in real-time via `clawteam board monitor`.
+
+        If the board server is not running, this silently fails.
+        """
+        import urllib.request
+        import urllib.parse
+
+        # Board server configuration
+        board_port = int(os.environ.get("CLAWTEAM_BOARD_PORT", "8080"))
+        board_url = f"http://127.0.0.1:{board_port}/api/agents/activity"
+
+        activity_data = {
+            "team_name": team_name,
+            "agent_name": agent_name,
+            "status": status,
+            "message": message,
+        }
+        if data:
+            activity_data["data"] = data
+
+        try:
+            req = urllib.request.Request(
+                board_url,
+                data=json.dumps(activity_data).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=2) as response:
+                pass  # Success - activity was broadcast
+        except Exception:
+            pass  # Silently fail if board server is not running
+
     def _gateway_call(self, method: str, params: dict = None, timeout: int = 30) -> dict:
         """调用 Gateway RPC"""
         import locale
@@ -297,6 +340,15 @@ class OpenClawSDKBackend(SpawnBackend):
                 )
                 keeper.start()
                 self._session_keepers[agent_name] = keeper
+
+                # 广播 Agent 启动活动
+                self._broadcast_activity(
+                    agent_name=agent_name,
+                    team_name=team_name,
+                    status="started",
+                    message=f"Agent {agent_name} ({agent_type}) started on team {team_name}",
+                    data={"session_key": session_key, "agent_id": agent_id},
+                )
 
                 return f"Agent '{agent_name}' started via OpenClaw SDK (session={session_key})"
 
@@ -442,7 +494,15 @@ class OpenClawSDKBackend(SpawnBackend):
             self._gateway_call("sessions.abort", params={"key": proc.session_key}, timeout=10)
             proc.done = True
 
-            # 3. 清理 keeper 线程引用
+            # 3. 广播 Agent 终止活动
+            self._broadcast_activity(
+                agent_name=agent_name,
+                team_name=proc.team_name,
+                status="terminated",
+                message=f"Agent {agent_name} terminated by leader",
+            )
+
+            # 4. 清理 keeper 线程引用
             self._session_keepers.pop(agent_name, None)
 
             return True
@@ -488,6 +548,15 @@ class OpenClawSDKBackend(SpawnBackend):
 
             # 等待下次检查
             proc.shutdown_event.wait(timeout=15)
+
+        # Agent 完成或关闭 - 广播完成活动
+        if proc.done:
+            self._broadcast_activity(
+                agent_name=agent_name,
+                team_name=proc.team_name,
+                status="completed",
+                message=f"Agent {agent_name} completed session",
+            )
 
     def _send_heartbeat(self, proc: OCAProcess) -> None:
         """发送心跳保持 session 活跃"""

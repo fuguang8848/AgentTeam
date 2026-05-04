@@ -2784,6 +2784,108 @@ def board_live(
     renderer.render_team_board_live(collector, team, interval=interval)
 
 
+@board_app.command("monitor")
+def board_monitor(
+    team: str = typer.Argument(None, help="Team name (optional, monitors all teams if omitted)"),
+    agent: Optional[str] = typer.Option(None, "--agent", "-a", help="Filter by agent name"),
+    port: int = typer.Option(8080, "--port", "-p", help="Board server port"),
+):
+    """Real-time agent activity monitor - stream agent events as they happen.
+
+    Shows live agent activities including:
+    - Agent started/stopped
+    - Task started/completed
+    - Heartbeats
+    - Errors
+
+    Requires the board server to be running (`clawteam board serve`).
+    """
+    import urllib.request
+    import urllib.parse
+
+    base_url = f"http://127.0.0.1:{port}"
+
+    # Build SSE URL
+    params = {}
+    if team:
+        params["team"] = team
+    if agent:
+        params["agent"] = agent
+    query = urllib.parse.urlencode(params)
+    url = f"{base_url}/api/agents/events"
+    if query:
+        url += "?" + query
+
+    if not _json_output:
+        console.print(f"[dim]Connecting to {url}...[/dim]")
+        console.print("[dim]Press Ctrl+C to stop.[/dim]")
+        console.print()
+
+    try:
+        req = urllib.request.Request(url, headers={"Accept": "text/event-stream"})
+        with urllib.request.urlopen(req, timeout=30) as response:
+            buffer = ""
+            for line in response:
+                line = line.decode("utf-8").strip()
+                if line.startswith("data: "):
+                    data = json.loads(line[6:])
+                    if data.get("type") == "connected":
+                        if not _json_output:
+                            console.print("[green]Connected![/green] Waiting for agent activity...")
+                            console.print("-" * 60)
+                    elif data.get("type") == "activity":
+                        activity = data["data"]
+                        _print_agent_activity(activity)
+                    elif data.get("type") == "heartbeat":
+                        pass  # Skip heartbeat comments
+    except KeyboardInterrupt:
+        if not _json_output:
+            console.print("\n[dim]Disconnected.[/dim]")
+    except Exception as e:
+        _output({"error": str(e)}, lambda d: console.print(f"[red]Error: {d['error']}[/red]"))
+        raise typer.Exit(1)
+
+
+def _print_agent_activity(activity: dict):
+    """Print an agent activity in a formatted way."""
+    import datetime
+
+    ts = activity.get("timestamp", "")
+    team = activity.get("team_name", "?")
+    agent = activity.get("agent_name", "?")
+    status = activity.get("status", "?")
+    message = activity.get("message", "")
+
+    # Format timestamp
+    try:
+        dt = datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        time_str = dt.strftime("%H:%M:%S")
+    except:
+        time_str = ts[11:19] if len(ts) > 19 else ts
+
+    # Color by status
+    status_colors = {
+        "started": "green",
+        "heartbeat": "blue",
+        "completed": "cyan",
+        "error": "red",
+        "idle": "yellow",
+        "message": "white",
+    }
+    color = status_colors.get(status, "white")
+
+    if _json_output:
+        _output(activity)
+    else:
+        # Format: [HH:MM:SS] [team/agent] STATUS: message
+        header = f"[dim][{time_str}][/dim] [{team}/{agent}]"
+        status_str = f"[{status}]"
+        if message:
+            console.print(f"{header} [bold {color}]{status_str}[/bold {color}]: {message}")
+        else:
+            console.print(f"{header} [bold {color}]{status_str}[/bold {color}]")
+
+
 @board_app.command("serve")
 def board_serve(
     team: Optional[str] = typer.Argument(None, help="Team name (optional, shows all if omitted)"),

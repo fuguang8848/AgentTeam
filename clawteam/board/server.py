@@ -29,6 +29,11 @@ _event_queue = deque(maxlen=500)  # Last 500 events
 _event_subscribers = []  # List of queue indices for SSE connections
 _event_broadcaster_lock = threading.Lock()
 
+# Thread-safe agent activity broadcaster for SSE (real-time agent monitoring)
+_agent_activity_queue = deque(maxlen=1000)  # Last 1000 activity events
+_agent_activity_subscribers = []  # List of queue indices for SSE connections
+_agent_activity_lock = threading.Lock()
+
 _STATIC_DIR = Path(__file__).parent / "static"
 _ALLOWED_PROXY_HOSTS = {
     "api.github.com",
@@ -279,6 +284,14 @@ class BoardHandler(BaseHTTPRequestHandler):
             # P37: Wire up EventTracker to board API
             # Supports GET /api/events/ and /api/events/?team=<team>&limit=100
             self._serve_events()
+        elif path == "/api/agents/events":
+            # Real-time agent activity stream (SSE)
+            # GET /api/agents/events?team=<team>&agent=<agent>
+            self._serve_agent_activity_sse()
+        elif path == "/api/agents/activity" and self.method == "POST":
+            # Emit agent activity event
+            # POST /api/agents/activity with JSON body
+            self._emit_agent_activity()
         elif path.startswith("/api/proxy"):
             # Proxy disabled for stability - security and resource concerns
             self.send_error(503, "Proxy disabled for stability")
@@ -2129,6 +2142,182 @@ class BoardHandler(BaseHTTPRequestHandler):
                     lock.release()
                 except RuntimeError:
                     # Lock not held by this thread, ignore
+                    pass
+
+    def _serve_agent_activity_sse(self):
+        """Serve real-time agent activity via SSE.
+
+        GET /api/agents/events?team=<team>&agent=<agent>&limit=100
+
+        Returns an SSE stream of agent activity events including:
+        - Agent started
+        - Agent heartbeat
+        - Agent completed task
+        - Agent idle
+        - Agent error
+        """
+        global _agent_activity_queue, _agent_activity_subscribers, _agent_activity_lock
+
+        params = parse_qs(urlparse(self.path).query)
+        team = params.get("team", [None])[0]
+        agent = params.get("agent", [None])[0]
+        limit = int(params.get("limit", ["100"])[0])
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+
+        # Register as subscriber
+        last_event_idx = len(_agent_activity_queue)
+        subscriber_lock = threading.Lock()
+        subscriber_lock.acquire()
+
+        with _agent_activity_lock:
+            _agent_activity_subscribers.append(subscriber_lock)
+
+        try:
+            # Send initial connection message
+            self.wfile.write(
+                f"data: {json.dumps({'type': 'connected', 'timestamp': _now_iso()}, ensure_ascii=False)}\n\n".encode(
+                    "utf-8"
+                )
+            )
+            self.wfile.flush()
+
+            # Send recent activity (initial snapshot)
+            with _agent_activity_lock:
+                recent = list(_agent_activity_queue)[-limit:]
+            for activity in recent:
+                # Filter by team/agent if specified
+                if team is None or activity.get("team_name") == team:
+                    if agent is None or activity.get("agent_name") == agent:
+                        self.wfile.write(
+                            f"data: {json.dumps({'type': 'activity', 'data': activity}, ensure_ascii=False)}\n\n".encode(
+                                "utf-8"
+                            )
+                        )
+                        self.wfile.flush()
+
+            # Stream activities as they come in
+            heartbeat_count = 0
+            idle_cycles = 0
+            active_heartbeat_interval = 5  # seconds when active
+            idle_heartbeat_interval = 15  # seconds when idle
+            current_timeout = active_heartbeat_interval
+
+            while True:
+                acquired = subscriber_lock.acquire(timeout=current_timeout)
+                if acquired:
+                    subscriber_lock.release()
+
+                # Send any new activities
+                has_new = False
+                with _agent_activity_lock:
+                    while len(_agent_activity_queue) > last_event_idx:
+                        has_new = True
+                        activity_data = _agent_activity_queue[last_event_idx]
+                        # Filter by team/agent
+                        if team is None or activity_data.get("team_name") == team:
+                            if agent is None or activity_data.get("agent_name") == agent:
+                                self.wfile.write(
+                                    f"data: {json.dumps({'type': 'activity', 'data': activity_data}, ensure_ascii=False)}\n\n".encode(
+                                        "utf-8"
+                                    )
+                                )
+                                self.wfile.flush()
+                        last_event_idx += 1
+
+                # Adaptive heartbeat
+                if has_new:
+                    idle_cycles = 0
+                    current_timeout = active_heartbeat_interval
+                else:
+                    idle_cycles += 1
+                    if idle_cycles > 3:
+                        current_timeout = idle_heartbeat_interval
+
+                heartbeat_count += 1
+                if heartbeat_count % 10 == 0:
+                    # Send heartbeat comment every ~50 seconds
+                    self.wfile.write(f": heartbeat {heartbeat_count}\n\n".encode("utf-8"))
+                    self.wfile.flush()
+
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass
+        finally:
+            with _agent_activity_lock:
+                if subscriber_lock in _agent_activity_subscribers:
+                    _agent_activity_subscribers.remove(subscriber_lock)
+
+    def _emit_agent_activity(self):
+        """Emit an agent activity event.
+
+        POST /api/agents/activity
+        Body: {"team_name": "...", "agent_name": "...", "status": "...", "message": "...", "data": {...}}
+
+        Status can be: started, heartbeat, completed, error, idle, message
+        """
+        global _agent_activity_queue, _agent_activity_subscribers, _agent_activity_lock
+
+        content_length = int(self.headers.get("Content-Length", 0))
+        if content_length == 0:
+            self.send_error(400, "Request body required")
+            return
+
+        try:
+            body = self.rfile.read(content_length).decode("utf-8")
+            activity_data = json.loads(body)
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            self.send_error(400, f"Invalid JSON: {e}")
+            return
+
+        # Validate required fields
+        if not activity_data.get("team_name") or not activity_data.get("agent_name"):
+            self.send_error(400, "team_name and agent_name are required")
+            return
+
+        # Add timestamp
+        activity_data["timestamp"] = _now_iso()
+
+        # Add to queue
+        with _agent_activity_lock:
+            _agent_activity_queue.append(activity_data)
+
+        # Notify subscribers
+        with _agent_activity_lock:
+            for lock in _agent_activity_subscribers[:]:
+                try:
+                    lock.release()
+                except RuntimeError:
+                    pass
+
+        # Return success
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps({"ok": True, "activity": activity_data}, ensure_ascii=False).encode("utf-8"))
+
+    @staticmethod
+    def broadcast_agent_activity(activity_data: dict):
+        """Broadcast an agent activity event to all SSE subscribers.
+
+        Use this static method to emit activity from anywhere in the codebase.
+        """
+        global _agent_activity_queue, _agent_activity_subscribers, _agent_activity_lock
+
+        # Add timestamp if not present
+        if "timestamp" not in activity_data:
+            activity_data["timestamp"] = _now_iso()
+
+        with _agent_activity_lock:
+            _agent_activity_queue.append(activity_data)
+            for lock in _agent_activity_subscribers[:]:
+                try:
+                    lock.release()
+                except RuntimeError:
                     pass
 
     def _serve_concurrency_limits(self):
