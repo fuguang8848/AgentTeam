@@ -2922,7 +2922,9 @@ def board_live(
 def board_monitor(
     team: str = typer.Argument(None, help="Team name (optional, monitors all teams if omitted)"),
     agent: Optional[str] = typer.Option(None, "--agent", "-a", help="Filter by agent name"),
-    status_filter: Optional[str] = typer.Option(None, "--status", "-s", help="Filter by status type (started/completed/terminated/error)"),
+    status_filter: Optional[str] = typer.Option(
+        None, "--status", "-s", help="Filter by status type (started/completed/terminated/error)"
+    ),
     port: int = typer.Option(8080, "--port", "-p", help="Board server port"),
     reconnect: bool = typer.Option(False, "--reconnect", "-r", help="Auto-reconnect on disconnect"),
     count: bool = typer.Option(False, "--count", "-c", help="Show event counts by status"),
@@ -2946,16 +2948,20 @@ def board_monitor(
     base_url = f"http://127.0.0.1:{port}"
 
     # Event counters for --count mode
-    event_counts = {
-        "started": 0,
-        "completed": 0,
-        "terminated": 0,
-        "error": 0,
-        "task_assigned": 0,
-        "heartbeat": 0,
-        "message": 0,
-        "other": 0,
-    } if count else None
+    event_counts = (
+        {
+            "started": 0,
+            "completed": 0,
+            "terminated": 0,
+            "error": 0,
+            "task_assigned": 0,
+            "heartbeat": 0,
+            "message": 0,
+            "other": 0,
+        }
+        if count
+        else None
+    )
 
     # Build SSE URL
     params = {}
@@ -3074,6 +3080,7 @@ def board_monitor(
             console.print(f"[yellow]Connection lost: {result}[/yellow]")
             console.print("[dim]Reconnecting in 3 seconds...[/dim]")
         import time
+
         time.sleep(3)
         if not _json_output:
             console.print(f"[dim]Reconnecting to {url}...[/dim]")
