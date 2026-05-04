@@ -345,10 +345,17 @@ def load_config(path: str = "config.yaml") -> AppConfig:
     # Check if path exists, otherwise check default config locations
     config_path_obj = Path(path)
     if not config_path_obj.exists():
-        # Try fallback locations
-        fallback = Path.home() / ".config" / "clawteam" / "config.json"
-        if fallback.exists():
-            config_path_obj = fallback
+        # Try fallback locations in order:
+        # 1. ~/.clawteam/config.yaml (NEW - primary fallback)
+        # 2. ~/.config/clawteam/config.json (legacy fallback)
+        fallbacks = [
+            Path.home() / ".clawteam" / "config.yaml",
+            Path.home() / ".config" / "clawteam" / "config.json",
+        ]
+        for fallback in fallbacks:
+            if fallback.exists():
+                config_path_obj = fallback
+                break
     _config = AppConfig.load(str(config_path_obj))
     return _config
 

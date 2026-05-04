@@ -268,6 +268,65 @@ def config_show():
     _output(data, _human)
 
 
+@config_app.command("init")
+def config_init(
+    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing config"),
+):
+    """Create a default configuration file in ~/.clawteam/config.yaml."""
+    from pathlib import Path
+    import yaml
+
+    config_dir = Path.home() / ".clawteam"
+    config_file = config_dir / "config.yaml"
+
+    if config_file.exists() and not force:
+        console.print(f"[yellow]Config file already exists at {config_file}[/yellow]")
+        console.print("Use --force to overwrite.")
+        raise typer.Exit(1)
+
+    # Default configuration
+    default_config = {
+        "# ClawTeam Configuration": None,
+        "# Version": "0.6.0",
+        "# Documentation": "https://github.com/YintaTriss/ClawTeam-OpenClaw",
+        "": None,
+        "# Default settings": None,
+        "data_dir": "~/.clawteam",
+        "default_team": None,  # No default team
+        "default_backend": "auto",
+        "": None,
+        "# Agent settings": None,
+        "agents": {
+            "max_concurrent": 10,
+            "spawn_timeout": 60,
+            "heartbeat_interval": 30,
+        },
+        "": None,
+        "# Gateway settings": None,
+        "gateway": {
+            "host": "127.0.0.1",
+            "port": 18789,
+            "timeout": 30,
+        },
+        "": None,
+        "# Board server settings": None,
+        "board": {
+            "host": "127.0.0.1",
+            "port": 8080,
+        },
+    }
+
+    # Create directory if needed
+    config_dir.mkdir(parents=True, exist_ok=True)
+
+    # Write config file
+    with open(config_file, "w", encoding="utf-8") as f:
+        yaml.dump(default_config, f, default_flow_style=False, sort_keys=False)
+
+    console.print(f"[green]✓[/green] Created default config at {config_file}")
+    console.print(f"[dim]Edit this file to customize your ClawTeam settings.[/dim]")
+
+
 @config_app.command("set")
 def config_set(
     key: str = typer.Argument(
