@@ -370,6 +370,7 @@ def doctor_run():
     result = {"check": "Disk Space", "status": "PASS", "details": ""}
     try:
         import shutil
+
         total, used, free = shutil.disk_usage(data_dir)
         free_gb = free // (2**30)
         total_gb = total // (2**30)
@@ -391,6 +392,7 @@ def doctor_run():
     result = {"check": "Python Version", "status": "PASS", "details": ""}
     try:
         import sys
+
         version = sys.version_info
         result["details"] = f"Python {version.major}.{version.minor}.{version.micro}"
         if version.major < 3 or (version.major == 3 and version.minor < 8):
@@ -405,6 +407,7 @@ def doctor_run():
     result = {"check": "Memory", "status": "PASS", "details": ""}
     try:
         import psutil
+
         mem = psutil.virtual_memory()
         available_gb = mem.available // (2**30)
         total_gb = mem.total // (2**30)
@@ -455,12 +458,8 @@ def doctor_run():
 
 @doctor_app.command("fix")
 def doctor_fix(
-    all_fixes: bool = typer.Option(
-        False, "--all", "-a", help="Apply all possible fixes (not just directory creation)"
-    ),
-    cleanup: bool = typer.Option(
-        False, "--cleanup", "-c", help="Clean up dead agent sessions and temp files"
-    ),
+    all_fixes: bool = typer.Option(False, "--all", "-a", help="Apply all possible fixes (not just directory creation)"),
+    cleanup: bool = typer.Option(False, "--cleanup", "-c", help="Clean up dead agent sessions and temp files"),
 ):
     """Attempt to fix common issues automatically.
 
@@ -517,6 +516,7 @@ def doctor_fix(
         # Clean up dead agent sessions from registry
         try:
             from clawteam.spawn.registry import list_dead_agents, terminate_agent_tree
+
             teams_dir = data_dir / "teams"
             if teams_dir.exists():
                 for team_dir in teams_dir.iterdir():

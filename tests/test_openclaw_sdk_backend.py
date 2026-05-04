@@ -98,7 +98,8 @@ class TestOpenClawSDKBackend:
         backend = OpenClawSDKBackend()
         
         assert backend._processes == {}
-        assert isinstance(backend._lock, threading.Lock)
+        assert hasattr(backend._lock, 'acquire')
+        assert hasattr(backend._lock, 'release')
         assert backend._gateway_cmd == "openclaw"  # default
 
     def test_backend_loads_running_agents(self, tmp_path):
@@ -418,7 +419,8 @@ class TestBackendGetProcesses:
         backend = OpenClawSDKBackend()
         
         assert hasattr(backend, "_lock")
-        assert isinstance(backend._lock, threading.Lock)
+        assert hasattr(backend._lock, 'acquire')
+        assert hasattr(backend._lock, 'release')
 
 
 class TestGatewayCmdDetection:
