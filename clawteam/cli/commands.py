@@ -5001,7 +5001,7 @@ def agent_list(
     else:
         # Get all teams from data dir
         data_dir = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
-        teams = [d.name for d in data_dir.iterdir() if d.is_dir() and not d.name.startswith('.')]
+        teams = [d.name for d in data_dir.iterdir() if d.is_dir() and not d.name.startswith(".")]
 
     all_agents = []
     for t in teams:
@@ -5093,7 +5093,7 @@ def agent_info(
         # Search all teams
         data_dir = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
         for t_dir in data_dir.iterdir():
-            if t_dir.is_dir() and not t_dir.name.startswith('.'):
+            if t_dir.is_dir() and not t_dir.name.startswith("."):
                 info = get_agent_info(t_dir.name, name)
                 if info:
                     team = t_dir.name
@@ -5167,14 +5167,14 @@ def agent_health(
         if health:
             if health.last_heartbeat:
                 try:
-                    hb_dt = datetime.datetime.fromisoformat(health.last_heartbeat.replace('Z', '+00:00'))
+                    hb_dt = datetime.datetime.fromisoformat(health.last_heartbeat.replace("Z", "+00:00"))
                     hb_age = (datetime.datetime.now() - hb_dt.replace(tzinfo=None)).total_seconds()
                     if hb_age < 60:
                         console.print(f"  Last heartbeat: {hb_age:.0f}s ago")
                     elif hb_age < 3600:
-                        console.print(f"  Last heartbeat: {hb_age/60:.1f}m ago")
+                        console.print(f"  Last heartbeat: {hb_age / 60:.1f}m ago")
                     else:
-                        console.print(f"  Last heartbeat: {hb_age/3600:.1f}h ago [yellow]⚠ stale[/yellow]")
+                        console.print(f"  Last heartbeat: {hb_age / 3600:.1f}h ago [yellow]⚠ stale[/yellow]")
                 except:
                     console.print(f"  Last heartbeat: {health.last_heartbeat}")
 
@@ -5191,7 +5191,7 @@ def agent_health(
     if not actual_team:
         data_dir = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
         for t_dir in data_dir.iterdir():
-            if t_dir.is_dir() and not t_dir.name.startswith('.'):
+            if t_dir.is_dir() and not t_dir.name.startswith("."):
                 info = get_agent_info(t_dir.name, name)
                 if info:
                     actual_team = t_dir.name
@@ -5203,6 +5203,7 @@ def agent_health(
 
     if watch:
         import time
+
         console.print("[dim]Watching agent health (Ctrl+C to stop)...[/dim]\n")
         while True:
             try:
@@ -5233,7 +5234,7 @@ def agent_restart(
     if not actual_team:
         data_dir = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
         for t_dir in data_dir.iterdir():
-            if t_dir.is_dir() and not t_dir.name.startswith('.'):
+            if t_dir.is_dir() and not t_dir.name.startswith("."):
                 info = get_agent_info(t_dir.name, name)
                 if info:
                     actual_team = t_dir.name
@@ -5266,6 +5267,7 @@ def agent_restart(
             try:
                 _gateway_call("sessions.send", {"key": session_key, "message": "shutdown"}, timeout=10)
                 import time
+
                 time.sleep(2)
             except:
                 pass
@@ -5314,7 +5316,7 @@ def agent_pause(
     if not actual_team:
         data_dir = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
         for t_dir in data_dir.iterdir():
-            if t_dir.is_dir() and not t_dir.name.startswith('.'):
+            if t_dir.is_dir() and not t_dir.name.startswith("."):
                 info = get_agent_info(t_dir.name, name)
                 if info:
                     actual_team = t_dir.name
@@ -5361,7 +5363,7 @@ def agent_resume(
     if not actual_team:
         data_dir = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
         for t_dir in data_dir.iterdir():
-            if t_dir.is_dir() and not t_dir.name.startswith('.'):
+            if t_dir.is_dir() and not t_dir.name.startswith("."):
                 info = get_agent_info(t_dir.name, name)
                 if info:
                     actual_team = t_dir.name
@@ -5408,7 +5410,7 @@ def agent_kill(
     if not actual_team:
         data_dir = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
         for t_dir in data_dir.iterdir():
-            if t_dir.is_dir() and not t_dir.name.startswith('.'):
+            if t_dir.is_dir() and not t_dir.name.startswith("."):
                 info = get_agent_info(t_dir.name, name)
                 if info:
                     actual_team = t_dir.name
