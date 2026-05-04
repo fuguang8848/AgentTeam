@@ -5053,24 +5053,37 @@ def agent_list(
             console.print("[yellow]No agents found.[/yellow]")
             return
 
-        console.print(f"[bold]Agents ({len(all_agents)})[/bold]")
-        console.print("-" * 80)
+        from rich.console import Console
+        from rich.table import Table
+        from rich.panel import Panel
+        from rich import box
 
-        # Group by team
+        # Create main table
+        table = Table(title=f"[bold]Agent List ({len(all_agents)} agents)[/bold]", box=box.ROUNDED, show_lines=True)
+        table.add_column("Team", style="cyan", no_wrap=True)
+        table.add_column("Agent", style="bold", no_wrap=True)
+        table.add_column("Type", style="dim")
+        table.add_column("Status", justify="center")
+        table.add_column("Runtime", justify="right", style="green")
+
+        # Add rows grouped by team
         by_team = {}
         for a in all_agents:
             by_team.setdefault(a["team"], []).append(a)
 
         for team_name, agents in by_team.items():
-            console.print(f"\n[cyan]{team_name}[/cyan]")
-            for a in agents:
-                status_color = "green" if a["status"] == "running" else "red"
-                console.print(
-                    f"  [{status_color}]{a['status']:8}[/{status_color}] "
-                    f"{a['name']:20} "
-                    f"({a['type']:15}) "
-                    f"runtime: {a['runtime']}"
+            # Add team header as first row
+            for i, a in enumerate(agents):
+                status_style = "[bold green]" if a["status"] == "running" else "[bold red]"
+                table.add_row(
+                    team_name if i == 0 else "",  # Only show team on first row
+                    a["name"],
+                    a["type"],
+                    f"{status_style}{a['status']}[/]",
+                    a["runtime"],
                 )
+
+        console.print(table)
 
 
 def _format_duration(duration: datetime.timedelta) -> str:
@@ -5099,6 +5112,9 @@ def agent_info(
 ):
     """Show detailed information about an agent."""
     from clawteam.spawn.registry import get_agent_info, is_agent_alive, get_agent_health
+    from rich.console import Console as RichConsole
+    from rich.table import Table
+    from rich.panel import Panel
     import datetime
 
     if not team:
@@ -5123,31 +5139,47 @@ def agent_info(
     is_alive = is_agent_alive(team, name)
     health = get_agent_health(team, name)
 
-    console.print(f"\n[bold cyan]Agent: {name}[/cyan][/bold] (team: {team})")
-    console.print("-" * 60)
-
+    # Create status panel
     status_color = "green" if is_alive else "red"
-    console.print(f"[bold]Status:[/bold] [{status_color}]{'running' if is_alive else 'stopped'}[/{status_color}]")
+    status_text = f"[bold {status_color}]{'● RUNNING' if is_alive else '○ STOPPED'}[/]"
+
+    # Create info table
+    info_table = Table(show_header=False, box=None, pad_edge=False)
+    info_table.add_column("key", style="bold cyan")
+    info_table.add_column("value")
+
+    info_table.add_row("Team", f"[cyan]{team}[/cyan]")
+    info_table.add_row("Status", status_text)
+    info_table.add_row("Type", info.get('agent_type', 'unknown'))
+    info_table.add_row("Backend", info.get('backend', 'unknown'))
 
     if info.get("started_at"):
         start_dt = datetime.datetime.fromtimestamp(info["started_at"])
-        console.print(f"[bold]Started:[/bold] {start_dt.strftime('%Y-%m-%d %H:%M:%S')}")
         runtime = datetime.datetime.now() - start_dt
-        console.print(f"[bold]Runtime:[/bold] {_format_duration(runtime)}")
-
-    console.print(f"[bold]Type:[/bold] {info.get('agent_type', 'unknown')}")
-    console.print(f"[bold]Backend:[/bold] {info.get('backend', 'unknown')}")
+        info_table.add_row("Started", start_dt.strftime('%Y-%m-%d %H:%M:%S'))
+        info_table.add_row("Runtime", _format_duration(runtime))
 
     if info.get("session_key"):
-        console.print(f"[bold]Session:[/bold] {info['session_key']}")
+        info_table.add_row("Session", f"[dim]{info['session_key']}[/dim]")
 
+    # Create health table
+    health_table = Table(show_header=False, box=None, pad_edge=False)
+    health_table.add_column("key", style="bold magenta")
+    health_table.add_column("value")
     if health:
-        console.print(f"\n[bold]Health:[/bold]")
-        console.print(f"  Last heartbeat: {health.last_heartbeat or 'never'}")
-        console.print(f"  Heartbeat count: {health.heartbeat_count}")
-        console.print(f"  Restart count: {health.restart_count}")
+        health_table.add_row("Last Heartbeat", health.last_heartbeat or "never")
+        health_table.add_row("Heartbeat Count", str(health.heartbeat_count))
+        health_table.add_row("Restart Count", str(health.restart_count))
         if health.last_error:
-            console.print(f"  Last error: {health.last_error}")
+            health_table.add_row("[red]Last Error[/red]", health.last_error)
+    else:
+        health_table.add_row("Health", "No health data")
+
+
+    # Print with panels
+    console.print(Panel(info_table, title=f"[bold]Agent: {name}[/bold]", border_style="cyan"))
+    if health:
+        console.print(Panel(health_table, title="[bold]Health[/bold]", border_style="magenta"))
 
 
 @agent_app.command("health")
