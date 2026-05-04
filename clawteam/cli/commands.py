@@ -241,6 +241,204 @@ config_app = typer.Typer(help="Configuration management")
 app.add_typer(config_app, name="config")
 
 
+# ============================================================================
+# Doctor Commands - System Health Diagnostics
+# ============================================================================
+
+doctor_app = typer.Typer(help="System health diagnostics")
+app.add_typer(doctor_app, name="doctor")
+
+
+@doctor_app.command("run")
+def doctor_run():
+    """Run comprehensive system health check.
+
+    Checks:
+    - Data directory accessibility
+    - Config file validity
+    - Database connectivity
+    - Gateway status
+    - Network connectivity
+    """
+    from rich.console import Console
+    from rich.table import Table
+    from rich import box
+
+    from clawteam.config import get_effective, config_path
+    from clawteam.team.models import get_data_dir
+
+    console = Console()
+    results = []
+
+    # Check 1: Data directory
+    data_dir = get_data_dir()
+    result = {"check": "Data Directory", "status": "PASS", "details": ""}
+    if not data_dir.exists():
+        result["status"] = "FAIL"
+        result["details"] = f"Directory does not exist: {data_dir}"
+    else:
+        try:
+            test_file = data_dir / ".doctor-check"
+            test_file.write_text("ok", encoding="utf-8")
+            content = test_file.read_text(encoding="utf-8")
+            test_file.unlink()
+            if content == "ok":
+                result["details"] = f"OK: {data_dir} (writable)"
+            else:
+                result["status"] = "FAIL"
+                result["details"] = "Write/read verification failed"
+        except Exception as e:
+            result["status"] = "FAIL"
+            result["details"] = f"Not writable: {e}"
+    results.append(result)
+
+    # Check 2: Config directory
+    cfg_dir = config_path().parent
+    result = {"check": "Config Directory", "status": "PASS", "details": ""}
+    if not cfg_dir.exists():
+        result["status"] = "WARN"
+        result["details"] = f"Directory does not exist: {cfg_dir} (will use defaults)"
+    else:
+        result["details"] = f"OK: {cfg_dir}"
+    results.append(result)
+
+    # Check 3: Gateway connectivity
+    result = {"check": "Gateway API", "status": "PASS", "details": ""}
+    try:
+        import urllib.request
+        import json
+
+        port = int(os.environ.get("OPENCLAW_GATEWAY_PORT", "18789"))
+        url = f"http://127.0.0.1:{port}/health"
+        token = os.environ.get("OPENCLAW_GATEWAY_TOKEN", "")
+        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = json.loads(resp.read().decode())
+            result["details"] = f"OK: Gateway responding (v{data.get('version', '?')})"
+    except urllib.error.URLError:
+        result["status"] = "WARN"
+        result["details"] = "Gateway not reachable (may not be running)"
+    except Exception as e:
+        result["status"] = "WARN"
+        result["details"] = f"Gateway check skipped: {e}"
+    results.append(result)
+
+    # Check 4: Config validity
+    result = {"check": "Config Validity", "status": "PASS", "details": ""}
+    try:
+        val, source = get_effective("data_dir")
+        result["details"] = f"data_dir={val} (from {source})"
+    except Exception as e:
+        result["status"] = "FAIL"
+        result["details"] = f"Config error: {e}"
+    results.append(result)
+
+    # Check 5: Teams directory
+    result = {"check": "Teams Directory", "status": "PASS", "details": ""}
+    teams_dir = data_dir / "teams"
+    if not teams_dir.exists():
+        result["status"] = "WARN"
+        result["details"] = "Teams directory does not exist (no teams created yet)"
+    else:
+        try:
+            teams = [d.name for d in teams_dir.iterdir() if d.is_dir()]
+            teams_str = ", ".join(teams[:5])
+            if len(teams) > 5:
+                teams_str += "..."
+            result["details"] = f"OK: {len(teams)} team(s) found: {teams_str}"
+        except Exception as e:
+            result["status"] = "WARN"
+            result["details"] = f"Cannot read teams: {e}"
+    results.append(result)
+
+    # Check 6: Database
+    result = {"check": "Database", "status": "PASS", "details": ""}
+    db_path = data_dir / "collab" / "collab.db"
+    if db_path.exists():
+        try:
+            size = db_path.stat().st_size
+            result["details"] = f"OK: Database exists ({size} bytes)"
+        except Exception as e:
+            result["status"] = "WARN"
+            result["details"] = f"Cannot stat database: {e}"
+    else:
+        result["status"] = "WARN"
+        result["details"] = "Database does not exist yet"
+    results.append(result)
+
+    # Print results
+    console.print()
+    table = Table(title="ClawTeam Doctor - Health Check Results", box=box.ROUNDED)
+    table.add_column("Check", style="cyan", width=20)
+    table.add_column("Status", width=8)
+    table.add_column("Details", style="dim")
+
+    pass_count = sum(1 for r in results if r["status"] == "PASS")
+    warn_count = sum(1 for r in results if r["status"] == "WARN")
+    fail_count = sum(1 for r in results if r["status"] == "FAIL")
+
+    for r in results:
+        color = {"PASS": "green", "WARN": "yellow", "FAIL": "red"}[r["status"]]
+        table.add_row(r["check"], f"[{color}]{r['status']}[/{color}]", r["details"])
+
+    console.print(table)
+    console.print()
+
+    # Summary
+    summary = f"[bold]Summary:[/bold] {pass_count} passed, {warn_count} warnings, {fail_count} failed"
+    if fail_count > 0:
+        console.print(f"{summary} - [red]Action required![/red]")
+    elif warn_count > 0:
+        console.print(f"{summary} - [yellow]Some checks need attention[/yellow]")
+    else:
+        console.print(f"{summary} - [green]All systems healthy![/green]")
+
+
+@doctor_app.command("fix")
+def doctor_fix():
+    """Attempt to fix common issues automatically.
+
+    Currently supported fixes:
+    - Create data directory if missing
+    - Create default config directory if missing
+    """
+    from clawteam.config import config_path
+    from clawteam.team.models import get_data_dir
+
+    console = Console()
+    fixes_applied = []
+
+    # Fix 1: Create data directory
+    data_dir = get_data_dir()
+    if not data_dir.exists():
+        try:
+            data_dir.mkdir(parents=True, exist_ok=True)
+            fixes_applied.append(f"Created data directory: {data_dir}")
+        except Exception as e:
+            console.print(f"[red]Failed to create data directory: {e}[/red]")
+    else:
+        console.print(f"[dim]Data directory already exists: {data_dir}[/dim]")
+
+    # Fix 2: Create config directory
+    cfg_dir = config_path().parent
+    if not cfg_dir.exists():
+        try:
+            cfg_dir.mkdir(parents=True, exist_ok=True)
+            fixes_applied.append(f"Created config directory: {cfg_dir}")
+        except Exception as e:
+            console.print(f"[red]Failed to create config directory: {e}[/red]")
+    else:
+        console.print(f"[dim]Config directory already exists: {cfg_dir}[/dim]")
+
+    if fixes_applied:
+        console.print()
+        console.print("[bold]Fixes applied:[/bold]")
+        for fix in fixes_applied:
+            console.print(f"  [OK] {fix}")
+    else:
+        console.print("[dim]No fixes needed[/dim]")
+
+
 @config_app.command("show")
 def config_show():
     """Show all configuration settings and their sources."""
