@@ -289,26 +289,22 @@ def config_init(
         "# ClawTeam Configuration": None,
         "# Version": "0.6.0",
         "# Documentation": "https://github.com/YintaTriss/ClawTeam-OpenClaw",
-        "": None,
         "# Default settings": None,
         "data_dir": "~/.clawteam",
         "default_team": None,  # No default team
         "default_backend": "auto",
-        "": None,
         "# Agent settings": None,
         "agents": {
             "max_concurrent": 10,
             "spawn_timeout": 60,
             "heartbeat_interval": 30,
         },
-        "": None,
         "# Gateway settings": None,
         "gateway": {
             "host": "127.0.0.1",
             "port": 18789,
             "timeout": 30,
         },
-        "": None,
         "# Board server settings": None,
         "board": {
             "host": "127.0.0.1",
