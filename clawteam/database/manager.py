@@ -5,8 +5,11 @@ from __future__ import annotations
 import logging
 import os
 import sqlite3
+from collections import OrderedDict
+from functools import wraps
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from threading import Lock
+from typing import Any, Callable, Dict, List, Optional
 
 from . import migrations
 from .repositories.agent import AgentRepository
@@ -24,8 +27,36 @@ from .types import (
 logger = logging.getLogger(__name__)
 
 
+def _lru_cache(max_size: int = 128):
+    """Simple LRU cache decorator for query results."""
+    def decorator(func: Callable) -> Callable:
+        cache: OrderedDict = OrderedDict()
+        lock = Lock()
+        
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Create cache key from args and kwargs
+            key = (args[1:], tuple(sorted(kwargs.items())))  # args[0] is self
+            
+            with lock:
+                if key in cache:
+                    cache.move_to_end(key)
+                    return cache[key]
+            
+            result = func(*args, **kwargs)
+            
+            with lock:
+                if len(cache) >= max_size:
+                    cache.popitem(last=False)
+                cache[key] = result
+            
+            return result
+        return wrapper
+    return decorator
+
+
 class DatabaseManager:
-    """Database manager with SQLite + memory fallback."""
+    """Database manager with SQLite + memory fallback and query optimization."""
 
     def __init__(self, db_path: Optional[str] = None):
         """Initialize database manager.
@@ -37,6 +68,17 @@ class DatabaseManager:
         self.db: Optional[sqlite3.Connection] = None
         self.using_sqlite: bool = False
         self.db_path: str = db_path or self._default_db_path()
+
+        # Prepared statement cache
+        self._stmt_cache: Dict[str, sqlite3.Cursor] = {}
+        self._stmt_cache_lock = Lock()
+        self._max_stmt_cache = 32
+
+        # Query result cache
+        self._query_cache: OrderedDict = OrderedDict()
+        self._query_cache_lock = Lock()
+        self._max_query_cache = 256
+        self._query_cache_ttl = 5.0  # seconds
 
         # Repositories
         self.task_repo: TaskRepository
@@ -60,6 +102,57 @@ class DatabaseManager:
         os.makedirs(data_dir, exist_ok=True)
         return os.path.join(data_dir, "clawteam.db")
 
+    def _get_prepared_statement(self, query: str) -> sqlite3.Cursor:
+        """Get or create a prepared statement from cache."""
+        with self._stmt_cache_lock:
+            if query not in self._stmt_cache:
+                if len(self._stmt_cache) >= self._max_stmt_cache:
+                    # Remove oldest entry
+                    self._stmt_cache.popitem(last=False)
+                self._stmt_cache[query] = self.db.execute(query)
+            return self._stmt_cache[query]
+
+    def _execute_cached(self, query: str, params: tuple = (), cache_key: Optional[str] = None, ttl: Optional[float] = None) -> List[Dict]:
+        """Execute a query with result caching."""
+        import time
+        
+        # Generate cache key if not provided
+        if cache_key is None:
+            cache_key = (query, params)
+        
+        ttl = ttl or self._query_cache_ttl
+        
+        with self._query_cache_lock:
+            if cache_key in self._query_cache:
+                cached_time, cached_result = self._query_cache[cache_key]
+                if time.time() - cached_time < ttl:
+                    self._query_cache.move_to_end(cache_key)
+                    return cached_result
+                else:
+                    del self._query_cache[cache_key]
+        
+        # Execute query
+        cursor = self.db.execute(query, params)
+        rows = [dict(row) for row in cursor.fetchall()]
+        
+        with self._query_cache_lock:
+            if len(self._query_cache) >= self._max_query_cache:
+                self._query_cache.popitem(last=False)
+            self._query_cache[cache_key] = (time.time(), rows)
+        
+        return rows
+
+    def _invalidate_cache(self, pattern: Optional[str] = None):
+        """Invalidate query cache, optionally filtered by pattern."""
+        with self._query_cache_lock:
+            if pattern is None:
+                self._query_cache.clear()
+            else:
+                keys_to_remove = [k for k in self._query_cache.keys() 
+                                if isinstance(k[0], str) and pattern in k[0]]
+                for key in keys_to_remove:
+                    del self._query_cache[key]
+
     def _initialize(self) -> None:
         """Initialize database connection and schema."""
         try:
@@ -68,15 +161,22 @@ class DatabaseManager:
             if db_dir:
                 os.makedirs(db_dir, exist_ok=True)
 
-            # Connect to SQLite
-            self.db = sqlite3.connect(self.db_path, check_same_thread=False)
+            # Connect to SQLite with optimized settings
+            self.db = sqlite3.connect(
+                self.db_path, 
+                check_same_thread=False,
+                isolation_level=None  # Autocommit mode for better performance
+            )
             self.db.row_factory = sqlite3.Row
             self.using_sqlite = True
 
-            # Set pragmas
+            # Set optimized pragmas
             self.db.execute("PRAGMA journal_mode = WAL")
             self.db.execute("PRAGMA foreign_keys = ON")
             self.db.execute("PRAGMA busy_timeout = 5000")
+            self.db.execute("PRAGMA cache_size = -64000")  # 64MB cache
+            self.db.execute("PRAGMA temp_store = MEMORY")
+            self.db.execute("PRAGMA mmap_size = 268435456")  # 256MB memory-mapped I/O
 
             # Initialize schema
             self._initialize_schema()
@@ -215,6 +315,7 @@ class DatabaseManager:
 
     def create_task(self, task: DatabaseTask) -> DatabaseTask:
         """Create a new task."""
+        self._invalidate_cache()  # Invalidate cache on mutations
         return self.task_repo.create(task)
 
     def get_task(self, task_id: str) -> Optional[DatabaseTask]:
@@ -223,10 +324,12 @@ class DatabaseManager:
 
     def update_task(self, task_id: str, updates: Dict[str, Any]) -> Optional[DatabaseTask]:
         """Update a task."""
+        self._invalidate_cache()
         return self.task_repo.update(task_id, updates)
 
     def delete_task(self, task_id: str) -> bool:
         """Delete a task."""
+        self._invalidate_cache()
         return self.task_repo.delete(task_id)
 
     def list_tasks(
@@ -249,6 +352,14 @@ class DatabaseManager:
         """Close database connection."""
         if self.db:
             try:
+                # Clear prepared statement cache
+                with self._stmt_cache_lock:
+                    self._stmt_cache.clear()
+                
+                # Clear query cache
+                with self._query_cache_lock:
+                    self._query_cache.clear()
+                
                 self.db.close()
             except Exception:
                 pass
@@ -258,6 +369,7 @@ class DatabaseManager:
 
     def create_session(self, session: DatabaseSession) -> DatabaseSession:
         """Create a new session."""
+        self._invalidate_cache()
         return self.session_repo.create(session)
 
     def get_session(self, session_id: str) -> Optional[DatabaseSession]:
@@ -266,16 +378,19 @@ class DatabaseManager:
 
     def update_session(self, session_id: str, updates: Dict[str, Any]) -> Optional[DatabaseSession]:
         """Update a session."""
+        self._invalidate_cache()
         return self.session_repo.update(session_id, updates)
 
     def terminate_session(self, session_id: str) -> Optional[DatabaseSession]:
         """Terminate a session."""
+        self._invalidate_cache()
         return self.session_repo.update(session_id, {"status": "terminated"})
 
     # ----- Agent operations -----
 
     def create_agent(self, agent: DatabaseAgent) -> DatabaseAgent:
         """Create a new agent."""
+        self._invalidate_cache()
         return self.agent_repo.create(agent)
 
     def get_agent(self, agent_id: str) -> Optional[DatabaseAgent]:
@@ -284,8 +399,10 @@ class DatabaseManager:
 
     def update_agent(self, agent_id: str, updates: Dict[str, Any]) -> Optional[DatabaseAgent]:
         """Update an agent."""
+        self._invalidate_cache()
         return self.agent_repo.update(agent_id, updates)
 
     def update_last_seen(self, agent_id: str) -> bool:
         """Update agent's last_seen timestamp."""
+        self._invalidate_cache()
         return self.agent_repo.update_last_seen(agent_id)

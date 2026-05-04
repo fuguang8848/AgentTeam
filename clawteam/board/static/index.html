@@ -4439,22 +4439,17 @@
             if (targetPage) targetPage.classList.add('active');
             if (navEl) navEl.classList.add('active');
             
-            // Show/hide right panel only on dashboard page
-            const rightPanel = document.getElementById('right-panel');
-            if (rightPanel) {
-                rightPanel.style.display = (pageId === 'dashboard') ? 'flex' : 'none';
-            }
-            
-            // Show/hide monitoring panel content inside dashboard-body
-            // dashboard-body contains BOTH monitoring content AND page divs (HTML structure issue)
-            // Hide ALL non-page children when not on dashboard page
+            // Show/hide dashboard-body (contains session monitor and metrics)
+            // dashboard-body is a sibling of pages, so we must explicitly control its visibility
             const dashboardBody = document.querySelector('.dashboard-body');
             if (dashboardBody) {
-                Array.from(dashboardBody.children).forEach(child => {
-                    if (!child.classList.contains('page')) {
-                        child.style.display = (pageId === 'dashboard') ? '' : 'none';
-                    }
-                });
+                dashboardBody.style.display = (pageId === 'dashboard') ? '' : 'none';
+            }
+            
+            // Show/hide right panel only on chat page (it's inside chat page)
+            const rightPanel = document.getElementById('right-panel');
+            if (rightPanel) {
+                rightPanel.style.display = (pageId === 'chat') ? 'flex' : 'none';
             }
             
             // Trigger page change event for specific pages

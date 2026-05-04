@@ -41,6 +41,12 @@ def get_backend(name: str = "auto") -> SpawnBackend:
         else:
             # Unix with tmux available - prefer tmux for better observability
             name = "tmux"
+    elif name == "tmux":
+        # Explicit tmux request - check if we're on Windows (tmux not available)
+        import sys
+        if sys.platform == "win32":
+            logger.warning("tmux backend not available on Windows, falling back to openclaw_sdk")
+            name = "openclaw_sdk"
 
     if name == "subprocess":
         from clawteam.spawn.subprocess_backend import SubprocessBackend

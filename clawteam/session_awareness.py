@@ -1,15 +1,19 @@
 """Session awareness for ClawTeam: track agent sessions, activity, and context.
 
 This module provides real-time awareness of:
- and status
+- Agent sessions and status
 - Session activity tracking (heartbeats, recent messages)
 - File change attribution across sessions
 - Session grouping and team context
 - Cross-session coordination primitives
 """
 
+from __future__ import annotations
+
 import json
 import threading
+import weakref
+from collections import OrderedDict, deque
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
@@ -36,7 +40,7 @@ class SessionActivityLevel(Enum):
     INACTIVE = "inactive"  # No activity in over 30 minutes
 
 
-@dataclass
+@dataclass(slots=True)
 class SessionContext:
     """Contextual information about a session."""
 
@@ -65,13 +69,22 @@ class SessionContext:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
-        data = asdict(self)
-        data["created_at"] = self.created_at.isoformat()
-        data["last_activity"] = self.last_activity.isoformat()
-        data["status"] = self.status.value
-        data["activity_level"] = self.activity_level.value
-        data["tags"] = list(self.tags)
-        return data
+        return {
+            "session_id": self.session_id,
+            "agent_name": self.agent_name,
+            "team_name": self.team_name,
+            "created_at": self.created_at.isoformat(),
+            "last_activity": self.last_activity.isoformat(),
+            "message_count": self.message_count,
+            "file_change_count": self.file_change_count,
+            "status": self.status.value,
+            "activity_level": self.activity_level.value,
+            "current_task": self.current_task,
+            "current_file": self.current_file,
+            "working_directory": self.working_directory,
+            "tags": list(self.tags),
+            "metadata": self.metadata,
+        }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SessionContext":
@@ -92,11 +105,88 @@ class SessionContext:
         if isinstance(data.get("tags"), list):
             data["tags"] = set(data["tags"])
 
-        return cls(**data)
+        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
+
+class LRUCache:
+    """Thread-safe LRU cache with memory limits."""
+
+    def __init__(self, max_size: int = 100, max_memory_mb: float = 10.0):
+        self._cache: OrderedDict = OrderedDict()
+        self._max_size = max_size
+        self._max_memory = int(max_memory_mb * 1024 * 1024)
+        self._current_memory = 0
+        self._lock = threading.Lock()
+
+    def get(self, key: str) -> Optional[Any]:
+        """Get value from cache."""
+        with self._lock:
+            if key in self._cache:
+                self._cache.move_to_end(key)
+                return self._cache[key]["value"]
+            return None
+
+    def set(self, key: str, value: Any, size: Optional[int] = None) -> None:
+        """Set value in cache."""
+        import sys
+
+        with self._lock:
+            # Estimate size if not provided
+            if size is None:
+                try:
+                    size = len(json.dumps(value).encode("utf-8"))
+                except:
+                    size = 1024  # Default estimate
+
+            # Check if key exists
+            if key in self._cache:
+                old_size = self._cache[key]["size"]
+                self._current_memory -= old_size
+                del self._cache[key]
+
+            # Evict if necessary
+            while (
+                len(self._cache) >= self._max_size or self._current_memory + size > self._max_memory
+            ) and self._cache:
+                _, evicted = self._cache.popitem(last=False)
+                self._current_memory -= evicted["size"]
+
+            # Add to cache
+            self._cache[key] = {"value": value, "size": size}
+            self._current_memory += size
+
+    def clear(self) -> None:
+        """Clear the cache."""
+        with self._lock:
+            self._cache.clear()
+            self._current_memory = 0
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get cache statistics."""
+        with self._lock:
+            return {
+                "size": len(self._cache),
+                "max_size": self._max_size,
+                "memory_bytes": self._current_memory,
+                "max_memory_bytes": self._max_memory,
+            }
 
 
 class AgentSessionTracker:
     """Tracks a single agent session lifecycle and activity."""
+
+    __slots__ = (
+        "session_id",
+        "agent_name",
+        "team_name",
+        "context",
+        "file_tracker",
+        "diff_tracker",
+        "_lock",
+        "_activity_timeout",
+        "_high_activity_window",
+        "_message_history",
+    )
 
     def __init__(self, session_id: str, agent_name: str, team_name: str):
         self.session_id = session_id
@@ -124,6 +214,9 @@ class AgentSessionTracker:
         self._activity_timeout = timedelta(minutes=30)
         self._high_activity_window = timedelta(minutes=1)
 
+        # Message history (bounded deque to prevent memory growth)
+        self._message_history: deque = deque(maxlen=100)
+
     def update_activity(self, message: Optional[str] = None) -> None:
         """Update session activity timestamp."""
         with self._lock:
@@ -134,6 +227,9 @@ class AgentSessionTracker:
         self.context.last_activity = datetime.now()
         if message:
             self.context.message_count += 1
+            self._message_history.append(
+                {"timestamp": datetime.now().isoformat(), "preview": message[:100] if message else None}
+            )
         self._update_activity_level_unsafe()
 
     def _update_activity_level(self) -> None:
@@ -171,12 +267,19 @@ class AgentSessionTracker:
 
     def _get_recent_message_count_unsafe(self, window: timedelta) -> int:
         """Get number of messages in recent window - MUST be called while holding _lock."""
-        # TODO: Implement message history tracking
-        # For now, return a simple estimate
-        if window <= self._high_activity_window:
-            # Assume high activity if we just got a message
-            return 1 if self.context.message_count > 0 else 0
-        return self.context.message_count
+        now = datetime.now()
+        cutoff = now - window
+        count = 0
+        for msg in reversed(self._message_history):
+            try:
+                msg_time = datetime.fromisoformat(msg["timestamp"])
+                if msg_time >= cutoff:
+                    count += 1
+                else:
+                    break
+            except:
+                pass
+        return count
 
     def track_file_change(
         self,
@@ -252,17 +355,20 @@ class AgentSessionTracker:
 
 
 class SessionAwarenessManager:
-    """Manages awareness of all active sessions."""
+    """Manages awareness of all active sessions with memory optimization."""
 
-    def __init__(
-        self,
-        team_name: str,
-    ):
+    # Global LRU cache for session summaries
+    _summary_cache = LRUCache(max_size=500, max_memory_mb=5.0)
+
+    def __init__(self, team_name: str):
         self.team_name = team_name
 
         # Session tracking
         self._sessions: Dict[str, AgentSessionTracker] = {}
         self._lock = threading.RLock()
+
+        # Weak reference set for memory-efficient tracking
+        self._agent_sessions: Dict[str, Set[str]] = {}  # agent_name -> set of session_ids
 
     def register_session(
         self,
@@ -288,6 +394,15 @@ class SessionAwarenessManager:
                         tracker.add_tag(tag)
 
             self._sessions[session_id] = tracker
+
+            # Track by agent
+            if agent_name not in self._agent_sessions:
+                self._agent_sessions[agent_name] = set()
+            self._agent_sessions[agent_name].add(session_id)
+
+            # Invalidate cache
+            self._summary_cache.clear()
+
             return tracker
 
     def unregister_session(self, session_id: str) -> bool:
@@ -296,7 +411,16 @@ class SessionAwarenessManager:
             if session_id in self._sessions:
                 tracker = self._sessions[session_id]
                 tracker.context.status = SessionStatus.TERMINATED
+                agent_name = tracker.agent_name
+
+                # Remove from agent tracking
+                if agent_name in self._agent_sessions:
+                    self._agent_sessions[agent_name].discard(session_id)
+                    if not self._agent_sessions[agent_name]:
+                        del self._agent_sessions[agent_name]
+
                 del self._sessions[session_id]
+                self._summary_cache.clear()
                 return True
             return False
 
@@ -315,11 +439,8 @@ class SessionAwarenessManager:
     def get_sessions_by_agent(self, agent_name: str) -> List[AgentSessionTracker]:
         """Get all sessions for a specific agent."""
         with self._lock:
-            return [
-                tracker
-                for tracker in self._sessions.values()
-                if tracker.agent_name == agent_name and tracker.context.status != SessionStatus.TERMINATED
-            ]
+            session_ids = self._agent_sessions.get(agent_name, set())
+            return [self._sessions[sid] for sid in session_ids if sid in self._sessions]
 
     def get_sessions_by_activity(self, min_level: SessionActivityLevel) -> List[AgentSessionTracker]:
         """Get sessions with at least specified activity level."""
@@ -331,15 +452,22 @@ class SessionAwarenessManager:
                 and tracker.context.status != SessionStatus.TERMINATED
             ]
 
-    def get_team_summary(self) -> Dict[str, Any]:
+    def get_team_summary(self, use_cache: bool = True) -> Dict[str, Any]:
         """Get summary of all sessions in team."""
+        cache_key = f"summary:{self.team_name}"
+
+        if use_cache:
+            cached = self._summary_cache.get(cache_key)
+            if cached is not None:
+                return cached
+
         with self._lock:
             sessions = list(self._sessions.values())
 
             active = [s for s in sessions if s.context.status in [SessionStatus.ACTIVE, SessionStatus.CREATED]]
             idle = [s for s in sessions if s.context.status == SessionStatus.IDLE]
 
-            return {
+            result = {
                 "team_name": self.team_name,
                 "total_sessions": len(sessions),
                 "active_sessions": len(active),
@@ -349,6 +477,11 @@ class SessionAwarenessManager:
                 "total_file_changes": sum(s.context.file_change_count for s in sessions),
                 "sessions": [s.get_summary() for s in sessions],
             }
+
+            # Cache the result
+            self._summary_cache.set(cache_key, result, size=len(json.dumps(result).encode("utf-8")))
+
+            return result
 
     def find_collaborators(
         self,
@@ -470,6 +603,19 @@ class SessionAwarenessManager:
 
         return cleaned
 
+    def get_memory_stats(self) -> Dict[str, Any]:
+        """Get memory usage statistics."""
+        with self._lock:
+            session_count = len(self._sessions)
+            agent_count = len(self._agent_sessions)
+            cache_stats = self._summary_cache.get_stats()
+
+            return {
+                "session_count": session_count,
+                "agent_count": agent_count,
+                "cache": cache_stats,
+            }
+
     def save_state(self, filepath: str) -> None:
         """Save session state to file."""
         with self._lock:
@@ -493,6 +639,7 @@ class SessionAwarenessManager:
 
             # Clear existing sessions
             self._sessions.clear()
+            self._agent_sessions.clear()
 
             # Load sessions
             for session_id, session_json in state.get("sessions", {}).items():
@@ -505,8 +652,18 @@ class SessionAwarenessManager:
                     )
                     tracker.from_json(session_json)
                     self._sessions[session_id] = tracker
+
+                    # Track by agent
+                    agent_name = tracker.agent_name
+                    if agent_name not in self._agent_sessions:
+                        self._agent_sessions[agent_name] = set()
+                    self._agent_sessions[agent_name].add(session_id)
+
                 except Exception as e:
                     print(f"Failed to load session {session_id}: {e}")
+
+            # Invalidate cache
+            self._summary_cache.clear()
 
 
 # Global manager instance

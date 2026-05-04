@@ -313,7 +313,7 @@ class ContextBoard:
 
             # Sort: pinned first, then by updated_at
             if include_pinned_first:
-                result.sort(key=lambda e: (not e.is_pinned, e.updated_at), reverse=True)
+                result.sort(key=lambda e: (not e.is_pinned, e.updated_at))
             else:
                 result.sort(key=lambda e: e.updated_at, reverse=True)
 

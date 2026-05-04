@@ -535,8 +535,8 @@ class ModelRouter:
     This is P38 - the intelligent model routing feature.
     """
 
-    # Known model tiers (these would come from config in a full implementation)
-    MODEL_TIERS = {
+    # Default model tiers (fallback when no config is provided)
+    DEFAULT_MODEL_TIERS = {
         "fast": [
             "gpt-4o-mini",
             "claude-3-haiku",
@@ -571,6 +571,48 @@ class ModelRouter:
         self.provider_selector = provider_selector
         self.complexity_analyzer = TaskComplexityAnalyzer()
         self.routing_policy = ModelRoutingPolicy()
+        
+        # Load model tiers from config or use defaults
+        self._model_tiers = self._load_model_tiers()
+
+    def _load_model_tiers(self) -> dict:
+        """Load model tiers from environment variable or file config.
+        
+        Environment Variables:
+            CLAWTEAM_MODEL_TIERS_JSON: JSON string with model tier config
+            CLAWTEAM_MODEL_TIERS_FILE: Path to JSON config file
+        """
+        import json
+        import os
+        
+        # Try environment variable first
+        env_json = os.environ.get("CLAWTEAM_MODEL_TIERS_JSON")
+        if env_json:
+            try:
+                return json.loads(env_json)
+            except json.JSONDecodeError as e:
+                logger.warning(f"Failed to parse CLAWTEAM_MODEL_TIERS_JSON: {e}")
+        
+        # Try config file
+        config_file = os.environ.get("CLAWTEAM_MODEL_TIERS_FILE")
+        if config_file:
+            try:
+                with open(config_file, "r") as f:
+                    return json.load(f)
+            except (OSError, json.JSONDecodeError) as e:
+                logger.warning(f"Failed to load model tiers from {config_file}: {e}")
+        
+        # Fall back to defaults
+        return self.DEFAULT_MODEL_TIERS.copy()
+
+    @property
+    def MODEL_TIERS(self) -> dict:
+        """Get current model tiers configuration."""
+        return self._model_tiers
+
+    def set_model_tiers(self, tiers: dict) -> None:
+        """Set model tiers configuration (for testing/dynamic config)."""
+        self._model_tiers = tiers
 
     def route_task(
         self,
@@ -634,11 +676,11 @@ class ModelRouter:
     ) -> str:
         """Select a specific model for the given tier."""
         tier_key = tier.value  # fast, balanced, powerful
-        models = self.MODEL_TIERS.get(tier_key, [])
+        models = self._model_tiers.get(tier_key, [])
 
         if not models:
             # Fallback to balanced
-            models = self.MODEL_TIERS["balanced"]
+            models = self._model_tiers.get("balanced", self.DEFAULT_MODEL_TIERS["balanced"])
 
         # For certain task types, prefer specific models
         if task_type == TaskType.architecture and tier == ModelTier.POWERFUL:

@@ -35,12 +35,12 @@ class EventTracker:
 
         Args:
             db_path: Path to the SQLite database file.
-                     If None, uses default location in data directory.
+                     If None, uses CLAWTEAM_EVENTS_DB_PATH env var or default location.
         """
         if db_path:
             self.db_path = Path(db_path)
         else:
-            self.db_path = get_data_dir() / "events" / "clawteam_events.db"
+            self.db_path = _get_default_db_path()
 
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn: Optional[sqlite3.Connection] = None
@@ -448,14 +448,47 @@ _tracker: Optional[EventTracker] = None
 _tracker_lock = threading.Lock()
 
 
+def _get_default_db_path() -> Path:
+    """Get default database path from environment or use default location."""
+    import os
+    env_path = os.environ.get("CLAWTEAM_EVENTS_DB_PATH")
+    if env_path:
+        return Path(env_path)
+    return get_data_dir() / "events" / "clawteam_events.db"
+
+
 def get_tracker() -> EventTracker:
-    """Get the global event tracker instance."""
+    """Get the global event tracker instance.
+    
+    Returns:
+        The global EventTracker instance.
+    """
     global _tracker
     if _tracker is None:
         with _tracker_lock:
             if _tracker is None:
                 _tracker = EventTracker()
     return _tracker
+
+
+def set_tracker(tracker: EventTracker) -> None:
+    """Set the global event tracker instance (for testing/dependency injection).
+    
+    Args:
+        tracker: The EventTracker instance to use as the global instance.
+    """
+    global _tracker
+    with _tracker_lock:
+        _tracker = tracker
+
+
+def reset_tracker() -> None:
+    """Reset the global tracker instance (for testing)."""
+    global _tracker
+    with _tracker_lock:
+        if _tracker is not None:
+            _tracker.close()
+            _tracker = None
 
 
 def track_event(event: "ClawTeamEvent") -> None:
@@ -510,6 +543,8 @@ def get_event_subscriber_count() -> int:
 __all__ = [
     "EventTracker",
     "get_tracker",
+    "set_tracker",
+    "reset_tracker",
     "track_event",
     "track_batch",
     "add_event_subscriber",
