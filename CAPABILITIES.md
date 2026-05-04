@@ -1,6 +1,6 @@
 # ClawTeam-OpenClaw 完整能力清单
 
-> **版本**: v0.5.5 | **测试**: 670+ | **状态**: 生产就绪
+> **版本**: v0.5.7 | **测试**: 679+ | **状态**: 生产就绪
 
 本文档详细记录 ClawTeam-OpenClaw 的所有功能模块和实现状态。
 
@@ -78,6 +78,24 @@
 - **Agent 间点对点消息**
 - **邮箱队列管理**
 - **消息持久化**
+
+### 1.5 Agent 生命周期 CLI 命令 (`cli/commands.py`)
+- **v0.5.7**: 新增 `agent` 命令组 ✅
+
+| 命令 | 说明 |
+|------|------|
+| `agent list [-t team] [-a]` | 列出所有 agent，显示状态和运行时长 |
+| `agent info <name> [-t team]` | 显示 agent 详细信息 |
+| `agent health <name> [-t team] [-w]` | 健康检查，支持 --watch 监控模式 |
+| `agent restart <name> [-t team] [-f]` | 重启 agent（终止+重新生成） |
+| `agent pause <name> [-t team] [-r reason]` | 暂停 agent（发送暂停信号） |
+| `agent resume <name> [-t team]` | 恢复已暂停的 agent |
+| `agent kill <name> [-t team] [-f]` | 立即终止 agent |
+
+**架构**:
+- 使用 Gateway API 发送消息 (`sessions.send`)
+- 使用 backend.terminate() 终止 agent
+- 支持 `--team` 指定团队，`--all` 显示已停止 agent
 
 ---
 
