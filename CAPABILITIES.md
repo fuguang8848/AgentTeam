@@ -1,6 +1,6 @@
 # ClawTeam-OpenClaw 完整能力清单
 
-> **版本**: v0.5.0 | **测试**: 595+ | **状态**: 生产就绪
+> **版本**: v0.5.1 | **测试**: 666+ | **状态**: 生产就绪
 
 本文档详细记录 ClawTeam-OpenClaw 的所有功能模块和实现状态。
 
@@ -48,6 +48,7 @@
 | alerts | `clawteam/alerts/` | 告警系统 | ✅ |
 | concurrency | `clawteam/concurrency/` | 并发控制 | ✅ |
 | parser | `clawteam/parser/` | 消息解析 | ✅ |
+| daemon | `clawteam/daemon/` | 持久Agent守护进程 | ✅ |
 
 ---
 
@@ -399,10 +400,83 @@ make test   # 运行测试
 
 ---
 
+## Agent Daemon (持久Agent守护进程)
+
+v0.5.1 新增功能，允许 Agent 持续运行并响应后续任务。
+
+### 架构
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     ClawTeam CLI                            │
+│  clawteam daemon start / spawn / send-task                 │
+└─────────────────────┬───────────────────────────────────────┘
+                      │ TCP Socket (Windows) / Unix Socket
+┌─────────────────────▼───────────────────────────────────────┐
+│                  agentd 守护进程                            │
+│  - 持久运行，管理所有 Agent Session                         │
+│  - 接收 spawn/send_task 命令                               │
+│  - 自动恢复运行中的 Agent                                   │
+└─────────────────────┬───────────────────────────────────────┘
+                      │ Gateway Sessions API
+┌─────────────────────▼───────────────────────────────────────┐
+│              OpenClaw Gateway                               │
+│  ws://127.0.0.1:18789                                      │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────────┐
+│              OpenClaw Agent (Session)                       │
+│  - 持续活跃，等待新任务                                     │
+│  - 通过 clawteam inbox 与 leader 通信                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### CLI 命令
+
+| 命令 | 说明 |
+|------|------|
+| `clawteam daemon start` | 启动守护进程 |
+| `clawteam daemon stop` | 停止守护进程 |
+| `clawteam daemon status` | 查看状态 |
+| `clawteam daemon list` | 列出运行中的 Agent |
+| `clawteam daemon spawn` | Spawn Agent |
+
+### SDK 集成
+
+```python
+# 通过 socket 直接与 daemon 通信
+import socket, json, struct
+
+def send_command(command, args=None):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect(("127.0.0.1", 18792))
+    
+    request = json.dumps({"command": command, "args": args}).encode()
+    sock.sendall(struct.pack("!I", len(request)))
+    sock.sendall(request)
+    
+    # 接收响应...
+
+# 发送任务
+send_command("send_task", {
+    "agent_name": "worker1",
+    "task": "创建文件.txt"
+})
+```
+
+### 持久化
+
+- PID 文件: `~/.clawteam/agentd.pid`
+- 运行中 Agent: `~/.clawteam/running_agents.json`
+- 自动恢复: Daemon 重启时恢复所有运行中的 Agent
+
+---
+
 ## 更新日志
 
 | 版本 | 日期 | 变化 |
 |------|------|------|
+| v0.5.1 | 2026-05-04 | Agent Daemon 持久运行、Continuous Mode、mentions/pinned 修复 |
 | v0.5.0 | 2026-05-03 | P26-P37 Agent 协调增强 |
 | v0.4.0 | 2026-04-26 | P1 问题修复升级 |
 | v0.3.1 | 2026-04-26 | P0 基础架构 |

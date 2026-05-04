@@ -4456,8 +4456,10 @@ def role_suggest(
 # ============================================================================
 
 from clawteam.cli.session import session_app
+from clawteam.cli.daemon_cmd import daemon_app
 
 app.add_typer(session_app, name="session", help="Session awareness commands")
+app.add_typer(daemon_app, name="daemon", help="Daemon management for persistent agents")
 
 
 # ============================================================================
