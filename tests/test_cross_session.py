@@ -80,7 +80,7 @@ class TestCrossSessionMessage:
         assert msg.to_session == "session-2"
         assert msg.notification_type == NotificationType.direct_message
         assert msg.content == "Hello"
-        assert msg.read == False
+        assert not msg.read
         assert len(msg.message_id) == 12
 
     def test_message_serialization(self):
@@ -222,7 +222,7 @@ class TestCrossSessionBus:
         
         # Verify messages marked as read
         for msg in messages:
-            assert msg.read == True
+            assert msg.read
 
     def test_receive_unread_only(self, bus, setup_sessions):
         """Test receiving only unread messages."""
@@ -268,7 +268,7 @@ class TestCrossSessionBus:
         messages = bus.peek(receiver.session_id)
         
         assert len(messages) == 1
-        assert messages[0].read == False
+        assert not messages[0].read
         
         # Verify still unread after peek
         unread_count = bus.count_unread(receiver.session_id)
@@ -388,7 +388,7 @@ class TestNotifications:
             for msg in messages:
                 assert msg.notification_type == NotificationType.task_complete
                 assert msg.payload["taskId"] == "task-123"
-                assert msg.payload["success"] == True
+                assert msg.payload["success"]
         else:
             assert messages.notification_type == NotificationType.task_complete
 

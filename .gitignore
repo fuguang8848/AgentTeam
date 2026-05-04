@@ -30,8 +30,9 @@ tmp/
 # Debug and test artifacts
 debug*.py
 fix*.py
-test_*.py
-test*.py
+!tests/           # Track all files in tests/ directory (MUST be first)
+test_*.py        # Ignore test files at repo root
+test*.py         # Ignore test*.py files at repo root
 failing_tests.txt
 last_test_result.txt
 test_results.txt

@@ -67,7 +67,7 @@ class TestSkillVariable:
         
         assert var.name == 'lang'
         assert var.description == '目标语言'
-        assert var.required == False
+        assert not var.required
         assert var.default_value == '中文'
     
     def test_variable_with_options(self):
@@ -102,8 +102,8 @@ class TestSkill:
         assert skill.name == '测试技能'
         assert skill.slash_command == 'test'
         assert skill.prompt_template == '请处理: {{user_input}}'
-        assert skill.is_installed == True
-        assert skill.is_enabled == True
+        assert skill.is_installed
+        assert skill.is_enabled
     
     def test_skill_with_variables(self):
         """测试带变量的技能"""
@@ -403,8 +403,8 @@ class TestSkillEngineHelperMethods:
             compatible_providers='all'
         )
         
-        assert SkillEngine.is_compatible_with_provider(skill, 'claude-code') == True
-        assert SkillEngine.is_compatible_with_provider(skill, 'codex') == True
+        assert SkillEngine.is_compatible_with_provider(skill, 'claude-code')
+        assert SkillEngine.is_compatible_with_provider(skill, 'codex')
     
     def test_is_compatible_with_provider_specific(self):
         """测试兼容特定 Provider"""
@@ -416,9 +416,9 @@ class TestSkillEngineHelperMethods:
             compatible_providers=['claude-code', 'codex']
         )
         
-        assert SkillEngine.is_compatible_with_provider(skill, 'claude-code') == True
-        assert SkillEngine.is_compatible_with_provider(skill, 'codex') == True
-        assert SkillEngine.is_compatible_with_provider(skill, 'gemini') == False
+        assert SkillEngine.is_compatible_with_provider(skill, 'claude-code')
+        assert SkillEngine.is_compatible_with_provider(skill, 'codex')
+        assert not SkillEngine.is_compatible_with_provider(skill, 'gemini')
 
 
 class TestSkillEngineProcessCommand:
@@ -440,7 +440,7 @@ class TestSkillEngineProcessCommand:
         
         result = SkillEngine.process_skill_command(skill, '--lang=英文 Hello World')
         
-        assert result['valid'] == True
+        assert result['valid']
         assert result['variables']['lang'] == '英文'
         assert result['missing'] == []
         assert '翻译为英文' in result['prompt']
@@ -461,7 +461,7 @@ class TestSkillEngineProcessCommand:
         
         result = SkillEngine.process_skill_command(skill, 'content')
         
-        assert result['valid'] == False
+        assert not result['valid']
         assert 'required' in result['missing']
 
 
@@ -533,7 +533,7 @@ class TestSkillEngineIntegration:
         # 处理命令
         result = SkillEngine.process_skill_command(skill, '--lang=英文 Hello World')
         
-        assert result['valid'] == True
+        assert result['valid']
         assert '英文' in result['prompt']
         assert 'Hello World' in result['prompt']
     
@@ -545,7 +545,7 @@ class TestSkillEngineIntegration:
         result = SkillEngine.process_skill_command(skill, 'Hello World')
         
         # 应使用默认值 '中文'
-        assert result['valid'] == True
+        assert result['valid']
         assert '中文' in result['prompt']
     
     def test_write_test_skill(self):
@@ -557,7 +557,7 @@ class TestSkillEngineIntegration:
             '--framework=pytest def add(a, b): return a + b'
         )
         
-        assert result['valid'] == True
+        assert result['valid']
         assert 'pytest' in result['prompt']
         assert 'def add' in result['prompt']
     
@@ -570,5 +570,5 @@ class TestSkillEngineIntegration:
             'def factorial(n): return 1 if n <= 1 else n * factorial(n-1)'
         )
         
-        assert result['valid'] == True
+        assert result['valid']
         assert 'factorial' in result['prompt']

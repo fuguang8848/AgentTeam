@@ -26,7 +26,7 @@ class TestIntegrationBasic:
         """Test that config can be created"""
         config = AppConfig()
         assert config is not None
-        assert config.debug == False
+        assert not config.debug
 
     def test_session_registry_singleton(self):
         """Test that session registry is a singleton"""

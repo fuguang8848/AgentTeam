@@ -62,7 +62,7 @@ class TestNotification:
         assert d["session_id"] == "session-1"
         assert d["session_name"] == "Test Session"
         assert d["priority"] == "high"
-        assert d["acknowledged"] == False
+        assert not d["acknowledged"]
 
 
 class TestNotificationConfig:
@@ -72,10 +72,10 @@ class TestNotificationConfig:
         """Test default configuration."""
         config = NotificationConfig()
         
-        assert config.enabled == True
-        assert config.sound == True
-        assert config.websocket_push == True
-        assert config.do_not_disturb["enabled"] == False
+        assert config.enabled
+        assert config.sound
+        assert config.websocket_push
+        assert not config.do_not_disturb["enabled"]
     
     def test_custom_config(self):
         """Test custom configuration."""
@@ -85,9 +85,9 @@ class TestNotificationConfig:
             do_not_disturb={"enabled": True, "start": "23:00", "end": "07:00"},
         )
         
-        assert config.enabled == False
-        assert config.sound == False
-        assert config.do_not_disturb["enabled"] == True
+        assert not config.enabled
+        assert not config.sound
+        assert config.do_not_disturb["enabled"]
         assert config.do_not_disturb["start"] == "23:00"
     
     def test_to_dict_and_from_dict(self):
@@ -189,7 +189,7 @@ class TestNotificationManager:
         
         # Acknowledge only confirmation
         result = manager.acknowledge("session-1", NotificationType.CONFIRMATION)
-        assert result == True
+        assert result
         
         # Error should still be active
         assert manager.get_active_count("session-1") == 1
@@ -202,7 +202,7 @@ class TestNotificationManager:
         manager.on_error("session-1", error_msg="test")
         
         result = manager.acknowledge("session-1")
-        assert result == True
+        assert result
         assert manager.get_active_count("session-1") == 0
     
     def test_get_active_count(self):
@@ -308,11 +308,11 @@ class TestNotificationManager:
         manager = NotificationManager()
         
         manager.update_config(enabled=False)
-        assert manager.get_config().enabled == False
+        assert not manager.get_config().enabled
         
         new_config = NotificationConfig(sound=False)
         manager.update_config(config=new_config)
-        assert manager.get_config().sound == False
+        assert not manager.get_config().sound
     
     def test_global_manager(self):
         """Test global manager instance."""
@@ -361,7 +361,7 @@ class TestDoNotDisturb:
         # This test can't reliably check time-based behavior without mocking
         # Just verify the config is set correctly
         config = manager.get_config()
-        assert config.do_not_disturb["enabled"] == True
+        assert config.do_not_disturb["enabled"]
         assert config.do_not_disturb["start"] == "23:00"
 
 

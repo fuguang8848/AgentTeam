@@ -35,12 +35,12 @@ class TestNotificationConfig:
         """测试默认配置"""
         config = NotificationConfig()
         assert config is not None
-        assert config.enabled == True
+        assert config.enabled
     
     def test_custom_config(self):
         """测试自定义配置"""
         config = NotificationConfig(enabled=False)
-        assert config.enabled == False
+        assert not config.enabled
 
 
 class TestNotification:
@@ -85,7 +85,7 @@ class TestNotificationManagerInit:
         """测试自定义配置初始化"""
         config = NotificationConfig(enabled=False)
         manager = NotificationManager(config)
-        assert manager._config.enabled == False
+        assert not manager._config.enabled
     
     def test_get_config(self):
         """测试获取配置"""
@@ -204,7 +204,7 @@ class TestNotificationManagerConfigUpdate:
         manager = NotificationManager()
         new_config = NotificationConfig(enabled=False)
         manager.update_config(new_config)
-        assert manager._config.enabled == False
+        assert not manager._config.enabled
 
 
 class TestNotificationManagerPersistence:

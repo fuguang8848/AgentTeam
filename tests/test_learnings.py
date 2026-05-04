@@ -65,7 +65,7 @@ class TestExperienceEntry:
         assert entry.area == "backend"
         assert entry.priority == "high"
         assert entry.count == 1
-        assert entry.resolved == False
+        assert not entry.resolved
         assert entry.resolution is None
         
     def test_experience_entry_defaults(self):

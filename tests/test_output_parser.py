@@ -71,7 +71,7 @@ class TestParserState:
     def test_state_defaults(self):
         """测试状态默认值"""
         state = ParserState(session_id="test-session")
-        assert state.is_thinking == False
+        assert not state.is_thinking
         assert state.text_buffer_lines == []
 
 

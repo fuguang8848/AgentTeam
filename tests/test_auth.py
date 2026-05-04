@@ -35,7 +35,7 @@ class TestTokenPayload:
             username="testuser",
             expires_at=time.time() + 3600
         )
-        assert payload.is_expired() == False
+        assert not payload.is_expired()
 
     def test_payload_is_expired_true(self):
         """Test that payload is expired."""
@@ -44,7 +44,7 @@ class TestTokenPayload:
             username="testuser",
             expires_at=time.time() - 1
         )
-        assert payload.is_expired() == True
+        assert payload.is_expired()
 
 
 class TestAuthManager:
@@ -54,26 +54,26 @@ class TestAuthManager:
         """Test manager initialization without API key."""
         monkeypatch.delenv("CLAWTEAM_API_KEY", raising=False)
         manager = AuthManager()
-        assert manager.is_auth_required() == False
+        assert not manager.is_auth_required()
 
     def test_manager_initialization_with_api_key(self, monkeypatch):
         """Test manager initialization with API key."""
         monkeypatch.setenv("CLAWTEAM_API_KEY", "test-api-key-123")
         manager = AuthManager()
-        assert manager.is_auth_required() == True
+        assert manager.is_auth_required()
         assert "admin" in manager._users
 
     def test_verify_api_key_correct(self, monkeypatch):
         """Test API key verification with correct key."""
         monkeypatch.setenv("CLAWTEAM_API_KEY", "test-api-key-123")
         manager = AuthManager()
-        assert manager.verify_api_key("test-api-key-123") == True
+        assert manager.verify_api_key("test-api-key-123")
 
     def test_verify_api_key_wrong(self, monkeypatch):
         """Test API key verification with wrong key."""
         monkeypatch.setenv("CLAWTEAM_API_KEY", "test-api-key-123")
         manager = AuthManager()
-        assert manager.verify_api_key("wrong-key") == False
+        assert not manager.verify_api_key("wrong-key")
 
     def test_create_token(self, monkeypatch):
         """Test creating a JWT token."""
@@ -120,7 +120,7 @@ class TestAuthManager:
         manager = AuthManager()
         token = manager.create_token("testuser", "user")
         result = manager.logout(token)
-        assert result == True
+        assert result
         assert token not in manager._tokens
 
 

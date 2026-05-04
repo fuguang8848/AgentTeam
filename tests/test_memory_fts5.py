@@ -32,11 +32,11 @@ def test_fts5_provider_initialization(memory_provider):
     
     # 检查是否已初始化
     # 注意：_initialize_db() 会在第一次访问时调用
-    assert memory_provider._initialized == False  # 还未初始化
+    assert not memory_provider._initialized  # 还未初始化
     
     # 触发初始化
     memory_provider._initialize_db()
-    assert memory_provider._initialized == True
+    assert memory_provider._initialized
 
 
 def test_fts5_availability_check():

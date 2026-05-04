@@ -68,15 +68,15 @@ class TestConcurrencyGuard:
         guard = ConcurrencyGuard(ConcurrencyConfig(max_sessions=2))
         
         # 初始可以创建
-        assert guard.can_create_session() == True
+        assert guard.can_create_session()
         
         # 注册一个会话
         guard.register_session()
-        assert guard.can_create_session() == True
+        assert guard.can_create_session()
         
         # 注册第二个会话
         guard.register_session()
-        assert guard.can_create_session() == False
+        assert not guard.can_create_session()
     
     def test_register_session(self):
         """测试会话注册"""
@@ -99,12 +99,12 @@ class TestConcurrencyGuard:
         
         # 注销存在的会话
         result = guard.unregister_session(sid)
-        assert result == True
+        assert result
         assert guard.get_active_session_count() == 0
         
         # 注销不存在的会话
         result = guard.unregister_session("non-existent")
-        assert result == False
+        assert not result
     
     def test_session_duration(self):
         """测试会话持续时间"""
@@ -129,7 +129,7 @@ class TestConcurrencyGuard:
         guard.register_session()
         
         status = guard.check_resources()
-        assert status.can_create == False
+        assert not status.can_create
         assert "Maximum session limit" in status.reason
         assert status.current_sessions == 1
         assert status.max_sessions == 1
@@ -153,7 +153,7 @@ class TestConcurrencyGuard:
         result = guard.should_warn_resources()
         # 内存使用率可能高也可能低，取决于测试环境
         assert 'warn' in result
-        assert 'message' in result or result['warn'] == False
+        assert 'message' in result or not result['warn']
     
     def test_should_warn_resources_sessions(self):
         """测试资源警告 - 会话数"""
@@ -165,7 +165,7 @@ class TestConcurrencyGuard:
             guard.register_session()
         
         result = guard.should_warn_resources()
-        assert result['warn'] == True
+        assert result['warn']
         assert "session limit" in result['message']
     
     def test_get_system_info(self):
@@ -308,9 +308,9 @@ class TestConcurrencyGuardIntegration:
         guard = ConcurrencyGuard(config)
         
         # 1. 检查初始状态
-        assert guard.can_create_session() == True
+        assert guard.can_create_session()
         status = guard.check_resources()
-        assert status.can_create == True
+        assert status.can_create
         
         # 2. 注册会话
         sid1 = guard.register_session()
@@ -322,14 +322,14 @@ class TestConcurrencyGuardIntegration:
         assert guard.get_active_session_count() == 3
         
         # 4. 达到上限
-        assert guard.can_create_session() == False
+        assert not guard.can_create_session()
         status = guard.check_resources()
-        assert status.can_create == False
+        assert not status.can_create
         
         # 5. 注销会话
         guard.unregister_session(sid1)
         assert guard.get_active_session_count() == 2
-        assert guard.can_create_session() == True
+        assert guard.can_create_session()
         
         # 6. 清理
         guard.cleanup()

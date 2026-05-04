@@ -73,7 +73,7 @@ def test_acknowledge_alert(alert_manager):
     assert alert.state == AlertState.ACTIVE
     
     success = acknowledge_alert(alert.id)
-    assert success == True
+    assert success
     assert alert.state == AlertState.ACKNOWLEDGED
 
 

@@ -28,8 +28,8 @@ class TestProviderCapabilityRegistry:
         cap = ProviderCapabilityRegistry.get("claude-code")
         assert cap is not None
         assert cap.provider_id == "claude-code"
-        assert cap.mcp_support.native == True
-        assert cap.skill_support.slash_commands == True
+        assert cap.mcp_support.native
+        assert cap.skill_support.slash_commands
         
     def test_get_unknown_capability(self):
         """测试获取未知 Provider"""
@@ -51,33 +51,33 @@ class TestProviderCapabilityRegistry:
         from clawteam.orchestrator.provider_capability import ProviderCapabilityRegistry
         
         mcp = ProviderCapabilityRegistry.get_mcp_capability("claude-code")
-        assert mcp.native == True
+        assert mcp.native
         
         # 未知 Provider 返回默认值
         mcp = ProviderCapabilityRegistry.get_mcp_capability("unknown")
-        assert mcp.native == False
+        assert not mcp.native
     
     def test_get_skill_capability(self):
         """测试获取 Skill 能力"""
         from clawteam.orchestrator.provider_capability import ProviderCapabilityRegistry
         
         skill = ProviderCapabilityRegistry.get_skill_capability("claude-code")
-        assert skill.slash_commands == True
-        assert skill.system_prompt == True
+        assert skill.slash_commands
+        assert skill.system_prompt
     
     def test_supports_native_mcp(self):
         """测试原生 MCP 支持"""
         from clawteam.orchestrator.provider_capability import ProviderCapabilityRegistry
         
-        assert ProviderCapabilityRegistry.supports_native_mcp("claude-code") == True
-        assert ProviderCapabilityRegistry.supports_native_mcp("codex") == False
+        assert ProviderCapabilityRegistry.supports_native_mcp("claude-code")
+        assert not ProviderCapabilityRegistry.supports_native_mcp("codex")
     
     def test_supports_mcp_fallback(self):
         """测试 MCP 降级支持"""
         from clawteam.orchestrator.provider_capability import ProviderCapabilityRegistry
         
-        assert ProviderCapabilityRegistry.supports_mcp_fallback("codex") == True
-        assert ProviderCapabilityRegistry.supports_mcp_fallback("claude-code") == False
+        assert ProviderCapabilityRegistry.supports_mcp_fallback("codex")
+        assert not ProviderCapabilityRegistry.supports_mcp_fallback("claude-code")
     
     def test_get_registered_ids(self):
         """测试获取已注册 ID"""
@@ -135,7 +135,7 @@ class TestProviderAvailability:
         from clawteam.orchestrator.provider_availability import check_provider_availability
         
         result = check_provider_availability("unknown-provider")
-        assert result.available == False
+        assert not result.available
         assert "Unknown provider" in result.error
     
     def test_get_availability_summary(self):
@@ -170,7 +170,7 @@ class TestProviderAutoSwitchManager:
         
         manager = ProviderAutoSwitchManager("test-team")
         assert manager.team_name == "test-team"
-        assert manager.auto_switch_enabled == True
+        assert manager.auto_switch_enabled
     
     def test_get_current_provider(self):
         """测试获取当前 Provider"""
@@ -245,7 +245,7 @@ class TestGitWorktreeService:
         from clawteam.workspace.worktree import GitWorktreeService
         
         service = GitWorktreeService(mock_repo)
-        assert service.is_git_repo() == True
+        assert service.is_git_repo()
     
     def test_get_current_branch(self, mock_repo):
         """测试获取当前分支"""
@@ -367,7 +367,7 @@ class TestWorktreeDataClasses:
         )
         
         d = result.to_dict()
-        assert d["canMerge"] == True
+        assert d["canMerge"]
         assert d["aheadBy"] == 5
     
     def test_merge_result_to_dict(self):
@@ -381,7 +381,7 @@ class TestWorktreeDataClasses:
         )
         
         d = result.to_dict()
-        assert d["success"] == True
+        assert d["success"]
         assert d["commitHash"] == "abc123"
 
 

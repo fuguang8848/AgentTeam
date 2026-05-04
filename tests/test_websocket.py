@@ -32,7 +32,7 @@ class TestConnectionPool:
         conn = WebSocketConnection(team_name="test-team", conn_id="conn-1", connected_at=time.time())
         result = pool.add(conn)
         
-        assert result == True
+        assert result
         assert pool.get("conn-1") == conn
         assert len(pool.get_team_connections("test-team")) == 1
 
@@ -43,7 +43,7 @@ class TestConnectionPool:
         pool.add(conn)
         
         result = pool.remove(conn)
-        assert result == True
+        assert result
         assert pool.get("conn-1") is None
 
     def test_get_stats(self):
@@ -74,7 +74,7 @@ class TestMessageBatcher:
         should_flush = batcher.add_message("test-team", {"type": "test", "data": "hello"})
         
         # First message shouldn't trigger flush (not enough messages and time hasn't elapsed)
-        assert should_flush == False
+        assert not should_flush
 
     def test_should_flush_by_size(self):
         """Test that batcher flushes when max batch size is reached."""
@@ -84,7 +84,7 @@ class TestMessageBatcher:
         batcher.add_message("test-team", {"msg": 2})
         should_flush = batcher.add_message("test-team", {"msg": 3})
         
-        assert should_flush == True
+        assert should_flush
 
     def test_get_and_clear_batch(self):
         """Test getting and clearing a batch."""
@@ -115,7 +115,7 @@ class TestWebSocketManager:
         conn = manager.add_connection("test-team", "conn-1")
         
         assert conn.team_name == "test-team"
-        assert conn.is_alive == True
+        assert conn.is_alive
         assert len(manager.get_connections("test-team")) == 1
 
     def test_add_multiple_connections(self):
@@ -196,14 +196,14 @@ class TestWebSocketConnection:
         
         assert conn.team_name == "test-team"
         assert conn.conn_id == "conn-1"
-        assert conn.is_alive == True
+        assert conn.is_alive
         assert conn.last_ping > 0
 
     def test_connection_default_values(self):
         """Test default values for connection."""
         conn = WebSocketConnection(team_name="test-team", conn_id="conn-1", connected_at=0.0)
         
-        assert conn.is_alive == True
+        assert conn.is_alive
         assert conn.last_ping > 0  # Should be set to current time
 
 
