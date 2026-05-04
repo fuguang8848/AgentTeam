@@ -59,7 +59,9 @@ class ExperienceEntry(BaseModel):
     session_ids: List[str] = Field(default_factory=list)
     related_task_ids: List[str] = Field(default_factory=list)
 
-    model_config = ConfigDict(json_encoders={datetime: lambda dt: dt.isoformat()})
+    model_config = ConfigDict(
+        ser_json_timedelta="iso8601",
+    )
 
 
 class PatternDetector:

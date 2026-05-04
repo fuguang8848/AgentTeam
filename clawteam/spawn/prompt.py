@@ -34,6 +34,40 @@ After completing each task, include a confidence assessment:
 - If you encounter something outside your expertise, say so and suggest escalation rather than guessing."""
 
 # ---------------------------------------------------------------------------
+# Continuous Running Mode for specialist agents
+# Injected when agent_type != "leader" to enable persistent inbox monitoring.
+# ---------------------------------------------------------------------------
+
+CONTINUOUS_RUN_BLOCK = """## Continuous Running Mode
+
+You are a persistent team agent. Do NOT exit after completing a task.
+
+**Startup:**
+1. Check your inbox for any pending tasks:
+   `clawteam inbox peek {team_name} --agent {agent_name}`
+2. If tasks exist, process them. If not, proceed to standby.
+
+**Main Loop:**
+- Every 30 seconds, check your inbox for new messages:
+  `clawteam inbox peek {team_name} --agent {agent_name}`
+- If you receive a new task:
+  1. Acknowledge receipt: `clawteam inbox receive {team_name} --agent {agent_name}`
+  2. Execute the task
+  3. Report completion to leader: `clawteam inbox send {team_name} {leader_name} "Task completed: [BRIEF_SUMMARY]"`
+  4. Return to standby loop
+
+**Shutdown Protocol:**
+- ONLY exit when the leader sends the exact message "shutdown"
+- Before exiting after completing a task, ALWAYS ask the leader:
+  `clawteam inbox send {team_name} {leader_name} "Task done. Should I exit or await new tasks?"`
+- Wait for leader's response before deciding to exit or continue
+
+**Task Completion:**
+- After completing any task, do NOT auto-exit
+- Send completion message to leader
+- Ask if should exit or await new tasks"""
+
+# ---------------------------------------------------------------------------
 # Leader-specific coordination rules
 # Injected when agent_type == "leader" to ensure proper board/task management.
 # ---------------------------------------------------------------------------
@@ -131,6 +165,13 @@ def build_agent_prompt(
     # Inject leader protocol for team leads
     if agent_type == "leader":
         lines.extend(["", LEADER_PROTOCOL])
+    # Inject continuous running mode for specialist agents (not leader)
+    else:
+        lines.extend(["", CONTINUOUS_RUN_BLOCK.format(
+            team_name=team_name,
+            agent_name=agent_name,
+            leader_name=leader_name
+        )])
     lines.extend(
         [
             "",
@@ -142,13 +183,12 @@ def build_agent_prompt(
             f"- First action: run `clawteam task list {team_name} --owner {agent_name}` to discover your task ID.",
             f"- Starting a task: `clawteam task update {team_name} [TASK_ID] --status in_progress`",
             f"- Finishing a task: `clawteam task update {team_name} [TASK_ID] --status completed`",
-            "- When you finish all tasks, send a summary to the leader:",
-            f'  `clawteam inbox send {team_name} {leader_name} "All tasks completed. [BRIEF_SUMMARY]"',
+            "- When you complete a task, report to the leader:",
+            f'  `clawteam inbox send {team_name} {leader_name} "Task completed: [BRIEF_SUMMARY]"',
             "- If you are blocked or any clawteam command is denied/fails, message the leader immediately with the exact error text:",
-            f'  `clawteam inbox send {team_name} {leader_name} "Blocked: [EXACT_ERROR]"`',
+            f'  `clawteam inbox send {team_name} {leader_name} "Blocked: [EXACT_ERROR]"',
             f"- After finishing work, report your costs: `clawteam cost report {team_name} --input-tokens [N] --output-tokens [N] --cost-cents [N]`",
             f"- Before finishing, save your session: `clawteam session save {team_name} --session-id [ID]`",
-            "- When you finish all tasks, type `exit` to terminate this session.",
             "",
             METACOGNITION_BLOCK,
             "",
