@@ -527,14 +527,35 @@ def start_daemon():
             _daemon.stop()
     atexit.register(cleanup)
 
-    # 处理 SIGINT/SIGTERM
-    def signal_handler(signum, frame):
-        print("\n[Daemon] Received shutdown signal")
+    # 信号处理（跨平台）
+    def _shutdown_daemon():
+        print("\n[Daemon] Shutting down")
         if _daemon:
             _daemon.stop()
         sys.exit(0)
 
-    if not IS_WINDOWS:
+    def signal_handler(signum, frame):
+        _shutdown_daemon()
+
+    if IS_WINDOWS:
+        # Windows: 使用控制台事件处理
+        import ctypes
+        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+
+        EVENT_SHUTDOWN = 0x0001  # CTRL_C_EVENT
+
+        def windows_signal_handler(sig):
+            if sig in (0, 1):  # CTRL_C_EVENT or CTRL_BREAK_EVENT
+                _shutdown_daemon()
+            return 1  # tell caller we handled it
+
+        # 注册控制台 Ctrl+C/Ctrl+Break 处理
+        kernel32.SetConsoleCtrlHandler(
+            ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_uint)(windows_signal_handler),
+            True
+        )
+    else:
+        # Unix: 使用标准 signal
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
 
@@ -574,12 +595,19 @@ if __name__ == "__main__":
     if command == "start":
         start_daemon()
     elif command == "stop":
-        # 通过 socket 发送 stop 命令
+        # 通过 socket 发送 stop 命令（跨平台）
         try:
             import socket
-            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            sock.settimeout(5)
-            sock.connect(str(SOCKET_FILE))
+            if IS_WINDOWS:
+                # Windows: 使用 TCP 连接
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(5)
+                sock.connect((SOCKET_HOST, DAEMON_PORT))
+            else:
+                # Unix: 使用 Unix Socket
+                sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                sock.settimeout(5)
+                sock.connect(str(SOCKET_FILE))
             request = json.dumps({"command": "stop"}).encode("utf-8")
             sock.sendall(struct.pack("!I", len(request)))
             sock.sendall(request)
@@ -592,7 +620,8 @@ if __name__ == "__main__":
             print(f"[Daemon] Stop failed: {e}")
     elif command == "status":
         if PID_FILE.exists():
-            print(f"[Daemon] Running (PID: {PID_FILE.read_text().strip()})")
+            pid = PID_FILE.read_text().strip()
+            print(f"[Daemon] Running (PID: {pid})")
         else:
             print("[Daemon] Not running")
     else:
