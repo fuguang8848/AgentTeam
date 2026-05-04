@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 import uuid
@@ -4975,6 +4976,477 @@ def insights_memory(
                 console.print(f"  {name}:  {bar}  {count}")
 
     _output(activity_stats, _human)
+
+
+# ============================================================================
+# Agent Commands (Lifecycle Management)
+# ============================================================================
+
+agent_app = typer.Typer(help="Agent lifecycle management commands")
+app.add_typer(agent_app, name="agent")
+
+
+@agent_app.command("list")
+def agent_list(
+    team: Optional[str] = typer.Option(None, "--team", "-t", help="Team name (default: all teams)"),
+    show_dead: bool = typer.Option(False, "--all", "-a", help="Include dead/stopped agents"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """List all agents with their status and runtime."""
+    from clawteam.spawn.registry import get_registry, is_agent_alive
+    import datetime
+
+    if team:
+        teams = [team]
+    else:
+        # Get all teams from data dir
+        data_dir = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
+        teams = [d.name for d in data_dir.iterdir() if d.is_dir() and not d.name.startswith('.')]
+
+    all_agents = []
+    for t in teams:
+        registry = get_registry(t)
+        for name, info in registry.items():
+            is_alive = is_agent_alive(t, name)
+            if not show_dead and not is_alive:
+                continue
+
+            # Calculate runtime
+            started_at = info.get("started_at")
+            if started_at:
+                try:
+                    start_dt = datetime.datetime.fromtimestamp(started_at)
+                    runtime = datetime.datetime.now() - start_dt
+                    runtime_str = _format_duration(runtime)
+                except:
+                    runtime_str = "unknown"
+            else:
+                runtime_str = "unknown"
+
+            agent_data = {
+                "team": t,
+                "name": name,
+                "type": info.get("agent_type", "unknown"),
+                "status": "running" if is_alive else "stopped",
+                "runtime": runtime_str,
+                "started_at": info.get("started_at"),
+                "session_key": info.get("session_key", ""),
+            }
+            all_agents.append(agent_data)
+
+    if json_output or _json_output:
+        _output({"agents": all_agents, "total": len(all_agents)})
+    else:
+        if not all_agents:
+            console.print("[yellow]No agents found.[/yellow]")
+            return
+
+        console.print(f"[bold]Agents ({len(all_agents)})[/bold]")
+        console.print("-" * 80)
+
+        # Group by team
+        by_team = {}
+        for a in all_agents:
+            by_team.setdefault(a["team"], []).append(a)
+
+        for team_name, agents in by_team.items():
+            console.print(f"\n[cyan]{team_name}[/cyan]")
+            for a in agents:
+                status_color = "green" if a["status"] == "running" else "red"
+                console.print(
+                    f"  [{status_color}]{a['status']:8}[/{status_color}] "
+                    f"{a['name']:20} "
+                    f"({a['type']:15}) "
+                    f"runtime: {a['runtime']}"
+                )
+
+
+def _format_duration(duration: datetime.timedelta) -> str:
+    """Format a duration as human-readable string."""
+    total_seconds = int(duration.total_seconds())
+    if total_seconds < 60:
+        return f"{total_seconds}s"
+    elif total_seconds < 3600:
+        mins = total_seconds // 60
+        secs = total_seconds % 60
+        return f"{mins}m {secs}s"
+    elif total_seconds < 86400:
+        hours = total_seconds // 3600
+        mins = (total_seconds % 3600) // 60
+        return f"{hours}h {mins}m"
+    else:
+        days = total_seconds // 86400
+        hours = (total_seconds % 86400) // 3600
+        return f"{days}d {hours}h"
+
+
+@agent_app.command("info")
+def agent_info(
+    name: str = typer.Argument(..., help="Agent name"),
+    team: Optional[str] = typer.Option(None, "--team", "-t", help="Team name"),
+):
+    """Show detailed information about an agent."""
+    from clawteam.spawn.registry import get_agent_info, is_agent_alive, get_agent_health
+    import datetime
+
+    if not team:
+        # Search all teams
+        data_dir = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
+        for t_dir in data_dir.iterdir():
+            if t_dir.is_dir() and not t_dir.name.startswith('.'):
+                info = get_agent_info(t_dir.name, name)
+                if info:
+                    team = t_dir.name
+                    break
+
+    if not team:
+        console.print(f"[red]Agent '{name}' not found.[/red]")
+        raise typer.Exit(1)
+
+    info = get_agent_info(team, name)
+    if not info:
+        console.print(f"[red]Agent '{name}' not found in team '{team}'.[/red]")
+        raise typer.Exit(1)
+
+    is_alive = is_agent_alive(team, name)
+    health = get_agent_health(team, name)
+
+    console.print(f"\n[bold cyan]Agent: {name}[/cyan][/bold] (team: {team})")
+    console.print("-" * 60)
+
+    status_color = "green" if is_alive else "red"
+    console.print(f"[bold]Status:[/bold] [{status_color}]{'running' if is_alive else 'stopped'}[/{status_color}]")
+
+    if info.get("started_at"):
+        start_dt = datetime.datetime.fromtimestamp(info["started_at"])
+        console.print(f"[bold]Started:[/bold] {start_dt.strftime('%Y-%m-%d %H:%M:%S')}")
+        runtime = datetime.datetime.now() - start_dt
+        console.print(f"[bold]Runtime:[/bold] {_format_duration(runtime)}")
+
+    console.print(f"[bold]Type:[/bold] {info.get('agent_type', 'unknown')}")
+    console.print(f"[bold]Backend:[/bold] {info.get('backend', 'unknown')}")
+
+    if info.get("session_key"):
+        console.print(f"[bold]Session:[/bold] {info['session_key']}")
+
+    if health:
+        console.print(f"\n[bold]Health:[/bold]")
+        console.print(f"  Last heartbeat: {health.last_heartbeat or 'never'}")
+        console.print(f"  Heartbeat count: {health.heartbeat_count}")
+        console.print(f"  Restart count: {health.restart_count}")
+        if health.last_error:
+            console.print(f"  Last error: {health.last_error}")
+
+
+@agent_app.command("health")
+def agent_health(
+    name: str = typer.Argument(..., help="Agent name"),
+    team: Optional[str] = typer.Option(None, "--team", "-t", help="Team name"),
+    watch: bool = typer.Option(False, "--watch", "-w", help="Watch mode (refresh every 5 seconds)"),
+):
+    """Check agent health status."""
+    from clawteam.spawn.registry import get_agent_info, is_agent_alive, get_agent_health
+    import datetime
+
+    def check_health(t: str, n: str) -> bool:
+        """Check and display health. Returns True if agent is healthy."""
+        info = get_agent_info(t, n)
+        if not info:
+            console.print(f"[red]Agent '{n}' not found.[/red]")
+            return False
+
+        alive = is_agent_alive(t, n)
+        health = get_agent_health(t, n)
+
+        if not alive:
+            console.print(f"[red]✗ Agent '{n}' is not running[/red]")
+            return False
+
+        console.print(f"[green]✓ Agent '{n}' is running[/green]")
+
+        if health:
+            if health.last_heartbeat:
+                try:
+                    hb_dt = datetime.datetime.fromisoformat(health.last_heartbeat.replace('Z', '+00:00'))
+                    hb_age = (datetime.datetime.now() - hb_dt.replace(tzinfo=None)).total_seconds()
+                    if hb_age < 60:
+                        console.print(f"  Last heartbeat: {hb_age:.0f}s ago")
+                    elif hb_age < 3600:
+                        console.print(f"  Last heartbeat: {hb_age/60:.1f}m ago")
+                    else:
+                        console.print(f"  Last heartbeat: {hb_age/3600:.1f}h ago [yellow]⚠ stale[/yellow]")
+                except:
+                    console.print(f"  Last heartbeat: {health.last_heartbeat}")
+
+            console.print(f"  Heartbeats: {health.heartbeat_count}")
+            console.print(f"  Restarts: {health.restart_count}")
+
+            if health.last_error:
+                console.print(f"  [yellow]Last error: {health.last_error}[/yellow]")
+
+        return True
+
+    # Find team if not provided
+    actual_team = team
+    if not actual_team:
+        data_dir = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
+        for t_dir in data_dir.iterdir():
+            if t_dir.is_dir() and not t_dir.name.startswith('.'):
+                info = get_agent_info(t_dir.name, name)
+                if info:
+                    actual_team = t_dir.name
+                    break
+
+    if not actual_team:
+        console.print(f"[red]Agent '{name}' not found.[/red]")
+        raise typer.Exit(1)
+
+    if watch:
+        import time
+        console.print("[dim]Watching agent health (Ctrl+C to stop)...[/dim]\n")
+        while True:
+            try:
+                console.print(f"\n[dim]{datetime.datetime.now().strftime('%H:%M:%S')}[/dim]")
+                check_health(actual_team, name)
+                time.sleep(5)
+            except KeyboardInterrupt:
+                console.print("\n[dim]Stopped.[/dim]")
+                break
+    else:
+        check_health(actual_team, name)
+
+
+@agent_app.command("restart")
+def agent_restart(
+    name: str = typer.Argument(..., help="Agent name"),
+    team: Optional[str] = typer.Option(None, "--team", "-t", help="Team name"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force kill if not responding"),
+):
+    """Restart an agent (terminate and respawn)."""
+    from clawteam.spawn.registry import get_agent_info, is_agent_alive, unregister_agent
+    from clawteam.spawn import get_backend
+    import subprocess
+    import json
+
+    # Find team if not provided
+    actual_team = team
+    if not actual_team:
+        data_dir = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
+        for t_dir in data_dir.iterdir():
+            if t_dir.is_dir() and not t_dir.name.startswith('.'):
+                info = get_agent_info(t_dir.name, name)
+                if info:
+                    actual_team = t_dir.name
+                    break
+
+    if not actual_team:
+        console.print(f"[red]Agent '{name}' not found.[/red]")
+        raise typer.Exit(1)
+
+    info = get_agent_info(actual_team, name)
+    if not info:
+        console.print(f"[red]Agent '{name}' not found in team '{actual_team}'.[/red]")
+        raise typer.Exit(1)
+
+    console.print(f"[yellow]Restarting agent '{name}'...[/yellow]")
+
+    # Get backend
+    backend_name = info.get("backend", "auto")
+    try:
+        backend = get_backend(backend_name)
+    except ValueError:
+        backend = get_backend("auto")
+
+    # If agent is alive, try graceful shutdown first
+    if is_agent_alive(actual_team, name) and not force:
+        # Try sending shutdown message via gateway
+        console.print(f"[dim]Sending shutdown signal...[/dim]")
+        session_key = info.get("session_key", "")
+        if session_key:
+            try:
+                _gateway_call("sessions.send", {"key": session_key, "message": "shutdown"}, timeout=10)
+                import time
+                time.sleep(2)
+            except:
+                pass
+
+    # Terminate the agent using backend
+    console.print(f"[dim]Terminating agent...[/dim]")
+    try:
+        backend.terminate(name)  # Note: only takes agent_name, not team_name
+    except Exception as e:
+        console.print(f"[yellow]Warning during termination: {e}[/yellow]")
+
+    # Unregister
+    try:
+        unregister_agent(actual_team, name)
+    except:
+        pass
+
+    # Respawn
+    console.print(f"[dim]Respawning agent...[/dim]")
+    try:
+        new_info = backend.spawn(
+            team_name=actual_team,
+            agent_name=name,
+            agent_type=info.get("agent_type", "general-purpose"),
+            task=info.get("last_task", ""),
+            parent_agent=info.get("parent_agent", ""),
+        )
+        console.print(f"[green]✓ Agent '{name}' restarted successfully[/green]")
+        console.print(f"[dim]New session: {new_info.get('session_key', 'unknown')}[/dim]")
+    except Exception as e:
+        console.print(f"[red]✗ Failed to restart agent: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@agent_app.command("pause")
+def agent_pause(
+    name: str = typer.Argument(..., help="Agent name"),
+    team: Optional[str] = typer.Option(None, "--team", "-t", help="Team name"),
+    reason: Optional[str] = typer.Option(None, "--reason", "-r", help="Reason for pausing"),
+):
+    """Pause an agent (asks it to stop processing and wait)."""
+    from clawteam.spawn.registry import get_agent_info, is_agent_alive
+
+    # Find team if not provided
+    actual_team = team
+    if not actual_team:
+        data_dir = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
+        for t_dir in data_dir.iterdir():
+            if t_dir.is_dir() and not t_dir.name.startswith('.'):
+                info = get_agent_info(t_dir.name, name)
+                if info:
+                    actual_team = t_dir.name
+                    break
+
+    if not actual_team:
+        console.print(f"[red]Agent '{name}' not found.[/red]")
+        raise typer.Exit(1)
+
+    info = get_agent_info(actual_team, name)
+    if not info:
+        console.print(f"[red]Agent '{name}' not found in team '{actual_team}'.[/red]")
+        raise typer.Exit(1)
+
+    if not is_agent_alive(actual_team, name):
+        console.print(f"[red]Agent '{name}' is not running.[/red]")
+        raise typer.Exit(1)
+
+    pause_msg = f"pause" + (f": {reason}" if reason else ": user requested")
+    session_key = info.get("session_key", "")
+
+    if not session_key:
+        console.print(f"[red]No session key found for agent '{name}'.[/red]")
+        raise typer.Exit(1)
+
+    try:
+        _gateway_call("sessions.send", {"key": session_key, "message": pause_msg}, timeout=10)
+        console.print(f"[green]✓ Pause signal sent to '{name}'[/green]")
+    except Exception as e:
+        console.print(f"[red]✗ Failed to send pause signal: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@agent_app.command("resume")
+def agent_resume(
+    name: str = typer.Argument(..., help="Agent name"),
+    team: Optional[str] = typer.Option(None, "--team", "-t", help="Team name"),
+):
+    """Resume a paused agent."""
+    from clawteam.spawn.registry import get_agent_info, is_agent_alive
+
+    # Find team if not provided
+    actual_team = team
+    if not actual_team:
+        data_dir = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
+        for t_dir in data_dir.iterdir():
+            if t_dir.is_dir() and not t_dir.name.startswith('.'):
+                info = get_agent_info(t_dir.name, name)
+                if info:
+                    actual_team = t_dir.name
+                    break
+
+    if not actual_team:
+        console.print(f"[red]Agent '{name}' not found.[/red]")
+        raise typer.Exit(1)
+
+    info = get_agent_info(actual_team, name)
+    if not info:
+        console.print(f"[red]Agent '{name}' not found in team '{actual_team}'.[/red]")
+        raise typer.Exit(1)
+
+    if not is_agent_alive(actual_team, name):
+        console.print(f"[red]Agent '{name}' is not running.[/red]")
+        raise typer.Exit(1)
+
+    session_key = info.get("session_key", "")
+    if not session_key:
+        console.print(f"[red]No session key found for agent '{name}'.[/red]")
+        raise typer.Exit(1)
+
+    try:
+        _gateway_call("sessions.send", {"key": session_key, "message": "resume"}, timeout=10)
+        console.print(f"[green]✓ Resume signal sent to '{name}'[/green]")
+    except Exception as e:
+        console.print(f"[red]✗ Failed to send resume signal: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@agent_app.command("kill")
+def agent_kill(
+    name: str = typer.Argument(..., help="Agent name"),
+    team: Optional[str] = typer.Option(None, "--team", "-t", help="Team name"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force kill without graceful shutdown"),
+):
+    """Kill an agent immediately (ungraceful termination)."""
+    from clawteam.spawn.registry import unregister_agent, get_agent_info, is_agent_alive
+    from clawteam.spawn import get_backend
+
+    # Find team if not provided
+    actual_team = team
+    if not actual_team:
+        data_dir = Path(os.environ.get("CLAWTEAM_DATA_DIR", "~/.clawteam")).expanduser()
+        for t_dir in data_dir.iterdir():
+            if t_dir.is_dir() and not t_dir.name.startswith('.'):
+                info = get_agent_info(t_dir.name, name)
+                if info:
+                    actual_team = t_dir.name
+                    break
+
+    if not actual_team:
+        console.print(f"[red]Agent '{name}' not found.[/red]")
+        raise typer.Exit(1)
+
+    info = get_agent_info(actual_team, name)
+    if not info:
+        console.print(f"[red]Agent '{name}' not found in team '{actual_team}'.[/red]")
+        raise typer.Exit(1)
+
+    if not is_agent_alive(actual_team, name) and not force:
+        console.print(f"[yellow]Agent '{name}' is not running. Use --force to kill anyway.[/yellow]")
+        return
+
+    console.print(f"[yellow]Killing agent '{name}'...[/yellow]")
+
+    # Get backend and terminate
+    backend_name = info.get("backend", "auto")
+    try:
+        backend = get_backend(backend_name)
+    except ValueError:
+        backend = get_backend("auto")
+
+    try:
+        backend.terminate(name)  # Note: only takes agent_name
+    except Exception as e:
+        console.print(f"[yellow]Warning during termination: {e}[/yellow]")
+
+    try:
+        unregister_agent(actual_team, name)
+    except:
+        pass
+
+    console.print(f"[green]✓ Agent '{name}' killed[/green]")
 
 
 if __name__ == "__main__":
