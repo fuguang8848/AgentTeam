@@ -366,6 +366,65 @@ def doctor_run():
         result["details"] = "Database does not exist yet"
     results.append(result)
 
+    # Check 7: Disk space
+    result = {"check": "Disk Space", "status": "PASS", "details": ""}
+    try:
+        import shutil
+        total, used, free = shutil.disk_usage(data_dir)
+        free_gb = free // (2**30)
+        total_gb = total // (2**30)
+        percent = (used / total) * 100
+        if free_gb < 1:
+            result["status"] = "FAIL"
+            result["details"] = f"Critical: Only {free_gb}GB free of {total_gb}GB ({percent:.1f}% used)"
+        elif free_gb < 5:
+            result["status"] = "WARN"
+            result["details"] = f"Low: {free_gb}GB free of {total_gb}GB ({percent:.1f}% used)"
+        else:
+            result["details"] = f"OK: {free_gb}GB free of {total_gb}GB ({percent:.1f}% used)"
+    except Exception as e:
+        result["status"] = "WARN"
+        result["details"] = f"Cannot check disk space: {e}"
+    results.append(result)
+
+    # Check 8: Python version
+    result = {"check": "Python Version", "status": "PASS", "details": ""}
+    try:
+        import sys
+        version = sys.version_info
+        result["details"] = f"Python {version.major}.{version.minor}.{version.micro}"
+        if version.major < 3 or (version.major == 3 and version.minor < 8):
+            result["status"] = "WARN"
+            result["details"] += " (recommended: 3.8+)"
+    except Exception as e:
+        result["status"] = "WARN"
+        result["details"] = f"Cannot determine Python version: {e}"
+    results.append(result)
+
+    # Check 9: Memory usage
+    result = {"check": "Memory", "status": "PASS", "details": ""}
+    try:
+        import psutil
+        mem = psutil.virtual_memory()
+        available_gb = mem.available // (2**30)
+        total_gb = mem.total // (2**30)
+        percent = mem.percent
+        if percent > 90:
+            result["status"] = "FAIL"
+            result["details"] = f"Critical: {percent:.1f}% used, {available_gb}GB available of {total_gb}GB"
+        elif percent > 75:
+            result["status"] = "WARN"
+            result["details"] = f"High: {percent:.1f}% used, {available_gb}GB available"
+        else:
+            result["details"] = f"OK: {percent:.1f}% used, {available_gb}GB available"
+    except ImportError:
+        result["status"] = "WARN"
+        result["details"] = "psutil not installed (optional)"
+    except Exception as e:
+        result["status"] = "WARN"
+        result["details"] = f"Cannot check memory: {e}"
+    results.append(result)
+
     # Print results
     console.print()
     table = Table(title="ClawTeam Doctor - Health Check Results", box=box.ROUNDED)
