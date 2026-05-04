@@ -38,7 +38,9 @@ class DetectedPattern(BaseModel):
     last_detected: datetime = Field(default_factory=datetime.now)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    model_config = ConfigDict(json_encoders={datetime: lambda dt: dt.isoformat()})
+    model_config = ConfigDict(
+        ser_json_timedelta="iso8601",
+    )
 
 
 class SkillSpec(BaseModel):
@@ -58,7 +60,9 @@ class SkillSpec(BaseModel):
     examples: List[Dict[str, Any]] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    model_config = ConfigDict(json_encoders={datetime: lambda dt: dt.isoformat()})
+    model_config = ConfigDict(
+        ser_json_timedelta="iso8601",
+    )
 
 
 class SkillUsageTracker:
