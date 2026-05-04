@@ -123,6 +123,44 @@ class OpenClawSDKBackend(SpawnBackend):
         self._gateway_cmd = self._detect_gateway_cmd()
         self._lock = threading.Lock()
         self._session_keepers: dict[str, threading.Thread] = {}  # 守护线程
+        self._running_agents: dict[str, dict] = {}  # 持久化运行中 Agent 注册表
+        self._load_running_agents()  # 加载持久化的运行中 agents
+
+    def _get_running_agents_file(self) -> Path:
+        """获取运行中 Agent 注册表文件路径"""
+        return DATA_DIR / "running_agents.json"
+
+    def _load_running_agents(self) -> None:
+        """加载持久化的运行中 Agent 注册表"""
+        registry_file = self._get_running_agents_file()
+        if registry_file.exists():
+            try:
+                data = json.loads(registry_file.read_text(encoding="utf-8"))
+                self._running_agents = data.get("agents", {})
+            except Exception:
+                self._running_agents = {}
+
+    def _save_running_agents(self) -> None:
+        """保存运行中 Agent 注册表到持久化存储"""
+        registry_file = self._get_running_agents_file()
+        registry_file.parent.mkdir(parents=True, exist_ok=True)
+        data = {"agents": self._running_agents}
+        registry_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    def _register_running_agent(self, agent_name: str, session_key: str, team_name: str, agent_type: str) -> None:
+        """注册运行中的 Agent 到持久化注册表"""
+        self._running_agents[agent_name] = {
+            "session_key": session_key,
+            "team_name": team_name,
+            "agent_type": agent_type,
+            "registered_at": time.time(),
+        }
+        self._save_running_agents()
+
+    def _unregister_running_agent(self, agent_name: str) -> None:
+        """从持久化注册表中移除 Agent"""
+        self._running_agents.pop(agent_name, None)
+        self._save_running_agents()
 
     def _detect_gateway_cmd(self) -> str:
         """检测 openclaw gateway 命令"""
@@ -247,6 +285,9 @@ class OpenClawSDKBackend(SpawnBackend):
 
                 # 写入团队注册表
                 self._register_agent(team_name, agent_name, session_key)
+
+                # 注册到持久化运行中 Agent 注册表（支持跨进程 send_task）
+                self._register_running_agent(agent_name, session_key, team_name, agent_type)
 
                 # Step 5: 启动 Session Keeper（守护线程）
                 keeper = threading.Thread(
@@ -500,22 +541,52 @@ class OpenClawSDKBackend(SpawnBackend):
         """
         向运行中的 Agent 发送新任务
 
+        支持两种模式：
+        1. 本地模式：agent 由当前 backend 实例 spawn，直接入队
+        2. 持久化模式：agent 由其他 backend 实例 spawn，从注册表查找 session_key 并直接发送
+
         Args:
             agent_name: Agent 名称
             task: 任务描述
 
         Returns:
-            True 如果任务已加入队列，False 如果 agent 不存在
+            True 如果任务发送成功，False 如果 agent 不存在或发送失败
         """
+        # 模式 1：本地 agent（当前 backend 实例 spawn 的）
         proc = self._processes.get(agent_name)
-        if not proc or proc.done:
-            return False
+        if proc and not proc.done:
+            try:
+                proc.task_queue.put_nowait(task)
+                return True
+            except queue.Full:
+                return False
 
-        try:
-            proc.task_queue.put_nowait(task)
-            return True
-        except queue.Full:
-            return False
+        # 模式 2：持久化 agent（由其他 backend 实例 spawn 的）
+        if agent_name in self._running_agents:
+            agent_info = self._running_agents[agent_name]
+            session_key = agent_info["session_key"]
+            team_name = agent_info.get("team_name", "unknown")
+
+            # 直接通过 Gateway Sessions API 发送任务
+            task_msg = (
+                f"## New Task Assignment\n\n{task}\n\n"
+                f"Execute this task and report completion to your leader when done.\n"
+                f'After completing, ask your leader: "Task done. Should I exit or await new tasks?"'
+            )
+
+            try:
+                self._gateway_call(
+                    "sessions.send",
+                    params={"key": session_key, "message": task_msg},
+                    timeout=10,
+                )
+                return True
+            except Exception:
+                # Session 可能已结束，从注册表中移除
+                self._unregister_running_agent(agent_name)
+                return False
+
+        return False
 
     def shutdown_agent(self, agent_name: str) -> bool:
         """
@@ -527,9 +598,33 @@ class OpenClawSDKBackend(SpawnBackend):
         Returns:
             True 如果成功发送 shutdown 信号
         """
+        # 模式 1：本地 agent
         proc = self._processes.get(agent_name)
-        if not proc:
-            return False
+        if proc:
+            proc.shutdown_event.set()
+            return True
 
-        proc.shutdown_event.set()
-        return True
+        # 模式 2：持久化 agent
+        if agent_name in self._running_agents:
+            agent_info = self._running_agents[agent_name]
+            session_key = agent_info["session_key"]
+
+            try:
+                shutdown_msg = "## Shutdown\n\nThe leader has sent the shutdown signal. Exit your session now."
+                self._gateway_call(
+                    "sessions.send",
+                    params={"key": session_key, "message": shutdown_msg},
+                    timeout=10,
+                )
+                # 等待一下让 agent 处理
+                time.sleep(2)
+                # 终止 session
+                self._gateway_call("sessions.abort", params={"key": session_key}, timeout=10)
+            except Exception:
+                pass
+
+            # 从注册表中移除
+            self._unregister_running_agent(agent_name)
+            return True
+
+        return False
