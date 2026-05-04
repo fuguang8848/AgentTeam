@@ -115,19 +115,21 @@ class MentionParser:
                 if (start, end) in seen_positions:
                     continue
 
-                if mention_type == MentionType.AGENT:
-                    value = match.group(1)
+                # Use local variable to avoid modifying loop variable
+                final_type = mention_type
+                value = match.group(1) if mention_type == MentionType.AGENT else None
 
+                if mention_type == MentionType.AGENT:
                     # Check if this is actually a team/all/here keyword
                     lower_value = value.lower()
                     if lower_value in self.TEAM_KEYWORDS:
-                        mention_type = MentionType.TEAM
+                        final_type = MentionType.TEAM
                         value = "team"
                     elif lower_value in self.ALL_KEYWORDS:
-                        mention_type = MentionType.ALL
+                        final_type = MentionType.ALL
                         value = "all"
                     elif lower_value in self.HERE_KEYWORDS:
-                        mention_type = MentionType.HERE
+                        final_type = MentionType.HERE
                         value = "here"
 
                     # Handle duplicates
@@ -137,7 +139,7 @@ class MentionParser:
 
                 seen_positions.add((start, end))
                 mention = Mention(
-                    type=mention_type,
+                    type=final_type,
                     value=value,
                     raw=raw,
                     start_pos=start,
