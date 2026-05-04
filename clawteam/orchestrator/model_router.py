@@ -571,20 +571,20 @@ class ModelRouter:
         self.provider_selector = provider_selector
         self.complexity_analyzer = TaskComplexityAnalyzer()
         self.routing_policy = ModelRoutingPolicy()
-        
+
         # Load model tiers from config or use defaults
         self._model_tiers = self._load_model_tiers()
 
     def _load_model_tiers(self) -> dict:
         """Load model tiers from environment variable or file config.
-        
+
         Environment Variables:
             CLAWTEAM_MODEL_TIERS_JSON: JSON string with model tier config
             CLAWTEAM_MODEL_TIERS_FILE: Path to JSON config file
         """
         import json
         import os
-        
+
         # Try environment variable first
         env_json = os.environ.get("CLAWTEAM_MODEL_TIERS_JSON")
         if env_json:
@@ -592,7 +592,7 @@ class ModelRouter:
                 return json.loads(env_json)
             except json.JSONDecodeError as e:
                 logger.warning(f"Failed to parse CLAWTEAM_MODEL_TIERS_JSON: {e}")
-        
+
         # Try config file
         config_file = os.environ.get("CLAWTEAM_MODEL_TIERS_FILE")
         if config_file:
@@ -601,7 +601,7 @@ class ModelRouter:
                     return json.load(f)
             except (OSError, json.JSONDecodeError) as e:
                 logger.warning(f"Failed to load model tiers from {config_file}: {e}")
-        
+
         # Fall back to defaults
         return self.DEFAULT_MODEL_TIERS.copy()
 

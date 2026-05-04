@@ -451,6 +451,7 @@ _tracker_lock = threading.Lock()
 def _get_default_db_path() -> Path:
     """Get default database path from environment or use default location."""
     import os
+
     env_path = os.environ.get("CLAWTEAM_EVENTS_DB_PATH")
     if env_path:
         return Path(env_path)
@@ -459,7 +460,7 @@ def _get_default_db_path() -> Path:
 
 def get_tracker() -> EventTracker:
     """Get the global event tracker instance.
-    
+
     Returns:
         The global EventTracker instance.
     """
@@ -473,7 +474,7 @@ def get_tracker() -> EventTracker:
 
 def set_tracker(tracker: EventTracker) -> None:
     """Set the global event tracker instance (for testing/dependency injection).
-    
+
     Args:
         tracker: The EventTracker instance to use as the global instance.
     """

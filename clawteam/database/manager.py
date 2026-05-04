@@ -29,29 +29,32 @@ logger = logging.getLogger(__name__)
 
 def _lru_cache(max_size: int = 128):
     """Simple LRU cache decorator for query results."""
+
     def decorator(func: Callable) -> Callable:
         cache: OrderedDict = OrderedDict()
         lock = Lock()
-        
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             # Create cache key from args and kwargs
             key = (args[1:], tuple(sorted(kwargs.items())))  # args[0] is self
-            
+
             with lock:
                 if key in cache:
                     cache.move_to_end(key)
                     return cache[key]
-            
+
             result = func(*args, **kwargs)
-            
+
             with lock:
                 if len(cache) >= max_size:
                     cache.popitem(last=False)
                 cache[key] = result
-            
+
             return result
+
         return wrapper
+
     return decorator
 
 
@@ -112,16 +115,18 @@ class DatabaseManager:
                 self._stmt_cache[query] = self.db.execute(query)
             return self._stmt_cache[query]
 
-    def _execute_cached(self, query: str, params: tuple = (), cache_key: Optional[str] = None, ttl: Optional[float] = None) -> List[Dict]:
+    def _execute_cached(
+        self, query: str, params: tuple = (), cache_key: Optional[str] = None, ttl: Optional[float] = None
+    ) -> List[Dict]:
         """Execute a query with result caching."""
         import time
-        
+
         # Generate cache key if not provided
         if cache_key is None:
             cache_key = (query, params)
-        
+
         ttl = ttl or self._query_cache_ttl
-        
+
         with self._query_cache_lock:
             if cache_key in self._query_cache:
                 cached_time, cached_result = self._query_cache[cache_key]
@@ -130,16 +135,16 @@ class DatabaseManager:
                     return cached_result
                 else:
                     del self._query_cache[cache_key]
-        
+
         # Execute query
         cursor = self.db.execute(query, params)
         rows = [dict(row) for row in cursor.fetchall()]
-        
+
         with self._query_cache_lock:
             if len(self._query_cache) >= self._max_query_cache:
                 self._query_cache.popitem(last=False)
             self._query_cache[cache_key] = (time.time(), rows)
-        
+
         return rows
 
     def _invalidate_cache(self, pattern: Optional[str] = None):
@@ -148,8 +153,7 @@ class DatabaseManager:
             if pattern is None:
                 self._query_cache.clear()
             else:
-                keys_to_remove = [k for k in self._query_cache.keys() 
-                                if isinstance(k[0], str) and pattern in k[0]]
+                keys_to_remove = [k for k in self._query_cache.keys() if isinstance(k[0], str) and pattern in k[0]]
                 for key in keys_to_remove:
                     del self._query_cache[key]
 
@@ -163,9 +167,9 @@ class DatabaseManager:
 
             # Connect to SQLite with optimized settings
             self.db = sqlite3.connect(
-                self.db_path, 
+                self.db_path,
                 check_same_thread=False,
-                isolation_level=None  # Autocommit mode for better performance
+                isolation_level=None,  # Autocommit mode for better performance
             )
             self.db.row_factory = sqlite3.Row
             self.using_sqlite = True
@@ -355,11 +359,11 @@ class DatabaseManager:
                 # Clear prepared statement cache
                 with self._stmt_cache_lock:
                     self._stmt_cache.clear()
-                
+
                 # Clear query cache
                 with self._query_cache_lock:
                     self._query_cache.clear()
-                
+
                 self.db.close()
             except Exception:
                 pass

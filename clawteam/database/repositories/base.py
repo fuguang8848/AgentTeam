@@ -64,16 +64,16 @@ class BaseRepository(Generic[T], ABC):
         """Create multiple records in a single transaction."""
         if not models:
             return []
-        
+
         if self.using_sqlite and self.db:
             # Collect all data
             data_list = [self._from_model(model) for model in models]
-            
+
             # Build batch INSERT query
             columns = ", ".join(data_list[0].keys())
             placeholders = ", ".join(["?"] * len(data_list[0]))
             query = f"INSERT INTO {self._table_name()} ({columns}) VALUES ({placeholders})"
-            
+
             # Execute all in one transaction
             cursor = self.db.cursor()
             try:
@@ -82,28 +82,28 @@ class BaseRepository(Generic[T], ABC):
             except Exception:
                 self.db.rollback()
                 raise
-        
+
         # Store in memory
         for model in models:
             model_id = self._from_model(model).get(self._id_field())
             if model_id:
                 self.mem_storage[model_id] = model
-        
+
         return models
 
     def update_batch(self, ids: List[str], updates: Dict[str, Any]) -> int:
         """Update multiple records by ID in a single transaction.
-        
+
         Args:
             ids: List of record IDs to update
             updates: Dictionary of field updates
-            
+
         Returns:
             Number of records updated
         """
         if not ids or not updates:
             return 0
-        
+
         # Serialize datetime objects for database storage
         db_updates = {}
         for key, value in updates.items():
@@ -111,13 +111,13 @@ class BaseRepository(Generic[T], ABC):
                 db_updates[key] = self._serialize_datetime(value)
             else:
                 db_updates[key] = value
-        
+
         updated_count = 0
-        
+
         if self.using_sqlite and self.db:
             set_clause = ", ".join([f"{k} = ?" for k in db_updates.keys()])
             params = list(db_updates.values())
-            
+
             cursor = self.db.cursor()
             try:
                 for id_val in ids:
@@ -128,7 +128,7 @@ class BaseRepository(Generic[T], ABC):
             except Exception:
                 self.db.rollback()
                 raise
-        
+
         # Update memory storage
         for id_val in ids:
             if id_val in self.mem_storage:
@@ -136,7 +136,7 @@ class BaseRepository(Generic[T], ABC):
                 existing_data.update(updates)
                 self.mem_storage[id_val] = self._to_model(existing_data)
                 updated_count += 1
-        
+
         return updated_count
 
     def get(self, id: str) -> Optional[T]:
@@ -153,24 +153,24 @@ class BaseRepository(Generic[T], ABC):
 
     def get_batch(self, ids: List[str]) -> List[T]:
         """Get multiple records by ID.
-        
+
         Args:
             ids: List of record IDs to retrieve
-            
+
         Returns:
             List of records found (in same order as input)
         """
         if not ids:
             return []
-        
+
         results = []
-        
+
         if self.using_sqlite and self.db:
             placeholders = ", ".join(["?"] * len(ids))
             query = f"SELECT * FROM {self._table_name()} WHERE {self._id_field()} IN ({placeholders})"
             cursor = self.db.execute(query, tuple(ids))
             rows = {row[self._id_field()]: self._to_model(dict(row)) for row in cursor.fetchall()}
-            
+
             # Maintain order
             for id_val in ids:
                 if id_val in rows:
@@ -179,7 +179,7 @@ class BaseRepository(Generic[T], ABC):
             for id_val in ids:
                 if id_val in self.mem_storage:
                     results.append(self.mem_storage[id_val])
-        
+
         return results
 
     def list(self, **filters) -> List[T]:
@@ -274,18 +274,18 @@ class BaseRepository(Generic[T], ABC):
 
     def delete_batch(self, ids: List[str]) -> int:
         """Delete multiple records by ID in a single transaction.
-        
+
         Args:
             ids: List of record IDs to delete
-            
+
         Returns:
             Number of records deleted
         """
         if not ids:
             return 0
-        
+
         deleted_count = 0
-        
+
         if self.using_sqlite and self.db:
             placeholders = ", ".join(["?"] * len(ids))
             query = f"DELETE FROM {self._table_name()} WHERE {self._id_field()} IN ({placeholders})"
@@ -297,13 +297,13 @@ class BaseRepository(Generic[T], ABC):
             except Exception:
                 self.db.rollback()
                 raise
-        
+
         # Remove from memory
         for id_val in ids:
             if id_val in self.mem_storage:
                 del self.mem_storage[id_val]
                 deleted_count += 1
-        
+
         return deleted_count
 
     def count(self, **filters) -> int:

@@ -40,13 +40,13 @@ class ConnectionPool:
                 # Remove oldest connection
                 oldest = min(self._connections.values(), key=lambda c: c.connected_at)
                 self.remove(oldest)
-            
+
             self._connections[conn.conn_id] = conn
-            
+
             if conn.team_name not in self._team_connections:
                 self._team_connections[conn.team_name] = set()
             self._team_connections[conn.team_name].add(conn.conn_id)
-            
+
             return True
 
     def remove(self, conn: WebSocketConnection) -> bool:
@@ -54,12 +54,12 @@ class ConnectionPool:
         with self._lock:
             if conn.conn_id in self._connections:
                 del self._connections[conn.conn_id]
-                
+
                 if conn.team_name in self._team_connections:
                     self._team_connections[conn.team_name].discard(conn.conn_id)
                     if not self._team_connections[conn.team_name]:
                         del self._team_connections[conn.team_name]
-                
+
                 return True
             return False
 
@@ -80,7 +80,7 @@ class ConnectionPool:
             return {
                 "total_connections": len(self._connections),
                 "total_teams": len(self._team_connections),
-                "team_counts": {team: len(conns) for team, conns in self._team_connections.items()}
+                "team_counts": {team: len(conns) for team, conns in self._team_connections.items()},
             }
 
 
@@ -97,7 +97,7 @@ class MessageBatcher:
 
     def add_message(self, team_name: str, message: dict) -> bool:
         """Add a message to the batch queue.
-        
+
         Returns True if batch should be flushed.
         """
         with self._lock:
@@ -105,16 +105,16 @@ class MessageBatcher:
                 self._batches[team_name] = deque(maxlen=self._max_batch_size)
                 self._last_flush[team_name] = time.time()
                 self._pending_count[team_name] = 0
-            
+
             self._batches[team_name].append(message)
             self._pending_count[team_name] += 1
-            
+
             # Check if we should flush
             should_flush = (
-                len(self._batches[team_name]) >= self._max_batch_size or
-                time.time() - self._last_flush[team_name] >= self._flush_interval
+                len(self._batches[team_name]) >= self._max_batch_size
+                or time.time() - self._last_flush[team_name] >= self._flush_interval
             )
-            
+
             return should_flush
 
     def get_and_clear_batch(self, team_name: str) -> List[dict]:
@@ -132,8 +132,8 @@ class MessageBatcher:
             if team_name not in self._batches:
                 return False
             return (
-                len(self._batches[team_name]) >= self._max_batch_size or
-                time.time() - self._last_flush[team_name] >= self._flush_interval
+                len(self._batches[team_name]) >= self._max_batch_size
+                or time.time() - self._last_flush[team_name] >= self._flush_interval
             )
 
 
@@ -153,11 +153,7 @@ class WebSocketManager:
 
     def add_connection(self, team_name: str, conn_id: str) -> WebSocketConnection:
         """Add a new WebSocket connection."""
-        conn = WebSocketConnection(
-            team_name=team_name,
-            conn_id=conn_id,
-            connected_at=time.time()
-        )
+        conn = WebSocketConnection(team_name=team_name, conn_id=conn_id, connected_at=time.time())
         with self._lock:
             self._connections[conn_id] = conn
             if team_name not in self._team_connections:
@@ -165,7 +161,9 @@ class WebSocketManager:
             if conn_id not in self._team_connections[team_name]:
                 self._team_connections[team_name].append(conn_id)
         self._pool.add(conn)
-        logger.info(f"WebSocket connected for team {team_name} (pool size: {self._pool.get_stats()['total_connections']})")
+        logger.info(
+            f"WebSocket connected for team {team_name} (pool size: {self._pool.get_stats()['total_connections']})"
+        )
         return conn
 
     def remove_connection(self, team_name: str, conn: WebSocketConnection):
@@ -176,7 +174,9 @@ class WebSocketManager:
             if team_name in self._team_connections:
                 self._team_connections[team_name] = [c for c in self._team_connections[team_name] if c != conn.conn_id]
         self._pool.remove(conn)
-        logger.info(f"WebSocket disconnected for team {team_name} (pool size: {self._pool.get_stats()['total_connections']})")
+        logger.info(
+            f"WebSocket disconnected for team {team_name} (pool size: {self._pool.get_stats()['total_connections']})"
+        )
 
     def get_connections(self, team_name: str) -> List[WebSocketConnection]:
         """Get all connections for a team."""
@@ -199,7 +199,7 @@ class WebSocketManager:
         """Broadcast a message to all connections for a team with batching."""
         # Add to batcher
         should_flush = self._batcher.add_message(team_name, message)
-        
+
         if should_flush:
             self._flush_batch(team_name)
 
@@ -208,19 +208,14 @@ class WebSocketManager:
         messages = self._batcher.get_and_clear_batch(team_name)
         if not messages:
             return
-        
+
         # Get broadcast handler
         with self._lock:
             handler = self._broadcast_handlers.get(team_name)
-        
+
         if handler:
             # Combine messages into a single batch
-            batch_message = {
-                "type": "batch",
-                "messages": messages,
-                "count": len(messages),
-                "timestamp": time.time()
-            }
+            batch_message = {"type": "batch", "messages": messages, "count": len(messages), "timestamp": time.time()}
             try:
                 handler(batch_message)
             except Exception as e:
@@ -230,7 +225,7 @@ class WebSocketManager:
         """Flush all pending batches."""
         with self._lock:
             team_names = list(self._broadcast_handlers.keys())
-        
+
         for team_name in team_names:
             if self._batcher.should_flush(team_name):
                 self._flush_batch(team_name)
@@ -239,23 +234,23 @@ class WebSocketManager:
         """Check connection health and remove stale connections."""
         now = time.time()
         stale_threshold = self._ping_interval + self._ping_timeout
-        
+
         with self._lock:
             team_names = list(self._team_connections.keys())
-        
+
         for team_name in team_names:
             stale_conn_ids = []
-            
+
             with self._lock:
                 conn_ids = list(self._team_connections.get(team_name, []))
-            
+
             # Identify stale connections
             for conn_id in conn_ids:
                 conn = self._connections.get(conn_id)
                 if conn and now - conn.last_ping > stale_threshold:
                     conn.is_alive = False
                     stale_conn_ids.append(conn_id)
-            
+
             # Remove stale connections
             for conn_id in stale_conn_ids:
                 conn = self._connections.get(conn_id)
@@ -265,11 +260,7 @@ class WebSocketManager:
     def get_stats(self) -> Dict:
         """Get manager statistics."""
         pool_stats = self._pool.get_stats()
-        return {
-            "pool": pool_stats,
-            "ping_interval": self._ping_interval,
-            "ping_timeout": self._ping_timeout
-        }
+        return {"pool": pool_stats, "ping_interval": self._ping_interval, "ping_timeout": self._ping_timeout}
 
 
 # Global WebSocket manager instance
@@ -290,7 +281,7 @@ def create_websocket_handler(collector, team_cache):
                 await ws.send_json(message)
             except Exception:
                 conn.is_alive = False
-        
+
         ws_manager.register_broadcast_handler(team_name, send_message)
 
         try:
