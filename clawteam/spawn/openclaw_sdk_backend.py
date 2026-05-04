@@ -83,6 +83,7 @@ class OCAProcess:
     shutdown_event: threading.Event = field(default_factory=threading.Event)
     keeper_thread: Optional[threading.Thread] = None
     cwd: Optional[str] = None
+    heartbeat_count: int = 0  # 心跳计数器，用于控制广播频率
 
 
 class OpenClawSDKBackend(SpawnBackend):
@@ -570,6 +571,16 @@ class OpenClawSDKBackend(SpawnBackend):
                 params={"key": proc.session_key, "message": heartbeat_msg},
                 timeout=10,
             )
+
+            # 广播心跳活动（每3次心跳广播一次，约3分钟一次，避免噪声）
+            proc.heartbeat_count += 1
+            if proc.heartbeat_count % 3 == 0:
+                self._broadcast_activity(
+                    agent_name=proc.name,
+                    team_name=proc.team_name,
+                    status="heartbeat",
+                    message=f"Agent {proc.name} is alive and waiting for tasks",
+                )
         except Exception:
             pass
 
@@ -585,6 +596,15 @@ class OpenClawSDKBackend(SpawnBackend):
                 "sessions.send",
                 params={"key": proc.session_key, "message": task_msg},
                 timeout=10,
+            )
+
+            # 广播任务分配活动
+            self._broadcast_activity(
+                agent_name=proc.name,
+                team_name=proc.team_name,
+                status="task_assigned",
+                message=f"New task assigned to {proc.name}",
+                data={"task": task[:100] + "..." if len(task) > 100 else task},
             )
         except Exception:
             pass
