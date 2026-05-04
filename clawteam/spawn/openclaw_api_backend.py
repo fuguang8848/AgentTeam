@@ -66,6 +66,7 @@ class OpenClawAPIBackend(SpawnBackend):
         openclaw_agent: str | None = None,
         model: str | None = None,
         parent_agent: str = "",
+        on_ready: str | None = None,
     ) -> str:
         """Spawn an OpenClaw agent and wait for its result."""
         if openclaw_agent:

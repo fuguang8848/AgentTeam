@@ -98,6 +98,7 @@ class TmuxBackend(SpawnBackend):
         openclaw_agent: str | None = None,
         model: str | None = None,
         parent_agent: str = "",
+        on_ready: str | None = None,
     ) -> str:
         if not shutil.which("tmux"):
             return "Error: tmux not installed"

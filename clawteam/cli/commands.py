@@ -2681,6 +2681,9 @@ def spawn_agent(
     parent: Optional[str] = typer.Option(
         None, "--parent", "-p", help="Parent agent name (for parent-child lifecycle management)"
     ),
+    on_ready: Optional[str] = typer.Option(
+        None, "--on-ready", help="Command or message to execute after agent is ready (post-ready hook)"
+    ),
 ):
     """Spawn a new agent process with identity + task as its initial prompt.
 
@@ -2817,6 +2820,7 @@ def spawn_agent(
         openclaw_agent=openclaw_agent,
         model=model,
         parent_agent=parent or "",
+        on_ready=on_ready,
     )
 
     if result.startswith("Error"):

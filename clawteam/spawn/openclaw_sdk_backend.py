@@ -280,6 +280,7 @@ class OpenClawSDKBackend(SpawnBackend):
         openclaw_agent: str | None = None,
         model: str | None = None,
         parent_agent: str = "",
+        on_ready: str | None = None,
     ) -> str:
         """
         通过 Gateway Sessions API 启动 OpenClaw Agent
@@ -309,6 +310,7 @@ class OpenClawSDKBackend(SpawnBackend):
                     team_name=team_name,
                     prompt=prompt or "Complete your assigned task",
                     cwd=cwd,
+                    on_ready=on_ready,
                 )
 
                 # Step 3: 发送任务到 Session
@@ -373,6 +375,7 @@ class OpenClawSDKBackend(SpawnBackend):
         team_name: str,
         prompt: str,
         cwd: str | None = None,
+        on_ready: str | None = None,
     ) -> str:
         """构建包含 clawteam 协作协议的任务消息"""
 
@@ -426,6 +429,22 @@ class OpenClawSDKBackend(SpawnBackend):
                     agent_name=agent_name,
                     leader_name="leader" if agent_type != "leader" else "",
                 ),
+            )
+
+        # Post-Ready Hook (golutra-style): Execute after agent is ready
+        if on_ready:
+            lines.insert(
+                -1,
+                f"""## Post-Ready Hook
+
+After you are ready and initialized, execute the following:
+
+```
+{on_ready}
+```
+
+Report completion to leader when done.
+""",
             )
 
         lines.append("Begin your task now.\n")
