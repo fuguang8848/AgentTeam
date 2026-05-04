@@ -316,11 +316,14 @@ class OpenClawSDKBackend(SpawnBackend):
 
         # 构建持续运行指令（针对 specialist 类型的 agent）
         if agent_type != "leader":
-            lines.insert(-1, _CONTINUOUS_RUN_BLOCK.format(
-                team_name=team_name,
-                agent_name=agent_name,
-                leader_name="leader" if agent_type != "leader" else "",
-            ))
+            lines.insert(
+                -1,
+                _CONTINUOUS_RUN_BLOCK.format(
+                    team_name=team_name,
+                    agent_name=agent_name,
+                    leader_name="leader" if agent_type != "leader" else "",
+                ),
+            )
 
         lines.append("Begin your task now.\n")
 

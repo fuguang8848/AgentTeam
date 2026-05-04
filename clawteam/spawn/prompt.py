@@ -167,11 +167,9 @@ def build_agent_prompt(
         lines.extend(["", LEADER_PROTOCOL])
     # Inject continuous running mode for specialist agents (not leader)
     else:
-        lines.extend(["", CONTINUOUS_RUN_BLOCK.format(
-            team_name=team_name,
-            agent_name=agent_name,
-            leader_name=leader_name
-        )])
+        lines.extend(
+            ["", CONTINUOUS_RUN_BLOCK.format(team_name=team_name, agent_name=agent_name, leader_name=leader_name)]
+        )
     lines.extend(
         [
             "",
