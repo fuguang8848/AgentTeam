@@ -1,15 +1,21 @@
-# ClawTeam-OpenClaw v0.5.1 待办事项
+# ClawTeam-OpenClaw v0.5.5 待办事项
 
-> **目标**: 完成 P37 组件集成，完善文档，增加测试
+> **目标**: SDK Agent 消息路由修复、文档完善
 
 ---
 
-## 🔄 进行中
+## ✅ v0.5.5 已完成 (2026-05-04)
+
+### SDK Agent 消息路由修复
+- [x] Smart Routing - inbox send 直接通过 Gateway API 发送消息给 running agent ✅
+- [x] Activity 广播 - task_assigned 事件实时推送到 Board 服务器 ✅
+- [x] Board Monitor - clawteam board monitor 实时显示 agent 活动 ✅
+- [x] Agent Shutdown - prompt 新增 shutdown 检测逻辑 ✅
+- [x] Release v0.5.5 创建 ✅
 
 ### P37: 组件集成
-- [ ] arch-integrator agent 完成组件集成
-- [ ] Board SSE → EventAPI 打通
-- [ ] 全系统集成测试
+- [x] Board SSE → EventAPI 打通 ✅
+- [x] 全系统集成测试 ✅
 
 ---
 
@@ -75,6 +81,13 @@
 - [x] 创建 CAPABILITIES.md
 - [x] 更新 README.md 指向新文档
 
+### 2026-05-04 (v0.5.5)
+- [x] SDK Agent 消息路由修复 - Smart Routing + Activity 广播
+- [x] Board Monitor 命令实现
+- [x] Agent Shutdown 检测逻辑
+- [x] CAPABILITIES.md 更新 v0.5.5
+- [x] Release v0.5.5 创建
+
 ---
 
-*本文档最后更新: 2026-05-04*
+*本文档最后更新: 2026-05-04 | v0.5.5*

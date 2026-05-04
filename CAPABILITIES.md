@@ -1,6 +1,6 @@
 # ClawTeam-OpenClaw 完整能力清单
 
-> **版本**: v0.5.4 | **测试**: 666+ | **状态**: 生产就绪
+> **版本**: v0.5.5 | **测试**: 670+ | **状态**: 生产就绪
 
 本文档详细记录 ClawTeam-OpenClaw 的所有功能模块和实现状态。
 
@@ -83,7 +83,22 @@
 
 ## 消息传输系统
 
-### 2.1 Transport 抽象 (`transport/base.py`)
+### 2.1 Smart Routing (`cli/commands.py`)
+- **v0.5.5**: SDK Agent 消息路由修复 ✅
+- **机制**:
+  1. `inbox send` 检查 `running_agents.json`
+  2. 如果目标 agent 是 running SDK agent → 通过 Gateway Sessions API 直接发送
+  3. 同时广播 `task_assigned` 活动事件到 Board 服务器
+  4. 如果 agent 未运行 → 回退到文件 inbox
+- **优势**: 消除 keeper 线程轮询延迟，消息实时送达
+
+### 2.2 Activity 广播 (`cli/commands.py`)
+- **v0.5.5**: 实时活动事件推送 ✅
+- **事件类型**: `started`, `task_assigned`, `heartbeat`, `completed`, `terminated`
+- **Board 服务器**: `POST /api/agents/activity` 接收事件
+- **Monitor 端点**: `GET /api/agents/events` SSE 流式推送
+
+### 2.3 Transport 抽象 (`transport/base.py`)
 ```python
 class Transport(ABC):
     def send(self, to: str, message: dict) -> bool
@@ -169,6 +184,10 @@ class Transport(ABC):
 - **P36**: SSE 实时推送 ✅
 - **HTTP API**
 - **CORS 支持**
+- **Board Monitor**: `clawteam board monitor` 实时监控 agent 活动 ✅
+  - `GET /api/agents/events` SSE 端点
+  - 支持 team/agent 过滤
+  - 彩色终端输出
 
 ### 5.4 静态文件 (`board/static/`)
 - **Web UI 资源**
@@ -362,7 +381,7 @@ make test   # 运行测试
 ## 测试覆盖
 
 ### 13.1 测试统计
-- **总测试数**: 595+
+- **总测试数**: 670+
 - **通过率**: 99%+
 - **跳过**: 14
 - **警告**: 6
@@ -476,6 +495,7 @@ send_command("send_task", {
 
 | 版本 | 日期 | 变化 |
 |------|------|------|
+| v0.5.5 | 2026-05-04 | **SDK Agent 消息路由修复**: Smart Routing、Activity 广播、Board Monitor、Agent Shutdown 检测 |
 | v0.5.4 | 2026-05-04 | Agent Daemon 完整文档化、Daemon API、CLI daemon 命令、**Windows Signal Fix** |
 | v0.5.1 | 2026-05-04 | Agent Daemon 持久运行、Continuous Mode、mentions/pinned 修复 |
 | v0.5.0 | 2026-05-03 | P26-P37 Agent 协调增强 |
@@ -484,4 +504,4 @@ send_command("send_task", {
 
 ---
 
-*本文档最后更新: 2026-05-04 | v0.5.4*
+*本文档最后更新: 2026-05-04 | v0.5.5*
