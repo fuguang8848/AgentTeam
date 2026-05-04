@@ -288,10 +288,6 @@ class BoardHandler(BaseHTTPRequestHandler):
             # Real-time agent activity stream (SSE)
             # GET /api/agents/events?team=<team>&agent=<agent>
             self._serve_agent_activity_sse()
-        elif path == "/api/agents/activity" and self.method == "POST":
-            # Emit agent activity event
-            # POST /api/agents/activity with JSON body
-            self._emit_agent_activity()
         elif path.startswith("/api/proxy"):
             # Proxy disabled for stability - security and resource concerns
             self.send_error(503, "Proxy disabled for stability")
@@ -476,6 +472,11 @@ class BoardHandler(BaseHTTPRequestHandler):
         if path == "/api/providers":
             # Providers configuration
             self._serve_providers()
+        elif path == "/api/agents/activity":
+            # Emit agent activity event
+            # POST /api/agents/activity with JSON body
+            if self._emit_agent_activity():
+                return
         elif path == "/api/templates/import":
             # Import a template from TOML content
             content_length = int(self.headers.get("Content-Length", 0))
@@ -2299,6 +2300,7 @@ class BoardHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps({"ok": True, "activity": activity_data}, ensure_ascii=False).encode("utf-8"))
+        return True
 
     @staticmethod
     def broadcast_agent_activity(activity_data: dict):
