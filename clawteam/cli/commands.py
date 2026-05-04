@@ -168,6 +168,7 @@ def _deliver_to_running_agent(agent_name: str, team_name: str, content: str, fro
         if result.returncode != 0:
             # Log error for debugging
             import logging
+
             logger = logging.getLogger("clawteam")
             stderr = result.stderr.decode("utf-8", errors="replace") if result.stderr else ""
             logger.warning(f"Gateway sessions.send failed: {stderr}")
@@ -185,11 +186,13 @@ def _deliver_to_running_agent(agent_name: str, team_name: str, content: str, fro
 
     except subprocess.TimeoutExpired:
         import logging
+
         logger = logging.getLogger("clawteam")
         logger.warning(f"Gateway sessions.send timed out for agent {agent_name}")
         return False
     except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
         import logging
+
         logger = logging.getLogger("clawteam")
         logger.warning(f"Failed to deliver message to agent {agent_name}: {e}")
         return False
@@ -5205,13 +5208,13 @@ def agent_info(
 
     info_table.add_row("Team", f"[cyan]{team}[/cyan]")
     info_table.add_row("Status", status_text)
-    info_table.add_row("Type", info.get('agent_type', 'unknown'))
-    info_table.add_row("Backend", info.get('backend', 'unknown'))
+    info_table.add_row("Type", info.get("agent_type", "unknown"))
+    info_table.add_row("Backend", info.get("backend", "unknown"))
 
     if info.get("started_at"):
         start_dt = datetime.datetime.fromtimestamp(info["started_at"])
         runtime = datetime.datetime.now() - start_dt
-        info_table.add_row("Started", start_dt.strftime('%Y-%m-%d %H:%M:%S'))
+        info_table.add_row("Started", start_dt.strftime("%Y-%m-%d %H:%M:%S"))
         info_table.add_row("Runtime", _format_duration(runtime))
 
     if info.get("session_key"):
@@ -5229,7 +5232,6 @@ def agent_info(
             health_table.add_row("[red]Last Error[/red]", health.last_error)
     else:
         health_table.add_row("Health", "No health data")
-
 
     # Print with panels
     console.print(Panel(info_table, title=f"[bold]Agent: {name}[/bold]", border_style="cyan"))
