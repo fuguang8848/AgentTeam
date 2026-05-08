@@ -1,6 +1,6 @@
 """ClawTeam - Framework-agnostic multi-agent coordination CLI."""
 
-__version__ = "0.5.0+sdk1"
+__version__ = "0.7.6"
 
 # Core multi-agent framework (SDK-style)
 from clawteam.alerts import (
