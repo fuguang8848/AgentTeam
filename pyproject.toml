@@ -44,9 +44,9 @@ redis = [
 agentteam = "agentteam.cli.commands:app"
 
 [project.urls]
-Homepage = "https://github.com/win4r/ClawTeam-OpenClaw"
-Repository = "https://github.com/win4r/ClawTeam-OpenClaw"
-Issues = "https://github.com/win4r/ClawTeam-OpenClaw/issues"
+Homepage = "https://github.com/YintaTriss/AgentTeam"
+Repository = "https://github.com/YintaTriss/AgentTeam"
+Issues = "https://github.com/YintaTriss/AgentTeam/issues"
 
 [build-system]
 requires = ["hatchling"]
