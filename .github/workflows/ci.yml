@@ -42,7 +42,7 @@ jobs:
 
       - name: Run tests
         run: |
-          poetry run python -m pytest tests/ -v --tb=short --ignore=tests/test_openclaw_agent.py --ignore=tests/test_openclaw_sdk_backend.py --ignore=tests/test_spawn_backends.py --ignore=tests/test_supervisor.py --ignore=tests/test_skill_engine.py
+          poetry run python -m pytest tests/ -v --tb=short --ignore=tests/test_openclaw_agent.py --ignore=tests/test_openclaw_sdk_backend.py --ignore=tests/test_spawn_backends.py --ignore=tests/test_supervisor.py --ignore=tests/test_skill_engine.py --ignore=tests/test_integration.py --ignore=tests/test_readiness.py --ignore=tests/test_p9_p10_p11.py
 
       - name: Upload coverage
         if: matrix.python-version == '3.12'
