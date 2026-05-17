@@ -1,5 +1,19 @@
 # 🦞 AgentTeam
 
+[English](README.md) ·
+[简体中文](README_CN.md) ·
+[繁體中文](README_TW.md) ·
+[日本語](README_JA.md) ·
+[한국어](README_KO.md) ·
+[Français](README_FR.md) ·
+[Español](README_ES.md) ·
+[Deutsch](README_DE.md) ·
+[Italiano](README_IT.md) ·
+[Русский](README_RU.md) ·
+[Português (Brasil)](README_PT-BR.md)
+
+
+
 <p align="center">
   <strong>Production-ready multi-agent swarm coordination — Built for <a href="https://openclaw.ai">OpenClaw</a>, powered by AI agents themselves</strong>
 </p>
