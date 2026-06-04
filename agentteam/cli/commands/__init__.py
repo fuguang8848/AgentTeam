@@ -31,6 +31,9 @@ from agentteam.cli.commands.metrics import app as metrics_app, cost_app, insight
 from agentteam.cli.commands.alert import app as alert_app, alert_app, audit_app, drift_app, role_app, review_app
 from agentteam.cli.commands.session import app as session_app
 
+# Re-export helper functions for backward compatibility
+from agentteam.cli.commands.helpers import _deliver_to_running_agent, _broadcast_activity_to_board
+
 __all__ = [
     # Main apps
     "init_app",
@@ -55,4 +58,7 @@ __all__ = [
     "drift_app",
     "role_app",
     "review_app",
+    # Helper functions (backward compatibility)
+    "_deliver_to_running_agent",
+    "_broadcast_activity_to_board",
 ]

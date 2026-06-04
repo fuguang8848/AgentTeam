@@ -24,7 +24,7 @@ from agentteam.board.handlers.tasks import TasksMixin
 from agentteam.board.handlers.overview import OverviewMixin
 from agentteam.board.handlers.sse import SSEHandlersMixin
 from agentteam.board.handlers.chat import ChatHandlersMixin
-from agentteam.board.utils import _get_collector, _now_iso
+from agentteam.board.utils import _get_collector, _now_iso, _generate_simple_response
 
 __all__ = ["serve", "BoardHandler"]
 
