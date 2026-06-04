@@ -1,0 +1,68 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.env
+.venv/
+venv/
+uv.lock
+.claude/*.local.md
+
+# Sensitive configs (NEVER commit these!)
+.env
+.env.local
+.env.*.local
+credentials.*
+config.local.*
+*.local.json
+.secrets.*
+
+# OpenClaw user config (contains API keys)
+# This file is in ~/.openclaw/, not here, but be careful
+# Do NOT copy openclaw.json to this directory
+
+tmp/
+
+# Debug and test artifacts
+debug*.py
+fix*.py
+!tests/           # Track all files in tests/ directory (MUST be first)
+test_*.py        # Ignore test files at repo root
+test*.py         # Ignore test*.py files at repo root
+failing_tests.txt
+last_test_result.txt
+test_results.txt
+test_err.txt
+test_output.txt
+pytest_tail.py
+run_tests.py
+run_tests.bat
+start_server.py
+nul
+
+# Claude Code/OpenClaw session files
+.claude/sessions/
+.claude/.memory/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local config (user-specific)
+CLAUDE.md

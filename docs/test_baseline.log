@@ -1,0 +1,119 @@
+........................................................................ [  3%]
+...................ss..ssss............................................. [  7%]
+........................................................................ [ 10%]
+........................................................................ [ 14%]
+.........s..ss.......................................................... [ 18%]
+........................................................................ [ 21%]
+........................................................................ [ 25%]
+.......................s................................................ [ 28%]
+...........................................................s............ [ 32%]
+..........................................s.......s.....s............... [ 36%]
+........................................................................ [ 39%]
+........................................................................ [ 43%]
+........................................................................ [ 47%]
+........................................................................ [ 50%]
+........................................................................ [ 54%]
+........................................................................ [ 57%]
+........................................................................ [ 61%]
+........................................................................ [ 65%]
+........................................................................ [ 68%]
+........................................................................ [ 72%]
+........................................................................ [ 75%]
+........................................................................ [ 79%]
+...............................................................F.....s.. [ 83%]
+.....................s.................................................. [ 86%]
+......................................s................................. [ 90%]
+........................................................................ [ 94%]
+........................................................................ [ 97%]
+..............................................                           [100%]Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_estimate_tokens_ascii0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_summary3\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_record_request0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_web_ui_data0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_accumulate_usage0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_trend0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_usage_summary1\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_estimate_tokens_chinese0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_full_workflow4\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_provider_stats0\\.agentteam\\usage\\token_stats.json'
+
+================================== FAILURES ===================================
+_________________ TestSkillAutoCreator.test_get_skill_metrics _________________
+tests\test_skills.py:598: in test_get_skill_metrics
+    assert metrics["success_rate"] == 2/3  # 2³É¹¦£¬1Ê§°Ü
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 0.5 == (2 / 3)
+============================== warnings summary ===============================
+tests/test_skills.py::TestDetectedPattern::test_detected_pattern_json_serialization
+  C:\Users\31683\AgentTeam\tests\test_skills.py:74: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    data = pattern.dict()
+
+tests/test_skills.py::TestSkillSpec::test_skill_spec_json_serialization
+  C:\Users\31683\AgentTeam\tests\test_skills.py:135: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    data = spec.dict()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_skills.py::TestSkillAutoCreator::test_get_skill_metrics - a...
+1 failed, 1972 passed, 17 skipped, 2 warnings in 179.13s (0:02:59)
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_token_stats_with_provider0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_estimator_initialization0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_estimate_tokens0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_estimate_tokens_empty0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_estimate_tokens_long0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_accumulate_usage3\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_record_request2\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_summary8\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_trend1\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_provider_stats1\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\tmpt03td9lo\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\tmpt03td9lo\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_accumulate_empty_text0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_accumulate_unicode0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_accumulate_no_provider0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_record_request_no_provide0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_trend_empty_history0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_multiple_sessions_same_pr0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_nonexistent_session_opera0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_daily_aggregation0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_accumulate_usage0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_trend0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_record_request0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_summary3\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_usage_summary1\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_estimate_tokens_ascii0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_token_stats_with_provider0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_provider_stats0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_web_ui_data0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_full_workflow4\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_estimate_tokens_chinese0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_estimator_initialization0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_estimate_tokens0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_estimate_tokens_empty0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_estimate_tokens_long0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_accumulate_usage3\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_record_request2\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_summary8\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_trend1\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_provider_stats1\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\tmpt03td9lo\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\tmpt03td9lo\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_accumulate_empty_text0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_accumulate_unicode0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_accumulate_no_provider0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_record_request_no_provide0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_trend_empty_history0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_multiple_sessions_same_pr0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_nonexistent_session_opera0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_daily_aggregation0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_full_workflow4\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_provider_stats0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_record_request0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_web_ui_data0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_token_stats_with_provider0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_usage_summary1\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_trend0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_estimate_tokens_chinese0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_get_summary3\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_accumulate_usage0\\.agentteam\\usage\\token_stats.json'
+Failed to save usage data: [Errno 2] No such file or directory: 'C:\\Users\\31683\\AppData\\Local\\Temp\\pytest-of-31683\\pytest-16\\test_estimate_tokens_ascii0\\.agentteam\\usage\\token_stats.json'
+[test-agent] Wait ready timeout after 180000 ms

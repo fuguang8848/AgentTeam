@@ -1,0 +1,63 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+uv.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+tests/
+
+# Documentation
+*.md
+docs/
+
+# Examples (keep examples/ directory)
+# examples/
+
+# Temporary files
+tmp/
+*.log
+*.tmp
+*.bak
+*.orig
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local config (contains secrets)
+.env
+.env.local
+.env.*.local
+.env.example
+
+# Claude/OpenClaw
+.claude/
+openclaw.json
+
+# Debug files
+debug*.py
+fix*.py
+test*.py
+start_server.py
