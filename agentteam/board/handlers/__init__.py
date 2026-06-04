@@ -14,6 +14,8 @@ from agentteam.board.handlers.notifications import NotificationsMixin
 from agentteam.board.handlers.providers import ProvidersMixin
 from agentteam.board.handlers.tasks import TasksMixin
 from agentteam.board.handlers.overview import OverviewMixin
+from agentteam.board.handlers.sse import SSEHandlersMixin
+from agentteam.board.handlers.chat import ChatHandlersMixin
 
 __all__ = [
     "BaseHandler",
@@ -28,4 +30,6 @@ __all__ = [
     "ProvidersMixin",
     "TasksMixin",
     "OverviewMixin",
+    "SSEHandlersMixin",
+    "ChatHandlersMixin",
 ]
