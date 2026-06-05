@@ -229,12 +229,17 @@ _config_fields_cache: dict[type, dict[str, ConfigField]] = {}
 # Common configuration classes
 
 
+def _get_pool_size_from_env() -> int:
+    """Get pool_size from environment variable with fallback to default."""
+    return int(os.environ.get("AGENTTEAM_DB_POOL_SIZE", "5"))
+
+
 @dataclass
 class DatabaseConfig(BaseConfig):
     """Database configuration"""
 
     path: str = "agentteam.db"
-    pool_size: int = 5
+    pool_size: int = field(default_factory=_get_pool_size_from_env)
     timeout: float = 30.0
     backup_enabled: bool = True
     backup_interval: int = 3600  # seconds

@@ -30,7 +30,10 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from agentteam.spawn.base import SpawnBackend
 
 
 class AgentState(Enum):
@@ -245,8 +248,9 @@ class CTTeam:
         Spawn an agent (uses OpenClaw SDK Backend)
         """
         from agentteam.spawn import get_backend
+        from agentteam.spawn.base import SpawnBackend
 
-        backend = get_backend("openclaw_sdk")
+        backend: SpawnBackend = get_backend("openclaw_sdk")
         result = backend.spawn(
             command=["openclaw"],
             agent_name=name,
@@ -298,9 +302,11 @@ class CTTeam:
 
     def assign_task(self, task_id: str, to_agent: str) -> None:
         """Assign task to agent"""
+        from agentteam.exceptions import TaskNotFoundError
+
         task = self.tasks.get(task_id)
         if not task:
-            raise ValueError(f"Task {task_id} not found")
+            raise TaskNotFoundError(f"Task {task_id} not found")
 
         task.assignee = to_agent
         task.state = TaskState.IN_PROGRESS
@@ -409,5 +415,13 @@ Message = CTMessage
 AgentStatus = AgentState
 TaskStatus = TaskState
 
-create_team = lambda name: CTTeam(name)
-get_team = lambda name: CTTeam(name) if Path(f"~/.agentteam/teams/{name}").expanduser().exists() else None
+def create_team(name: str) -> CTTeam:
+    """Create a new CTTeam instance for the given team name."""
+    return CTTeam(name)
+
+
+def get_team(name: str) -> Optional[CTTeam]:
+    """Get a CTTeam instance if the team exists, otherwise None."""
+    if Path(f"~/.agentteam/teams/{name}").expanduser().exists():
+        return CTTeam(name)
+    return None

@@ -211,7 +211,89 @@ class TeamSnapshotCache:
 
 
 class BoardHandler(BaseHTTPRequestHandler):
-    """HTTP handler for the board Web UI."""
+    """HTTP handler for the board Web UI.
+
+    ## Route Organization (grouped by resource)
+
+    ### Authentication
+    - _check_auth()         — verify API key / Bearer token
+    - _is_public_endpoint() — public path check
+
+    ### Static / Files
+    - _serve_static()       — static file serving (HTML, JS, CSS, images, fonts)
+    - _serve_files()        — workspace file listing
+
+    ### JSON Helpers
+    - _serve_json()         — JSON response wrapper
+
+    ### Team / Task (team/ subtree)
+    - _serve_team()        — /api/team/<name>
+    - _serve_team_alerts()  — /api/teams/<name>/alerts
+    - _serve_db_tasks()    — /api/db/tasks
+
+    ### Agents (agents/ subtree)
+    - _serve_agent_activity_sse()  — GET /api/agents/events (SSE)
+    - _emit_agent_activity()       — POST /api/agents/activity
+
+    ### Events (events/ subtree)
+    - _serve_events()       — /api/events/ (P37)
+
+    ### Sessions (sessions/ subtree)
+    - _serve_sessions()     — /api/sessions
+    - _serve_session()      — /api/sessions/<id>
+    - _serve_session_state() — /api/state/<id> (disabled)
+
+    ### Transport (transport/ subtree)
+    - _serve_transport_status() — /api/transport/status
+    - _serve_transport_stats()  — /api/transport/stats
+
+    ### Usage / Metrics (usage/ subtree)
+    - _serve_usage_summary()  — /api/usage/summary
+    - _serve_usage_trend()    — /api/usage/trend
+    - _serve_provider_stats() — /api/usage/providers
+
+    ### Providers / Settings (config/ subtree)
+    - _serve_providers()      — /api/providers (GET/POST)
+    - _delete_provider()       — DELETE /api/providers/<name>
+    - _serve_settings()        — /api/settings
+    - _serve_concurrency_limits() — /api/concurrency/limits
+    - _get_providers_file() / _load_providers() / _save_providers() — file I/O
+
+    ### Skills / Notifications
+    - _serve_skills()        — /api/skills
+    - _serve_notifications()  — /api/notifications
+    - _mark_notifications_read() — POST /api/notifications/mark-read
+
+    ### Chat
+    - _poll_chat_events()    — /api/chat/events (polling)
+    - _serve_chat_events()   — /api/chat/events (legacy SSE)
+    - _serve_chat_history()  — /api/chat/history
+    - _clear_chat_history()  — internal
+    - _save_chat_message()   — internal
+    - _broadcast_chat_event() — internal
+    - _handle_chat_command()  — /chat command processing
+    - _call_ai_assistant()   — AI assistant invocation
+
+    ### Templates
+    - _serve_templates()     — /api/templates (import/export via list_templates)
+
+    ### Health / Profiler
+    - _serve_profiler_stats() — /api/profiler/stats
+    - _serve_agent_readiness() — /api/readiness/agent/<id> (disabled)
+
+    ### SSE Helpers (class methods, called from callbacks)
+    - _broadcast_event()      — broadcast event to SSE subscribers
+    - _broadcast_chat_event() — broadcast chat event to SSE subscribers
+
+    ### Lifecycle
+    - log_message() — quiet request logging
+
+    ## Global State (module-level)
+    - _collector         — lazy BoardCollector singleton
+    - _event_queue       — last 500 events (SSE)
+    - _agent_activity_queue — last 1000 agent activity events (SSE)
+    - _chat_event_queue  — last 100 chat events (SSE)
+    """
 
     collector: BoardCollector
     default_team: str = ""

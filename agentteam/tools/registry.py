@@ -91,16 +91,18 @@ class ToolRegistry:
 
     def call(self, name: str, **kwargs) -> Any:
         """Call a tool by name"""
+        from agentteam.exceptions import ValidationError
+
         tool = self.get(name)
         if not tool:
-            raise ValueError(f"Tool '{name}' not found")
+            raise ValidationError(f"Tool '{name}' not found")
 
         if tool["func"]:
             return tool["func"](**kwargs)
         elif tool["skill_path"]:
             return self._call_skill(tool["skill_path"], **kwargs)
         else:
-            raise ValueError(f"Tool '{name}' has no implementation")
+            raise ValidationError(f"Tool '{name}' has no implementation")
 
     def _call_skill(self, skill_path: str, **kwargs) -> Any:
         """Call a skill by path"""

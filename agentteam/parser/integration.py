@@ -11,12 +11,14 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Any, Callable
+from typing import Any, Callable, TYPE_CHECKING
 
 from agentteam.audit import AuditEventType, log_audit_event
 from agentteam.notification import NotificationManager
-from agentteam.parser.types import ActivityEvent, ActivityEventType
-from agentteam.parser.output_parser import OutputParser
+
+if TYPE_CHECKING:
+    from agentteam.parser.types import ActivityEvent, ActivityEventType
+    from agentteam.parser.output_parser import OutputParser
 
 logger = logging.getLogger(__name__)
 

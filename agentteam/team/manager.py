@@ -79,7 +79,9 @@ class TeamManager:
         validate_identifier(leader_name, "leader name")
         validate_identifier(user, "user name", allow_empty=True)
         if _config_path(name).exists():
-            raise ValueError(f"Team '{name}' already exists")
+            from agentteam.exceptions import TeamAlreadyExistsError
+
+            raise TeamAlreadyExistsError(f"Team '{name}' already exists")
 
         leader = TeamMember(
             name=leader_name,
@@ -143,10 +145,14 @@ class TeamManager:
         validate_identifier(user, "user name", allow_empty=True)
         config = _load_config(team_name)
         if not config:
-            raise ValueError(f"Team '{team_name}' not found")
+            from agentteam.exceptions import TeamNotFoundError
+
+            raise TeamNotFoundError(f"Team '{team_name}' not found")
         for m in config.members:
             if m.name == member_name and m.user == user:
-                raise ValueError(f"Agent '{member_name}' (user={user or '(none)'}) already in team")
+                from agentteam.exceptions import AgentError
+
+                raise AgentError(f"Agent '{member_name}' (user={user or '(none)'}) already in team")
         member = TeamMember(
             name=member_name,
             user=user,

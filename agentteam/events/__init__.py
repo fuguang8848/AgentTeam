@@ -46,6 +46,8 @@ from agentteam.events.models import (
 from agentteam.events.tracker import (
     EventTracker,
     get_tracker,
+    set_tracker,
+    reset_tracker,
     track_batch,
     track_event,
 )
@@ -66,6 +68,8 @@ __all__ = [
     # Tracker
     "EventTracker",
     "get_tracker",
+    "set_tracker",
+    "reset_tracker",
     "track_event",
     "track_batch",
     # API

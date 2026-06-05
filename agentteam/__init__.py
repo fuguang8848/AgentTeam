@@ -2,6 +2,21 @@
 
 __version__ = "0.7.6"
 
+# Exceptions
+from agentteam.exceptions import (
+    AgentTeamError,
+    AgentNotFoundError,
+    AgentSpawnError,
+    AuthenticationError,
+    ConfigurationError,
+    TeamAlreadyExistsError,
+    TeamNotFoundError,
+    TaskError,
+    TaskNotFoundError,
+    TransportError,
+    ValidationError,
+)
+
 # Core multi-agent framework (SDK-style)
 from agentteam.alerts import (
     Alert,
@@ -152,6 +167,19 @@ from agentteam.memory import (
 from agentteam.skill.engine import SkillEngine
 
 __all__ = [
+    # Exceptions
+    "AgentTeamError",
+    "TeamNotFoundError",
+    "TeamAlreadyExistsError",
+    "TaskNotFoundError",
+    "TaskError",
+    "AgentError",
+    "AgentNotFoundError",
+    "AgentSpawnError",
+    "ConfigurationError",
+    "TransportError",
+    "AuthenticationError",
+    "ValidationError",
     # Core multi-agent framework
     "Team",
     "Agent",
