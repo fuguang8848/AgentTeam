@@ -56,7 +56,9 @@ def _generate_simple_response(message: str) -> str:
         return "我可以帮你管理团队。使用命令：\\n/members - 查看团队成员 \\n/status - 查看团队状态 \\n/tasks - 查看任务列表"
 
     # Default response
-    return "我理解你的意思，但我需要更多信息来帮助你。你可以试试：\\n1. 使用 /help 查看帮助 \\n2. 使用 /members 查看团队成员 \\n3. 直接描述你需要的帮助"
+    import random
+    default_responses = ["收到了", "好的，继续", "我明白了"]
+    return random.choice(default_responses)
 
 
 class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
