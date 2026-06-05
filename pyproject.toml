@@ -1,6 +1,6 @@
 [project]
 name = "agentteam"
-version = "0.5.1"
+version = "0.7.0"
 description = "Framework-agnostic multi-agent coordination CLI"
 readme = "README.md"
 requires-python = ">=3.10"
