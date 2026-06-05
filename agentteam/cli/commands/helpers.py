@@ -92,7 +92,9 @@ def _deliver_to_running_agent(
             return False
 
         # Broadcast task_assigned activity to board server
-        _broadcast_activity_to_board(
+        # Use full path so tests can mock it via agentteam.cli.commands._broadcast_activity_to_board
+        import agentteam.cli.commands as cli_commands
+        cli_commands._broadcast_activity_to_board(
             agent_name=agent_name,
             team_name=team_name,
             status="task_assigned",
