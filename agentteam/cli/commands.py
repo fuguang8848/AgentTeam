@@ -6,7 +6,19 @@ from typing import Optional
 import typer
 from rich.console import Console
 from agentteam import __version__
-from agentteam.cli.commands import *
+from agentteam.cli.commands.init import init_app
+from agentteam.cli.commands.team import team_app
+from agentteam.cli.commands.agent import agent_app
+from agentteam.cli.commands.task import task_app
+from agentteam.cli.commands.message import message_app
+from agentteam.cli.commands.board import board_app
+from agentteam.cli.commands.config import config_app
+from agentteam.cli.commands.lifecycle import lifecycle_app
+from agentteam.cli.commands.workspace import workspace_app
+from agentteam.cli.commands.template import template_app
+from agentteam.cli.commands.metrics import metrics_app
+from agentteam.cli.commands.session import session_app
+from agentteam.cli.commands.alert import alert_app
 
 app = typer.Typer(name="agentteam", help="Framework-agnostic multi-agent CLI", no_args_is_help=True)
 console = Console()
@@ -19,14 +31,11 @@ for name, sub in [
     ("message", message_app),
     ("board", board_app),
     ("config", config_app),
-    ("doctor", doctor_app),
     ("lifecycle", lifecycle_app),
     ("workspace", workspace_app),
     ("template", template_app),
     ("metrics", metrics_app),
-    ("cost", cost_app),
-    ("insights", insights_app),
-    ("dag", dag_app),
+    ("session", session_app),
     ("alert", alert_app),
     ("audit", audit_app),
     ("drift", drift_app),
