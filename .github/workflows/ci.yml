@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Normalize line endings (apply .gitattributes)
-        run: git add --renormalize . && git reset --hard HEAD
+        run: git add --renormalize . && git checkout-index -f -a
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Normalize line endings (apply .gitattributes)
-        run: git add --renormalize . && git reset --hard HEAD
+        run: git add --renormalize . && git checkout-index -f -a
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -104,7 +104,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Normalize line endings (apply .gitattributes)
-        run: git add --renormalize . && git reset --hard HEAD
+        run: git add --renormalize . && git checkout-index -f -a
 
       - name: Set up Python
         uses: actions/setup-python@v5
