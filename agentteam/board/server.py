@@ -350,9 +350,10 @@ class BoardHandler(BaseHTTPRequestHandler):
 
         if path == "/" or path == "/index.html":
             self._serve_static("index.html", "text/html")
-        elif path == "/api/health":
+        elif path == "/api/health" or path == "/health":
             # Health check endpoint - always available even when collector is not initialized
-            self._serve_json({"status": "ok", "timestamp": _now_iso()})
+            # V 6/7 10:35 fix: 加 /health alias, 报告说 /health 返 404, 实际 /api/health HTTP 200.
+            self._serve_json({"status": "ok", "timestamp": _now_iso(), "service": "agentteam-board"})
         elif path == "/api/overview":
             # Use lazy-loaded collector
             self._serve_json({"teams": _get_collector().collect_overview()})
