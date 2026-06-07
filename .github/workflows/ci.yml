@@ -15,18 +15,18 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
+      - name: Configure git line endings
+        run: git config --global core.autocrlf input
+
       - uses: actions/checkout@v4
-        with:
-          core.autocrlf: input
+
+      - name: Normalize line endings (apply .gitattributes)
+        run: git add --renormalize . && git reset --hard HEAD
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Normalize line endings
-        run: |
-          git reset --hard HEAD
 
       - name: Install dependencies
         run: |
@@ -61,18 +61,18 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Configure git line endings
+        run: git config --global core.autocrlf input
+
       - uses: actions/checkout@v4
-        with:
-          core.autocrlf: input
+
+      - name: Normalize line endings (apply .gitattributes)
+        run: git add --renormalize . && git reset --hard HEAD
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Normalize line endings
-        run: |
-          git reset --hard HEAD
 
       - name: Install dependencies
         run: |
@@ -98,18 +98,18 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Configure git line endings
+        run: git config --global core.autocrlf input
+
       - uses: actions/checkout@v4
-        with:
-          core.autocrlf: input
+
+      - name: Normalize line endings (apply .gitattributes)
+        run: git add --renormalize . && git reset --hard HEAD
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Normalize line endings
-        run: |
-          git reset --hard HEAD
 
       - name: Install dependencies
         run: |
