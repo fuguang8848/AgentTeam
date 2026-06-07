@@ -16,11 +16,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          core.autocrlf: input
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Normalize line endings
+        run: |
+          git reset --hard HEAD
 
       - name: Install dependencies
         run: |
@@ -56,11 +62,17 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+        with:
+          core.autocrlf: input
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Normalize line endings
+        run: |
+          git reset --hard HEAD
 
       - name: Install dependencies
         run: |
@@ -87,11 +99,17 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+        with:
+          core.autocrlf: input
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Normalize line endings
+        run: |
+          git reset --hard HEAD
 
       - name: Install dependencies
         run: |
