@@ -81,7 +81,9 @@ def _handle_members_command() -> dict:
         for session in active_sessions[:20]:  # Show first 20
             role = session.role or "unknown"
             name = session.name or role
-            response += f"• {name} ({role}) - Active since {session.created_at[:16] if session.created_at else 'unknown'}\n"
+            response += (
+                f"• {name} ({role}) - Active since {session.created_at[:16] if session.created_at else 'unknown'}\n"
+            )
 
         return {"role": "system", "content": response, "timestamp": _now_iso()}
     except Exception as e:

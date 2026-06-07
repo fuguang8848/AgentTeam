@@ -36,11 +36,13 @@ def _output(data: dict | list, human_fn=None):
     """Output data as JSON or human-readable."""
     if _json_output:
         import json
+
         print(json.dumps(data, indent=2, ensure_ascii=False))
     elif human_fn:
         human_fn(data)
     else:
         import json
+
         print(json.dumps(data, indent=2, ensure_ascii=False))
 
 
@@ -94,6 +96,7 @@ def doctor_run():
     try:
         import urllib.request
         import json as json_module
+
         port = int(os.environ.get("OPENCLAW_GATEWAY_PORT", "18789"))
         url = f"http://127.0.0.1:{port}/health"
         token = os.environ.get("OPENCLAW_GATEWAY_TOKEN", "")
@@ -242,8 +245,13 @@ def config_show():
     from agentteam.config import get_effective
 
     settings = [
-        "data_dir", "default_backend", "workspace", "skip_permissions",
-        "max_agents", "transport", "log_level",
+        "data_dir",
+        "default_backend",
+        "workspace",
+        "skip_permissions",
+        "max_agents",
+        "transport",
+        "log_level",
     ]
 
     def _human(items):
@@ -294,7 +302,10 @@ def config_init(
         config["workspace"] = workspace
 
     cfg_path.write_text(yaml.dump(config), encoding="utf-8")
-    _output({"status": "initialized", "path": str(cfg_path)}, lambda d: console.print(f"[green]OK[/green] Config saved to {d['path']}"))
+    _output(
+        {"status": "initialized", "path": str(cfg_path)},
+        lambda d: console.print(f"[green]OK[/green] Config saved to {d['path']}"),
+    )
 
 
 @app.command("set")
@@ -319,7 +330,10 @@ def config_set(
 
     config[key] = value
     cfg_path.write_text(yaml.dump(config), encoding="utf-8")
-    _output({"status": "set", "key": key, "value": value}, lambda d: console.print(f"[green]OK[/green] {d['key']} = {d['value']}"))
+    _output(
+        {"status": "set", "key": key, "value": value},
+        lambda d: console.print(f"[green]OK[/green] {d['key']} = {d['value']}"),
+    )
 
 
 @app.command("get")
@@ -331,7 +345,10 @@ def config_get(
 
     if key:
         val, source = get_effective(key)
-        _output({"key": key, "value": val, "source": source}, lambda d: console.print(f"{d['key']} = {d['value']} (from {d['source']})"))
+        _output(
+            {"key": key, "value": val, "source": source},
+            lambda d: console.print(f"{d['key']} = {d['value']} (from {d['source']})"),
+        )
     else:
         config_show()
 
@@ -356,10 +373,12 @@ def config_health():
             issues.append(f"Config error: {e}")
 
     if issues:
+
         def _human(items):
             console.print("[yellow]Configuration issues:[/yellow]")
             for issue in items:
                 console.print(f"  - {issue}")
+
         _output(issues, _human)
     else:
         console.print("[green]✓ Configuration is healthy[/green]")

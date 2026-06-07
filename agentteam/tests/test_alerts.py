@@ -33,7 +33,7 @@ def test_create_alert(alert_manager):
         message="Test alert message",
         severity=AlertSeverity.WARNING,
     )
-    
+
     assert isinstance(alert, Alert)
     assert alert.name == "test_alert"
     assert alert.message == "Test alert message"
@@ -54,7 +54,7 @@ def test_get_active_alerts(alert_manager):
         message="Second alert",
         severity=AlertSeverity.WARNING,
     )
-    
+
     active = get_active_alerts()
     assert len(active) >= 2
     names = [a.name for a in active]
@@ -69,9 +69,9 @@ def test_acknowledge_alert(alert_manager):
         message="Alert to acknowledge",
         severity=AlertSeverity.ERROR,
     )
-    
+
     assert alert.state == AlertState.ACTIVE
-    
+
     success = acknowledge_alert(alert.id)
     assert success
     assert alert.state == AlertState.ACKNOWLEDGED
@@ -84,14 +84,14 @@ def test_alert_state_transitions(alert_manager):
         message="Testing state transitions",
         severity=AlertSeverity.WARNING,
     )
-    
+
     # Initial state
     assert alert.state == AlertState.ACTIVE
-    
+
     # Acknowledge
     alert.acknowledge()
     assert alert.state == AlertState.ACKNOWLEDGED
-    
+
     # Resolve
     alert.resolve()
     assert alert.state == AlertState.RESOLVED
@@ -106,16 +106,17 @@ def test_alert_rule_evaluation():
         condition=lambda m: m.get("test_value", 0) > 10,
         severity=AlertSeverity.ERROR,
     )
-    
+
     from agentteam.alerts import get_alert_manager
+
     manager = get_alert_manager()
     manager.add_rule(rule)
-    
+
     try:
         # Test with metrics that should trigger
         metrics = {"test_value": 15}
         alerts = evaluate_alerts(metrics)
-        
+
         # Check our rule triggered
         triggered_names = [a.name for a in alerts]
         assert "eval_test_rule" in triggered_names, f"Expected 'eval_test_rule' in {triggered_names}"
@@ -132,21 +133,21 @@ def test_alert_severity_levels():
         severity=AlertSeverity.INFO,
     )
     assert info_alert.severity == AlertSeverity.INFO
-    
+
     warning_alert = create_alert(
         name="warning_test",
         message="Warning message",
         severity=AlertSeverity.WARNING,
     )
     assert warning_alert.severity == AlertSeverity.WARNING
-    
+
     error_alert = create_alert(
         name="error_test",
         message="Error message",
         severity=AlertSeverity.ERROR,
     )
     assert error_alert.severity == AlertSeverity.ERROR
-    
+
     critical_alert = create_alert(
         name="critical_test",
         message="Critical message",
@@ -163,6 +164,6 @@ def test_alert_with_tags(alert_manager):
         severity=AlertSeverity.WARNING,
         tags={"category": "test", "source": "unit_test"},
     )
-    
+
     assert alert.tags.get("category") == "test"
     assert alert.tags.get("source") == "unit_test"

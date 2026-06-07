@@ -18,7 +18,7 @@ from .types import TaskState
 class CTTask:
     """
     Team Task - 团队任务
-    
+
     属性:
         id: 任务唯一 ID
         title: 任务标题
@@ -32,7 +32,7 @@ class CTTask:
         result: 任务结果
         error: 错误信息
     """
-    
+
     id: str
     title: str
     description: str
@@ -44,7 +44,7 @@ class CTTask:
     completed_at: Optional[float] = None
     result: Optional[str] = None
     error: Optional[str] = None
-    
+
     @classmethod
     def create(
         cls,
@@ -63,7 +63,7 @@ class CTTask:
             assignee=assignee,
             priority=priority,
         )
-    
+
     def to_dict(self) -> dict:
         """转换为字典"""
         return {
@@ -99,13 +99,13 @@ class CTTask:
             result=data.get("result"),
             error=data.get("error"),
         )
-    
+
     def assign_to(self, agent_name: str) -> None:
         """分配给 Agent"""
         self.assignee = agent_name
         self.state = TaskState.IN_PROGRESS
         self.updated_at = time.time()
-    
+
     def complete(self, result: Optional[str] = None) -> None:
         """完成任务"""
         self.state = TaskState.COMPLETED
@@ -113,22 +113,22 @@ class CTTask:
         self.updated_at = time.time()
         if result:
             self.result = result
-    
+
     def fail(self, error: str) -> None:
         """标记失败"""
         self.state = TaskState.BLOCKED
         self.error = error
         self.updated_at = time.time()
-    
+
     def cancel(self) -> None:
         """取消任务"""
         self.state = TaskState.CANCELLED
         self.updated_at = time.time()
-    
+
     def is_active(self) -> bool:
         """检查是否处于活跃状态"""
         return self.state in (TaskState.PENDING, TaskState.IN_PROGRESS)
-    
+
     def is_done(self) -> bool:
         """检查是否已结束"""
         return self.state in (TaskState.COMPLETED, TaskState.BLOCKED, TaskState.CANCELLED)

@@ -82,15 +82,19 @@ def session_show(
     session = store.get(agent_name)
 
     if session:
+
         def _human(s):
             console.print(f"\n[bold]Session - {agent_name}[/bold]")
             console.print(f"  Session ID: {s.get('session_id', 'N/A')}")
             console.print(f"  Last task: {s.get('last_task_id', 'N/A')}")
             console.print(f"  Saved at: {s.get('saved_at', 'N/A')[:19]}")
+
         _output(_dump(session), _human)
     else:
-        _output({"error": "No session found"},
-                lambda d: console.print(f"[yellow]No saved session for '{agent_name}'[/yellow]"))
+        _output(
+            {"error": "No session found"},
+            lambda d: console.print(f"[yellow]No saved session for '{agent_name}'[/yellow]"),
+        )
 
 
 @app.command("clear")
@@ -112,8 +116,10 @@ def session_clear(
     store = SessionStore(team)
     store.delete(agent_name)
 
-    _output({"status": "cleared", "agent": agent_name},
-            lambda d: console.print(f"[green]OK[/green] Session cleared for '{agent_name}'"))
+    _output(
+        {"status": "cleared", "agent": agent_name},
+        lambda d: console.print(f"[green]OK[/green] Session cleared for '{agent_name}'"),
+    )
 
 
 if __name__ == "__main__":

@@ -20,29 +20,29 @@ from .message import CTInbox, CTMessage
 class CTTeam:
     """
     Team Container - 团队容器
-    
+
     管理多个 CTAgent 和任务，支持：
     - Agent 注册和管理
     - 任务分配和跟踪
     - 消息队列
     - 状态持久化
     """
-    
+
     def __init__(self, name: str, storage_path: Optional[Path] = None):
         self.name = name
         self.agents: Dict[str, CTAgent] = {}
         self.tasks: Dict[str, CTTask] = {}
         self.inbox = CTInbox()
-        
+
         if storage_path:
             self.storage_path = Path(storage_path)
         else:
             self.storage_path = Path("~/.agentteam/teams").expanduser() / name
-        
+
         self._load_state()
-    
+
     # ==================== Agent Management ====================
-    
+
     def register_agent(
         self,
         name: str,
@@ -61,11 +61,11 @@ class CTTeam:
         self.agents[name] = agent
         self._save_state()
         return agent
-    
+
     def get_agent(self, name: str) -> Optional[CTAgent]:
         """获取 Agent"""
         return self.agents.get(name)
-    
+
     def remove_agent(self, name: str) -> bool:
         """移除 Agent"""
         if name in self.agents:
@@ -73,7 +73,7 @@ class CTTeam:
             self._save_state()
             return True
         return False
-    
+
     def update_agent_state(self, name: str, state: AgentState) -> bool:
         """更新 Agent 状态"""
         agent = self.agents.get(name)
@@ -82,9 +82,9 @@ class CTTeam:
             self._save_state()
             return True
         return False
-    
+
     # ==================== Task Management ====================
-    
+
     def create_task(
         self,
         title: str,
@@ -100,47 +100,47 @@ class CTTeam:
             priority=priority,
         )
         self.tasks[task.id] = task
-        
+
         if assignee:
             agent = self.agents.get(assignee)
             if agent:
                 agent.assign_task(task.id)
-        
+
         self._save_state()
         return task
-    
+
     def get_task(self, task_id: str) -> Optional[CTTask]:
         """获取任务"""
         return self.tasks.get(task_id)
-    
+
     def assign_task(self, task_id: str, agent_name: str) -> bool:
         """分配任务给 Agent"""
         task = self.tasks.get(task_id)
         agent = self.agents.get(agent_name)
-        
+
         if task and agent:
             task.assign_to(agent_name)
             agent.assign_task(task_id)
             self._save_state()
             return True
         return False
-    
+
     def complete_task(self, task_id: str, result: Optional[str] = None) -> bool:
         """完成任务"""
         task = self.tasks.get(task_id)
         if not task:
             return False
-        
+
         task.complete(result)
-        
+
         if task.assignee:
             agent = self.agents.get(task.assignee)
             if agent:
                 agent.complete_task()
-        
+
         self._save_state()
         return True
-    
+
     def fail_task(self, task_id: str, error: str) -> bool:
         """标记任务失败"""
         task = self.tasks.get(task_id)
@@ -149,13 +149,13 @@ class CTTeam:
             self._save_state()
             return True
         return False
-    
+
     def get_pending_tasks(self) -> List[CTTask]:
         """获取待处理任务"""
         return [t for t in self.tasks.values() if t.state == TaskState.PENDING]
-    
+
     # ==================== Message Management ====================
-    
+
     def send_message(
         self,
         from_agent: str,
@@ -168,17 +168,17 @@ class CTTeam:
             to_agent=to_agent,
             content=content,
         )
-    
+
     def broadcast(self, from_agent: str, content: str) -> Optional[CTMessage]:
         """广播消息"""
         return self.inbox.broadcast(from_agent=from_agent, content=content)
-    
+
     def get_messages(self, agent_name: Optional[str] = None, unread_only: bool = False) -> List[CTMessage]:
         """获取消息"""
         return self.inbox.get_messages(agent_name=agent_name, unread_only=unread_only)
-    
+
     # ==================== Status & Utilities ====================
-    
+
     def get_status(self) -> dict:
         """获取团队状态"""
         return {
@@ -197,7 +197,7 @@ class CTTeam:
                 "unread": self.inbox.count(unread_only=True),
             },
         }
-    
+
     def wait_all(self, timeout: int = 3600) -> dict:
         """等待所有 Agent 完成"""
         start = time.time()
@@ -207,13 +207,13 @@ class CTTeam:
                 break
             time.sleep(1)
         return self.get_status()
-    
+
     # ==================== Persistence ====================
-    
+
     def _get_state_file(self) -> Path:
         """获取状态文件路径"""
         return self.storage_path / "team_state.json"
-    
+
     def _save_state(self) -> None:
         """保存状态"""
         try:
@@ -228,7 +228,7 @@ class CTTeam:
                 json.dump(state, f, indent=2, ensure_ascii=False)
         except Exception:
             pass
-    
+
     def _load_state(self) -> None:
         """加载状态"""
         state_file = self._get_state_file()
@@ -236,20 +236,14 @@ class CTTeam:
             try:
                 with open(state_file, "r", encoding="utf-8") as f:
                     state = json.load(f)
-                
+
                 self.name = state.get("name", self.name)
-                self.agents = {
-                    name: CTAgent.from_dict(data)
-                    for name, data in state.get("agents", {}).items()
-                }
-                self.tasks = {
-                    tid: CTTask.from_dict(data)
-                    for tid, data in state.get("tasks", {}).items()
-                }
+                self.agents = {name: CTAgent.from_dict(data) for name, data in state.get("agents", {}).items()}
+                self.tasks = {tid: CTTask.from_dict(data) for tid, data in state.get("tasks", {}).items()}
                 self.inbox = CTInbox.from_dict(state.get("inbox", {}))
             except Exception:
                 pass
-    
+
     def to_dict(self) -> dict:
         """转换为字典"""
         return {
@@ -257,19 +251,13 @@ class CTTeam:
             "agents": {name: agent.to_dict() for name, agent in self.agents.items()},
             "tasks": {tid: task.to_dict() for tid, task in self.tasks.items()},
         }
-    
+
     @classmethod
     def from_dict(cls, data: dict, storage_path: Optional[Path] = None) -> "CTTeam":
         """从字典创建"""
         team = cls(data.get("name", "unknown"), storage_path=storage_path)
-        team.agents = {
-            name: CTAgent.from_dict(agent_data)
-            for name, agent_data in data.get("agents", {}).items()
-        }
-        team.tasks = {
-            tid: CTTask.from_dict(task_data)
-            for tid, task_data in data.get("tasks", {}).items()
-        }
+        team.agents = {name: CTAgent.from_dict(agent_data) for name, agent_data in data.get("agents", {}).items()}
+        team.tasks = {tid: CTTask.from_dict(task_data) for tid, task_data in data.get("tasks", {}).items()}
         return team
 
 

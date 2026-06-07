@@ -67,6 +67,7 @@ class TestPidAlive:
 
     def test_current_process_is_alive(self):
         import os
+
         assert _pid_alive(os.getpid()) is True
 
     def test_nonexistent_pid_is_dead(self):
@@ -80,6 +81,7 @@ class TestIsAgentAlive:
 
     def test_subprocess_alive_with_current_pid(self, team_name):
         import os
+
         _create_team(team_name)
         register_agent(team_name, "self", backend="subprocess", pid=os.getpid())
         assert is_agent_alive(team_name, "self") is True
@@ -108,6 +110,7 @@ class TestListDeadAgents:
 
     def test_excludes_alive_agent(self, team_name):
         import os
+
         _create_team(team_name)
         register_agent(team_name, "alive", backend="subprocess", pid=os.getpid())
         register_agent(team_name, "dead", backend="subprocess", pid=999999999)

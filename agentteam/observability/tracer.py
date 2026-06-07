@@ -27,6 +27,7 @@ try:
     )
     from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
     from opentelemetry.context import Context
+
     OTEL_AVAILABLE = True
 except ImportError:
     OTEL_AVAILABLE = False
@@ -254,6 +255,7 @@ class TracerWrapper:
         Returns:
             Decorator function
         """
+
         def decorator(func: Callable) -> Callable:
             span_name = name or f"{func.__module__}.{func.__qualname__}"
 
@@ -272,6 +274,7 @@ class TracerWrapper:
                         raise
 
             return wrapper
+
         return decorator
 
 
@@ -295,6 +298,7 @@ def trace_async(
     Returns:
         Decorated function
     """
+
     def decorator(func: Callable) -> Callable:
         span_name = name or f"{func.__module__}.{func.__qualname__}"
 
@@ -313,6 +317,7 @@ def trace_async(
                     raise
 
         return wrapper
+
     return decorator
 
 

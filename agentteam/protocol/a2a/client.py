@@ -30,32 +30,33 @@ logger = logging.getLogger(__name__)
 
 class A2AClientError(Exception):
     """Base exception for A2A client errors."""
+
     pass
 
 
 class A2AClient:
     """
     A2A Protocol Client.
-    
+
     Client for interacting with A2A protocol servers. Supports:
     - AgentCard discovery
     - Task submission and management
     - Message passing
     - SSE event subscription
-    
+
     Example:
         ```python
         client = A2AClient("http://localhost:8080")
-        
+
         # Get agent card
         card = await client.get_agent_card()
-        
+
         # Submit a task
         task = await client.submit_task(
             name="analyze_code",
             arguments={"path": "/src"}
         )
-        
+
         # Subscribe to events
         async for event in client.subscribe_events():
             print(event)
@@ -70,7 +71,7 @@ class A2AClient:
     ):
         """
         Initialize A2A Client.
-        
+
         Args:
             base_url: Base URL of the A2A server
             auth_token: Optional authentication token
@@ -87,7 +88,7 @@ class A2AClient:
             headers = {}
             if self.auth_token:
                 headers["Authorization"] = f"Bearer {self.auth_token}"
-            
+
             timeout = aiohttp.ClientTimeout(total=self.timeout)
             self._session = aiohttp.ClientSession(
                 headers=headers,
@@ -109,63 +110,60 @@ class A2AClient:
     ) -> Any:
         """
         Make an RPC call to the server.
-        
+
         Args:
             method: The RPC method name
             params: Method parameters
             request_id: Optional request ID
-            
+
         Returns:
             The result from the server
         """
         session = await self._get_session()
-        
+
         request = A2ARequest(
             method=method,
             params=params or {},
             request_id=request_id,
         )
-        
+
         url = urljoin(self.base_url, "/rpc")
         async with session.post(url, json=request.model_dump(by_alias=True)) as resp:
             if resp.status != 200:
                 text = await resp.text()
                 raise A2AClientError(f"HTTP {resp.status}: {text}")
-            
+
             data = await resp.json()
-            
+
             # Handle batch response
             if isinstance(data, list):
                 return [self._parse_response(item) for item in data]
-            
+
             return self._parse_response(data)
 
     def _parse_response(self, data: dict[str, Any]) -> Any:
         """Parse an A2A response."""
         response = A2AResponse(**data)
-        
+
         if response.error:
-            raise A2AClientError(
-                f"RPC Error {response.error.get('code')}: "
-                f"{response.error.get('message')}"
-            )
-        
+            raise A2AClientError(f"RPC Error {response.error.get('code')}: {response.error.get('message')}")
+
         return response.result
 
     async def get_agent_card(self) -> AgentCard:
         """
         Get the AgentCard from the server.
-        
+
         Returns:
             The agent's AgentCard
         """
         session = await self._get_session()
         url = urljoin(self.base_url, "/.well-known/agent-card")
-        
+
         async with session.get(url) as resp:
             if resp.status != 200:
                 raise A2AClientError(f"Failed to get agent card: HTTP {resp.status}")
-            
+
             data = await resp.json()
             return AgentCard(**data)
 
@@ -179,14 +177,14 @@ class A2AClient:
     ) -> Task:
         """
         Submit a new task to the agent.
-        
+
         Args:
             name: Task name
             description: Task description
             arguments: Task input arguments
             priority: Task priority
             input_schema: JSON Schema for input
-            
+
         Returns:
             The submitted task
         """
@@ -201,17 +199,17 @@ class A2AClient:
             params["arguments"] = arguments
         if input_schema:
             params["inputSchema"] = input_schema
-        
+
         result = await self._rpc("tasks.submit", params)
         return Task(**result)
 
     async def get_task(self, task_id: str) -> Task:
         """
         Get a task by ID.
-        
+
         Args:
             task_id: The task ID
-            
+
         Returns:
             The task
         """
@@ -221,10 +219,10 @@ class A2AClient:
     async def get_task_status(self, task_id: str) -> TaskStatus:
         """
         Get the status of a task.
-        
+
         Args:
             task_id: The task ID
-            
+
         Returns:
             The task status
         """
@@ -234,10 +232,10 @@ class A2AClient:
     async def cancel_task(self, task_id: str) -> bool:
         """
         Cancel a task.
-        
+
         Args:
             task_id: The task ID
-            
+
         Returns:
             True if cancelled
         """
@@ -247,10 +245,10 @@ class A2AClient:
     async def accept_task(self, task_id: str) -> Task:
         """
         Accept a task for processing.
-        
+
         Args:
             task_id: The task ID
-            
+
         Returns:
             The accepted task
         """
@@ -260,27 +258,30 @@ class A2AClient:
     async def reject_task(self, task_id: str, reason: str) -> bool:
         """
         Reject a task.
-        
+
         Args:
             task_id: The task ID
             reason: Reason for rejection
-            
+
         Returns:
             True if rejected
         """
-        result = await self._rpc("tasks.reject", {
-            "taskId": task_id,
-            "reason": reason,
-        })
+        result = await self._rpc(
+            "tasks.reject",
+            {
+                "taskId": task_id,
+                "reason": reason,
+            },
+        )
         return result.get("rejected", False)
 
     async def get_task_result(self, task_id: str) -> Any:
         """
         Get the result of a completed task.
-        
+
         Args:
             task_id: The task ID
-            
+
         Returns:
             The task result
         """
@@ -297,14 +298,14 @@ class A2AClient:
     ) -> Message:
         """
         Send a message to an agent.
-        
+
         Args:
             content: Message content
             to_agent_id: Target agent ID
             to_agent_name: Target agent name
             task_id: Associated task ID
             message_type: Message type
-            
+
         Returns:
             The sent message
         """
@@ -318,7 +319,7 @@ class A2AClient:
             params["toAgentName"] = to_agent_name
         if task_id:
             params["taskId"] = task_id
-        
+
         result = await self._rpc("messages.send", params)
         return Message(**result)
 
@@ -328,22 +329,22 @@ class A2AClient:
     ) -> AsyncGenerator[dict[str, Any], None]:
         """
         Subscribe to server events via SSE.
-        
+
         Args:
             client_id: Optional client ID for the subscription
-            
+
         Yields:
             Event dictionaries from the server
         """
         session = await self._get_session()
         client_id = client_id or id(self)
-        
+
         url = f"{self.base_url}/events?client_id={client_id}"
-        
+
         async with session.get(url) as resp:
             if resp.status != 200:
                 raise A2AClientError(f"Failed to subscribe: HTTP {resp.status}")
-            
+
             async for line in resp.content:
                 line = line.decode().strip()
                 if line.startswith("data: "):
@@ -365,31 +366,31 @@ class A2AClient:
     ) -> Task:
         """
         Wait for a task to complete.
-        
+
         Args:
             task_id: The task ID
             poll_interval: Polling interval in seconds
             timeout: Maximum wait time in seconds
-            
+
         Returns:
             The completed task
-            
+
         Raises:
             asyncio.TimeoutError: If timeout is reached
         """
         start_time = asyncio.get_event_loop().time()
-        
+
         while True:
             status = await self.get_task_status(task_id)
-            
+
             if status in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED):
                 return await self.get_task(task_id)
-            
+
             if timeout:
                 elapsed = asyncio.get_event_loop().time() - start_time
                 if elapsed >= timeout:
                     raise asyncio.TimeoutError(f"Task {task_id} did not complete within {timeout}s")
-            
+
             await asyncio.sleep(poll_interval)
 
     async def __aenter__(self) -> A2AClient:

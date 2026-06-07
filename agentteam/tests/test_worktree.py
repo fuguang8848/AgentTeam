@@ -467,10 +467,10 @@ class TestWorktreeIntegration:
         """Test service and manager consistency."""
         service = GitWorktreeService(".")
         manager = WorktreeManager(".")
-        
+
         service_worktrees = service.list_worktrees()
         manager_worktrees = manager.get_all_worktrees()
-        
+
         # Should have same count
         assert len(service_worktrees) == len(manager_worktrees)
 

@@ -25,8 +25,10 @@ def _now_iso() -> str:
 # JSON-RPC Types
 # =============================================================================
 
+
 class MCPJSONRPCError:
     """MCP JSON-RPC error codes."""
+
     PARSE_ERROR = -32700
     INVALID_REQUEST = -32600
     METHOD_NOT_FOUND = -32601
@@ -40,6 +42,7 @@ class MCPJSONRPCError:
 @dataclass
 class MCPRequest:
     """MCP JSON-RPC request."""
+
     jsonrpc: str = "2.0"
     id: str | int | None = None
     method: str = ""
@@ -56,7 +59,7 @@ class MCPRequest:
 
 class MCPResponse:
     """MCP JSON-RPC response (not using dataclass to allow property)."""
-    
+
     def __init__(
         self,
         jsonrpc: str = "2.0",
@@ -88,13 +91,7 @@ class MCPResponse:
         return cls(jsonrpc="2.0", id=id, result=result)
 
     @classmethod
-    def create_error(
-        cls,
-        code: int,
-        message: str,
-        data: Any = None,
-        id: str | int | None = None
-    ) -> MCPResponse:
+    def create_error(cls, code: int, message: str, data: Any = None, id: str | int | None = None) -> MCPResponse:
         """Create an error response."""
         return cls(
             jsonrpc="2.0",
@@ -106,6 +103,7 @@ class MCPResponse:
 @dataclass
 class MCPError:
     """MCP error object."""
+
     code: int
     message: str
     data: Any = None
@@ -121,9 +119,11 @@ class MCPError:
 # Tool Types
 # =============================================================================
 
+
 @dataclass
 class MCPToolInputSchema:
     """JSON Schema for tool input."""
+
     type: str = "object"
     properties: dict[str, Any] = field(default_factory=dict)
     required: list[str] = field(default_factory=list)
@@ -139,6 +139,7 @@ class MCPToolInputSchema:
 @dataclass
 class MCPToolOutputSchema:
     """JSON Schema for tool output."""
+
     type: str = "object"
     properties: dict[str, Any] = field(default_factory=dict)
 
@@ -153,31 +154,32 @@ class MCPToolOutputSchema:
 class MCPTool:
     """
     MCP Tool definition.
-    
+
     Represents a callable function/tool that can be invoked
     by an LLM through the MCP protocol.
     """
+
     name: str
     description: str
     input_schema: MCPToolInputSchema | dict[str, Any]
     output_schema: MCPToolOutputSchema | dict[str, Any] | None = None
     annotations: dict[str, Any] = field(default_factory=dict)
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "name": self.name,
             "description": self.description,
             "inputSchema": (
-                self.input_schema.to_dict() 
-                if isinstance(self.input_schema, MCPToolInputSchema) 
-                else self.input_schema
+                self.input_schema.to_dict() if isinstance(self.input_schema, MCPToolInputSchema) else self.input_schema
             ),
             "outputSchema": (
                 self.output_schema.to_dict()
                 if isinstance(self.output_schema, MCPToolOutputSchema)
                 else self.output_schema
-            ) if self.output_schema else None,
+            )
+            if self.output_schema
+            else None,
             "annotations": self.annotations,
         }
 
@@ -186,14 +188,16 @@ class MCPTool:
 # Resource Types
 # =============================================================================
 
+
 @dataclass
 class MCPResource:
     """MCP resource definition."""
+
     uri: str
     name: str
     description: str = ""
     mime_type: str = "text/plain"
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "uri": self.uri,
@@ -206,11 +210,12 @@ class MCPResource:
 @dataclass
 class MCPResourceTemplate:
     """MCP resource template for dynamic resources."""
+
     uri_template: str
     name: str
     description: str = ""
     mime_type: str = "text/plain"
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "uriTemplate": self.uri_template,
@@ -224,13 +229,15 @@ class MCPResourceTemplate:
 # Prompt Types
 # =============================================================================
 
+
 @dataclass
 class MCPrompt:
     """MCP prompt definition."""
+
     name: str
     description: str = ""
     arguments: list[dict[str, Any]] = field(default_factory=list)
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
@@ -243,13 +250,15 @@ class MCPrompt:
 # Server Info Types
 # =============================================================================
 
+
 @dataclass
 class MCPServerInfo:
     """MCP server information."""
+
     name: str
     version: str
     protocol_version: str = "2024-11-05"
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
@@ -262,14 +271,16 @@ class MCPServerInfo:
 # Capability Types
 # =============================================================================
 
+
 @dataclass
 class MCPCapabilities:
     """MCP server capabilities."""
+
     tools: dict[str, Any] | None = None
     resources: dict[str, Any] | None = None
     prompts: dict[str, Any] | None = None
     logging: dict[str, Any] | None = None
-    
+
     def to_dict(self) -> dict[str, Any]:
         result = {}
         if self.tools is not None:
@@ -287,8 +298,10 @@ class MCPCapabilities:
 # Transport Types
 # =============================================================================
 
+
 class MCPTransport(str, Enum):
     """MCP transport types."""
+
     STDIO = "stdio"
     SSE = "sse"
     HTTP = "http"
@@ -298,10 +311,11 @@ class MCPTransport(str, Enum):
 @dataclass
 class MCPStdioTransport:
     """Stdio transport configuration."""
+
     command: str
     args: list[str] = field(default_factory=list)
     env: dict[str, str] = field(default_factory=dict)
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "command": self.command,
@@ -313,9 +327,10 @@ class MCPStdioTransport:
 @dataclass
 class MCPSSETransport:
     """SSE (Server-Sent Events) transport configuration."""
+
     url: str
     headers: dict[str, str] = field(default_factory=dict)
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "url": self.url,
@@ -327,14 +342,16 @@ class MCPSSETransport:
 # Notification Types
 # =============================================================================
 
-@dataclass 
+
+@dataclass
 class MCPProgressNotification:
     """Progress notification for long-running operations."""
+
     progress_token: str
     progress: float
     total: float | None = None
     message: str | None = None
-    
+
     def to_dict(self) -> dict[str, Any]:
         result = {
             "progressToken": self.progress_token,
@@ -350,10 +367,11 @@ class MCPProgressNotification:
 @dataclass
 class MCPLogMessage:
     """Log message notification."""
+
     level: str
     logger: str = ""
     data: Any = None
-    
+
     def to_dict(self) -> dict[str, Any]:
         result: dict[str, Any] = {"level": self.level}
         if self.logger:

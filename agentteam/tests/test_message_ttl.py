@@ -9,6 +9,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+
 class TestTTLConfig:
     """Test TTL configuration from environment."""
 
@@ -111,6 +113,7 @@ class TestTTLConfigClass:
         old_ts = 1000
 
         assert not config.is_expired(old_ts)
+
 
 class TestFileTransportTTL:
     """Test FileTransport TTL cleanup functionality."""

@@ -51,14 +51,16 @@ class AgentMixin:
             session = registry.get_session(agent_id)
 
             if session:
-                self._serve_json({
-                    "agentId": session.agent_id,
-                    "name": session.name,
-                    "role": session.role,
-                    "status": session.status,
-                    "createdAt": session.created_at,
-                    "workDir": getattr(session, "work_dir", ""),
-                })
+                self._serve_json(
+                    {
+                        "agentId": session.agent_id,
+                        "name": session.name,
+                        "role": session.role,
+                        "status": session.status,
+                        "createdAt": session.created_at,
+                        "workDir": getattr(session, "work_dir", ""),
+                    }
+                )
             else:
                 self.send_error(404, f"Agent '{agent_id}' not found")
 
@@ -104,16 +106,20 @@ class AgentMixin:
             mgr = get_readiness_manager()
             readiness = mgr.get_agent_readiness(agent_id)
 
-            self._serve_json({
-                "agentId": agent_id,
-                "ready": readiness.is_ready if hasattr(readiness, "is_ready") else False,
-                "checks": readiness.checks if hasattr(readiness, "checks") else [],
-            })
+            self._serve_json(
+                {
+                    "agentId": agent_id,
+                    "ready": readiness.is_ready if hasattr(readiness, "is_ready") else False,
+                    "checks": readiness.checks if hasattr(readiness, "checks") else [],
+                }
+            )
 
         except Exception as e:
             # Fallback: assume ready
-            self._serve_json({
-                "agentId": agent_id,
-                "ready": True,
-                "checks": [],
-            })
+            self._serve_json(
+                {
+                    "agentId": agent_id,
+                    "ready": True,
+                    "checks": [],
+                }
+            )

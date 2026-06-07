@@ -9,7 +9,9 @@ from agentteam.transport.file import FileTransport
 
 def _setup(team_name: str) -> tuple[LifecycleManager, MailboxManager]:
     TeamManager.create_team(
-        name=team_name, leader_name="leader", leader_id="lid",
+        name=team_name,
+        leader_name="leader",
+        leader_id="lid",
     )
     TeamManager.add_member(team_name, "worker", "wid")
     transport = FileTransport(team_name)
@@ -50,8 +52,10 @@ class TestRejectShutdown:
     def test_sends_rejection_with_reason(self, team_name):
         lm, mailbox = _setup(team_name)
         lm.reject_shutdown(
-            agent_name="worker", request_id="req-2",
-            requester_name="leader", reason="still busy",
+            agent_name="worker",
+            request_id="req-2",
+            requester_name="leader",
+            reason="still busy",
         )
 
         msgs = mailbox.receive("leader")
@@ -72,8 +76,11 @@ class TestSendIdle:
     def test_idle_notification_reaches_leader(self, team_name):
         lm, mailbox = _setup(team_name)
         lm.send_idle(
-            agent_name="worker", agent_id="wid",
-            leader_name="leader", last_task="task-1", task_status="completed",
+            agent_name="worker",
+            agent_id="wid",
+            leader_name="leader",
+            last_task="task-1",
+            task_status="completed",
         )
 
         msgs = mailbox.receive("leader")

@@ -57,6 +57,7 @@ def _generate_simple_response(message: str) -> str:
 
     # Default response
     import random
+
     default_responses = ["收到了", "好的，继续", "我明白了"]
     return random.choice(default_responses)
 

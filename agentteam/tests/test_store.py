@@ -22,10 +22,12 @@ class TestBackwardCompat:
 
     def test_tasklockerror_importable_from_old_path(self):
         from agentteam.team.tasks import TaskLockError as OldLockError
+
         assert OldLockError is TaskLockError
 
     def test_basetaskstore_importable_from_old_path(self):
         from agentteam.team.tasks import BaseTaskStore as OldBase
+
         assert OldBase is BaseTaskStoreFromBase
 
     def test_old_import_creates_working_store(self, team_name):
@@ -122,12 +124,14 @@ class TestStoreRoundTrip:
 class TestConfigIntegration:
     def test_task_store_in_config(self):
         from agentteam.config import AgentTeamConfig
+
         cfg = AgentTeamConfig()
         assert hasattr(cfg, "task_store")
         assert cfg.task_store == ""
 
     def test_task_store_env_var_in_get_effective(self):
         from agentteam.config import get_effective
+
         with patch.dict(os.environ, {"AGENTTEAM_TASK_STORE": "redis"}):
             val, source = get_effective("task_store")
         assert val == "redis"

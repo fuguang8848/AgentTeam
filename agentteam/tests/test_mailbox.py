@@ -206,9 +206,7 @@ class TestReceiveQuarantine:
         inbox = _inbox_path(team_name, "bob")
 
         mb.send(from_agent="a", to="bob", content="good")
-        (inbox / "msg-invalid.json").write_text(
-            json.dumps({"type": "message"}), encoding="utf-8"
-        )
+        (inbox / "msg-invalid.json").write_text(json.dumps({"type": "message"}), encoding="utf-8")
 
         received = mb.receive("bob", limit=10)
 
@@ -224,9 +222,7 @@ class TestReceiveQuarantine:
         mb = _make_mailbox(team_name)
         inbox = _inbox_path(team_name, "bob")
 
-        (inbox / "msg-0001-invalid.json").write_text(
-            json.dumps({"type": "message"}), encoding="utf-8"
-        )
+        (inbox / "msg-0001-invalid.json").write_text(json.dumps({"type": "message"}), encoding="utf-8")
         (inbox / "msg-0002-valid.json").write_text(
             json.dumps(
                 {
@@ -252,9 +248,7 @@ class TestReceiveQuarantine:
         mb = _make_mailbox(team_name)
         inbox = _inbox_path(team_name, "bob")
 
-        (inbox / "msg-invalid.json").write_text(
-            json.dumps({"type": "message"}), encoding="utf-8"
-        )
+        (inbox / "msg-invalid.json").write_text(json.dumps({"type": "message"}), encoding="utf-8")
 
         peeked = mb.peek("bob")
 
@@ -270,9 +264,7 @@ class TestReceiveQuarantine:
         inbox = _inbox_path(team_name, "bob")
 
         mb.send(from_agent="a", to="bob", content="good")
-        (inbox / "msg-invalid.json").write_text(
-            json.dumps({"type": "message"}), encoding="utf-8"
-        )
+        (inbox / "msg-invalid.json").write_text(json.dumps({"type": "message"}), encoding="utf-8")
 
         received = mb.receive("bob", limit=10)
 

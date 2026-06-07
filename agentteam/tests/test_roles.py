@@ -236,7 +236,8 @@ class TestSuggestRole:
     def test_suggest_developer(self, team_name):
         """Code-related task suggests developer."""
         task = TaskItem(
-            id="t1", subject="Implement user authentication API",
+            id="t1",
+            subject="Implement user authentication API",
             description="Write backend code for login and registration endpoints",
         )
         role = suggest_role(task, "alice")
@@ -245,7 +246,8 @@ class TestSuggestRole:
     def test_suggest_reviewer(self, team_name):
         """Review-related task suggests reviewer."""
         task = TaskItem(
-            id="t2", subject="Review PR #42 for security issues",
+            id="t2",
+            subject="Review PR #42 for security issues",
             description="Audit the code changes and verify no vulnerabilities",
         )
         role = suggest_role(task, "alice")
@@ -254,7 +256,8 @@ class TestSuggestRole:
     def test_suggest_tester(self, team_name):
         """Test-related task suggests tester."""
         task = TaskItem(
-            id="t3", subject="Run integration tests and QA for payment module",
+            id="t3",
+            subject="Run integration tests and QA for payment module",
             description="Create comprehensive test coverage with mocks and fixtures",
         )
         role = suggest_role(task, "alice")
@@ -263,7 +266,8 @@ class TestSuggestRole:
     def test_suggest_architect(self, team_name):
         """Design-related task suggests architect."""
         task = TaskItem(
-            id="t4", subject="Design microservice architecture",
+            id="t4",
+            subject="Design microservice architecture",
             description="Plan the system design and create blueprints for service communication",
         )
         role = suggest_role(task, "alice")
@@ -272,7 +276,8 @@ class TestSuggestRole:
     def test_suggest_coordinator(self, team_name):
         """Coordination-related task suggests coordinator."""
         task = TaskItem(
-            id="t5", subject="Coordinate sprint planning meeting",
+            id="t5",
+            subject="Coordinate sprint planning meeting",
             description="Organize the team and manage the schedule for the next sprint",
         )
         role = suggest_role(task, "alice")
@@ -287,7 +292,8 @@ class TestSuggestRole:
     def test_chinese_keywords(self, team_name):
         """Chinese keywords are also recognized."""
         task = TaskItem(
-            id="t7", subject="编写单元测试",
+            id="t7",
+            subject="编写单元测试",
             description="为支付模块创建全面的测试覆盖",
         )
         role = suggest_role(task, "alice")

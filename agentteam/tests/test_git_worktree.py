@@ -40,7 +40,7 @@ def temp_git_repo():
             cwd=repo_path,
             check=True,
         )
-        
+
         # Check current branch name and rename to main if needed
         result = subprocess.run(
             ["git", "branch", "--show-current"],
@@ -116,7 +116,7 @@ class TestWorktreeManager:
 
     def test_init_with_invalid_repo(self):
         """Test initialization with invalid repository.
-        
+
         Note: WorktreeManager only validates when repo_path is NOT provided.
         When repo_path IS provided, it accepts the path without git validation.
         This test verifies that behavior.
@@ -168,12 +168,8 @@ class TestWorktreeManager:
     def test_list_worktrees(self, worktree_manager):
         """Test listing worktrees."""
         # Create multiple worktrees
-        info1 = worktree_manager.create_worktree(
-            task_id="task-1", branch_name="branch-1"
-        )
-        info2 = worktree_manager.create_worktree(
-            task_id="task-2", branch_name="branch-2"
-        )
+        info1 = worktree_manager.create_worktree(task_id="task-1", branch_name="branch-1")
+        info2 = worktree_manager.create_worktree(task_id="task-2", branch_name="branch-2")
 
         worktrees = worktree_manager.list_worktrees()
         assert len(worktrees) >= 2
@@ -184,9 +180,7 @@ class TestWorktreeManager:
 
     def test_list_worktrees_with_filter(self, worktree_manager):
         """Test listing worktrees with status filter."""
-        info = worktree_manager.create_worktree(
-            task_id="task-filter", branch_name="branch-filter"
-        )
+        info = worktree_manager.create_worktree(task_id="task-filter", branch_name="branch-filter")
 
         # Should appear in active filter
         active = worktree_manager.list_worktrees(WorktreeStatus.ACTIVE)
@@ -200,9 +194,7 @@ class TestWorktreeManager:
 
     def test_get_worktree_status(self, worktree_manager):
         """Test getting worktree status."""
-        info = worktree_manager.create_worktree(
-            task_id="task-status", branch_name="branch-status"
-        )
+        info = worktree_manager.create_worktree(task_id="task-status", branch_name="branch-status")
 
         status = worktree_manager.get_worktree_status(info.worktree_id)
         assert status["worktree_id"] == info.worktree_id
@@ -217,9 +209,7 @@ class TestWorktreeManager:
 
     def test_remove_worktree(self, worktree_manager):
         """Test removing a worktree."""
-        info = worktree_manager.create_worktree(
-            task_id="task-remove", branch_name="branch-remove"
-        )
+        info = worktree_manager.create_worktree(task_id="task-remove", branch_name="branch-remove")
 
         # Verify worktree exists
         assert Path(info.path).exists()
@@ -260,9 +250,7 @@ class TestWorktreeManager:
             )
             worktree_manager._worktrees = [info]
 
-            result = worktree_manager.merge_worktree(
-                "test-merge", target_branch="main", strategy="merge"
-            )
+            result = worktree_manager.merge_worktree("test-merge", target_branch="main", strategy="merge")
             assert result["merged"] is True
             assert result["worktree_id"] == "test-merge"
 
@@ -293,9 +281,7 @@ class TestWorktreeManager:
     def test_detect_conflicts(self, worktree_manager):
         """Test detecting conflicts."""
         # Create a worktree
-        info = worktree_manager.create_worktree(
-            task_id="task-conflict", branch_name="branch-conflict"
-        )
+        info = worktree_manager.create_worktree(task_id="task-conflict", branch_name="branch-conflict")
 
         # No conflicts initially
         conflicts = worktree_manager.detect_conflicts(info.worktree_id)
@@ -304,9 +290,7 @@ class TestWorktreeManager:
     def test_cleanup_worktrees(self, worktree_manager):
         """Test cleaning up worktrees."""
         # Create worktree
-        info = worktree_manager.create_worktree(
-            task_id="task-cleanup", branch_name="branch-cleanup"
-        )
+        info = worktree_manager.create_worktree(task_id="task-cleanup", branch_name="branch-cleanup")
 
         # Mark as stale
         info.status = WorktreeStatus.STALE
@@ -326,9 +310,7 @@ class TestWorktreeManager:
         import time
         from datetime import datetime
 
-        info = worktree_manager.create_worktree(
-            task_id="task-activity", branch_name="branch-activity"
-        )
+        info = worktree_manager.create_worktree(task_id="task-activity", branch_name="branch-activity")
 
         original_activity = info.last_activity
         time.sleep(0.01)

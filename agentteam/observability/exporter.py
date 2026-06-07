@@ -23,6 +23,7 @@ try:
     from opentelemetry.sdk.metrics import MeterProvider
     from opentelemetry.sdk.resources import Resource, SERVICE_NAME, SERVICE_VERSION
     from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+
     OTEL_AVAILABLE = True
 except ImportError:
     OTEL_AVAILABLE = False
@@ -41,6 +42,7 @@ except ImportError:
 # Try to import Prometheus
 try:
     from prometheus_client import start_http_server, CollectorRegistry
+
     PROMETHEUS_AVAILABLE = True
 except ImportError:
     PROMETHEUS_AVAILABLE = False
@@ -54,6 +56,7 @@ logger = get_basic_logger(__name__)
 
 class ExporterType(Enum):
     """Types of exporters supported."""
+
     CONSOLE = "console"
     OTLP = "otlp"
     PROMETHEUS = "prometheus"
@@ -84,10 +87,12 @@ def create_resource(service_name: str, service_version: str) -> Optional[Any]:
     if not OTEL_AVAILABLE:
         return None
 
-    return Resource.create({
-        SERVICE_NAME: service_name,
-        SERVICE_VERSION: service_version,
-    })
+    return Resource.create(
+        {
+            SERVICE_NAME: service_name,
+            SERVICE_VERSION: service_version,
+        }
+    )
 
 
 def setup_console_exporter() -> None:
@@ -105,9 +110,7 @@ def setup_console_exporter() -> None:
 
         # Setup tracer provider with console exporter
         tracer_provider = TracerProvider(resource=resource)
-        tracer_provider.add_span_processor(
-            BatchSpanProcessor(ConsoleSpanExporter())
-        )
+        tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
         trace.set_tracer_provider(tracer_provider)
         global _tracer_provider
         _tracer_provider = tracer_provider

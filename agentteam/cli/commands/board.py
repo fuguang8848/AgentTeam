@@ -113,7 +113,20 @@ def board_monitor(
     import urllib.parse
 
     base_url = f"http://127.0.0.1:{port}"
-    event_counts = {"started": 0, "completed": 0, "terminated": 0, "error": 0, "task_assigned": 0, "heartbeat": 0, "message": 0, "other": 0} if count else None
+    event_counts = (
+        {
+            "started": 0,
+            "completed": 0,
+            "terminated": 0,
+            "error": 0,
+            "task_assigned": 0,
+            "heartbeat": 0,
+            "message": 0,
+            "other": 0,
+        }
+        if count
+        else None
+    )
 
     params = {}
     if team:
@@ -153,6 +166,7 @@ def board_monitor(
                 if not reconnect:
                     break
                 import time
+
                 time.sleep(2)
     finally:
         if count and event_counts:
@@ -204,6 +218,7 @@ def board_serve(
         console.print("[dim]Press Ctrl+C to stop[/dim]")
 
         import time
+
         while True:
             time.sleep(1)
     except ImportError:
@@ -221,6 +236,7 @@ def board_attach(
 
     if not agent:
         from agentteam.identity import AgentIdentity
+
         agent = AgentIdentity.from_env().agent_name
 
     try:

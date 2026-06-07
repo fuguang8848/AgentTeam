@@ -8,9 +8,12 @@ from unittest.mock import MagicMock
 # TmuxBackend tests
 # ---------------------------------------------------------------------------
 
+
 def _make_tmux_mocks(monkeypatch, captured: dict, *, tmux_ok: bool = True, agent_flag_supported: bool = True):
     """Patch tmux, shutil.which, register_agent, and time.sleep for TmuxBackend tests."""
-    monkeypatch.setattr("agentteam.spawn.tmux_backend.shutil.which", lambda name: "/usr/bin/tmux" if name == "tmux" else None)
+    monkeypatch.setattr(
+        "agentteam.spawn.tmux_backend.shutil.which", lambda name: "/usr/bin/tmux" if name == "tmux" else None
+    )
     monkeypatch.setattr("agentteam.spawn.command_validation.shutil.which", lambda name, path=None: f"/usr/bin/{name}")
     monkeypatch.setattr("agentteam.spawn.tmux_backend._openclaw_supports_agent_flag", lambda: agent_flag_supported)
 
@@ -83,9 +86,7 @@ def test_tmux_backend_excludes_agent_flag_when_not_set(monkeypatch):
     # Split on ";" to isolate the openclaw command portion.
     openclaw_part = full_shell_cmd.split(";")
     # Find the segment containing "openclaw tui" (the actual agent command)
-    openclaw_cmd_segment = next(
-        (seg for seg in openclaw_part if "openclaw" in seg and "lifecycle" not in seg), ""
-    )
+    openclaw_cmd_segment = next((seg for seg in openclaw_part if "openclaw" in seg and "lifecycle" not in seg), "")
     assert "--agent" not in openclaw_cmd_segment, (
         f"Expected no '--agent' in openclaw command segment, got: {openclaw_cmd_segment!r}"
     )
@@ -113,9 +114,7 @@ def test_tmux_backend_drops_agent_flag_when_unsupported(monkeypatch, capsys):
     full_shell_cmd = spawn_cmd[-1] if spawn_cmd else ""
     # --agent should NOT appear in the openclaw command segment
     openclaw_part = full_shell_cmd.split(";")
-    openclaw_cmd_segment = next(
-        (seg for seg in openclaw_part if "openclaw" in seg and "lifecycle" not in seg), ""
-    )
+    openclaw_cmd_segment = next((seg for seg in openclaw_part if "openclaw" in seg and "lifecycle" not in seg), "")
     assert "--agent" not in openclaw_cmd_segment, (
         f"Expected no '--agent' in openclaw command (unsupported), got: {openclaw_cmd_segment!r}"
     )
@@ -144,14 +143,13 @@ def test_tmux_backend_sets_openclaw_workspace_env(monkeypatch):
 
     spawn_cmd = captured.get("spawn_cmd", [])
     full_shell_cmd = spawn_cmd[-1] if spawn_cmd else ""
-    assert "OPENCLAW_WORKSPACE=" in full_shell_cmd, (
-        f"Expected OPENCLAW_WORKSPACE in exports, got: {full_shell_cmd!r}"
-    )
+    assert "OPENCLAW_WORKSPACE=" in full_shell_cmd, f"Expected OPENCLAW_WORKSPACE in exports, got: {full_shell_cmd!r}"
 
 
 # ---------------------------------------------------------------------------
 # SubprocessBackend tests
 # ---------------------------------------------------------------------------
+
 
 def test_subprocess_backend_raises_with_openclaw_agent(monkeypatch):
     """subprocess_backend.spawn() with openclaw_agent should raise NotImplementedError."""

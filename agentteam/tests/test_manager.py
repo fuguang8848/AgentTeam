@@ -29,9 +29,7 @@ class TestCreateTeam:
         assert (data / "tasks" / team_name).is_dir()
 
     def test_create_with_user_prefix(self, team_name):
-        TeamManager.create_team(
-            name=team_name, leader_name="lead", leader_id="x", user="bob"
-        )
+        TeamManager.create_team(name=team_name, leader_name="lead", leader_id="x", user="bob")
         data = get_data_dir()
         # inbox should be user_name format
         assert (data / "teams" / team_name / "inboxes" / "bob_lead").is_dir()
@@ -149,9 +147,7 @@ class TestGetLeader:
         assert TeamManager.get_leader_name(team_name) == "boss"
 
     def test_get_leader_inbox(self, team_name):
-        TeamManager.create_team(
-            name=team_name, leader_name="boss", leader_id="lead-id", user="joe"
-        )
+        TeamManager.create_team(name=team_name, leader_name="boss", leader_id="lead-id", user="joe")
         assert TeamManager.get_leader_inbox(team_name) == "joe_boss"
 
     def test_leader_of_nonexistent_team(self):

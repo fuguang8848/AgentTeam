@@ -198,9 +198,7 @@ class TestTaskLocking:
         t = store.create("force-me")
         with patch("agentteam.spawn.registry.is_agent_alive", return_value=True):
             store.update(t.id, status=TaskStatus.in_progress, caller="agent-a")
-            updated = store.update(
-                t.id, status=TaskStatus.in_progress, caller="agent-b", force=True
-            )
+            updated = store.update(t.id, status=TaskStatus.in_progress, caller="agent-b", force=True)
         assert updated.locked_by == "agent-b"
 
     def test_dead_agent_lock_is_released(self, store):

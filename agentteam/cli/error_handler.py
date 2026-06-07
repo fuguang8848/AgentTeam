@@ -18,6 +18,7 @@ try:
     from rich.panel import Panel
     from rich.syntax import Syntax
     from rich.table import Table
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
@@ -141,9 +142,7 @@ def format_error_panel(
 
     # Add context if available
     context = getattr(error, "context", None)
-    if context and (
-        context.team_name or context.agent_id or context.session_id or context.task_id
-    ):
+    if context and (context.team_name or context.agent_id or context.session_id or context.task_id):
         content_lines.append("")
         content_lines.append("[bold]Context:[/bold]")
         if context.team_name:
@@ -258,7 +257,7 @@ def handle_cli_error(
 ) -> None:
     """
     Handle CLI errors with user-friendly output.
-    
+
     Args:
         error: The exception to handle
         explain: Whether to show detailed traceback and suggestions
@@ -319,7 +318,7 @@ class CLIErrorHandler:
 def install_excepthook(explain_errors: bool = False) -> None:
     """
     Install a global exception hook for unhandled exceptions.
-    
+
     This provides user-friendly error messages for any uncaught exception.
     """
     original_excepthook = sys.excepthook

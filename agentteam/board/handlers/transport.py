@@ -41,11 +41,13 @@ class TransportMixin:
             except Exception:
                 health = "unhealthy"
 
-            self._serve_json({
-                "transport": transport_type,
-                "health": health,
-                "redisUrl": redis_url if transport_type == "redis" else None,
-            })
+            self._serve_json(
+                {
+                    "transport": transport_type,
+                    "health": health,
+                    "redisUrl": redis_url if transport_type == "redis" else None,
+                }
+            )
 
         except Exception as e:
             self.send_error(500, str(e))
@@ -102,11 +104,13 @@ class TransportMixin:
             if new_transport == "redis" and payload.get("redis_url"):
                 os.environ["AGENTTEAM_REDIS_URL"] = payload.get("redis_url")
 
-            self._serve_json({
-                "status": "ok",
-                "transport": new_transport,
-                "message": "Transport configuration updated. Restart required for full effect.",
-            })
+            self._serve_json(
+                {
+                    "status": "ok",
+                    "transport": new_transport,
+                    "message": "Transport configuration updated. Restart required for full effect.",
+                }
+            )
 
         except Exception as e:
             self.send_error(400, str(e))

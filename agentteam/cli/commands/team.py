@@ -479,12 +479,14 @@ def team_status(
             if has_user:
                 row.append(m.get("user", ""))
             alive = m.get("alive")
-            row.extend([
-                m.get("agentId", "")[:8],
-                m.get("agentType", ""),
-                "[green]✓[/green]" if alive else "[red]✗[/red]",
-                m.get("joinedAt", "")[:19] if m.get("joinedAt") else "",
-            ])
+            row.extend(
+                [
+                    m.get("agentId", "")[:8],
+                    m.get("agentType", ""),
+                    "[green]✓[/green]" if alive else "[red]✗[/red]",
+                    m.get("joinedAt", "")[:19] if m.get("joinedAt") else "",
+                ]
+            )
             table.add_row(*row)
         console.print(table)
 

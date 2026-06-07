@@ -176,38 +176,56 @@ class TestBoardServerImports(unittest.TestCase):
     def test_import_handlers(self):
         """Test importing all handler modules."""
         from agentteam.board.handlers import (
-            BaseHandler, AuthMixin, StaticMixin, TeamMixin,
-            AgentMixin, SessionMixin, SettingsMixin, TransportMixin,
-            NotificationsMixin, ProvidersMixin, TasksMixin, OverviewMixin
+            BaseHandler,
+            AuthMixin,
+            StaticMixin,
+            TeamMixin,
+            AgentMixin,
+            SessionMixin,
+            SettingsMixin,
+            TransportMixin,
+            NotificationsMixin,
+            ProvidersMixin,
+            TasksMixin,
+            OverviewMixin,
         )
+
         self.assertIsNotNone(BaseHandler)
 
     def test_import_sse(self):
         """Test importing SSE modules."""
         from agentteam.board.sse import (
-            SSEBroadcaster, get_sse_broadcaster,
-            AgentActivityBroadcaster, get_agent_activity_broadcaster
+            SSEBroadcaster,
+            get_sse_broadcaster,
+            AgentActivityBroadcaster,
+            get_agent_activity_broadcaster,
         )
+
         self.assertIsNotNone(SSEBroadcaster)
         self.assertIsNotNone(AgentActivityBroadcaster)
 
     def test_import_chat(self):
         """Test importing chat modules."""
         from agentteam.board.chat import (
-            call_ai_assistant, generate_simple_response,
-            handle_chat_command, process_chat_message
+            call_ai_assistant,
+            generate_simple_response,
+            handle_chat_command,
+            process_chat_message,
         )
+
         self.assertIsNotNone(generate_simple_response)
         self.assertIsNotNone(handle_chat_command)
 
     def test_import_utils(self):
         """Test importing utils module."""
         from agentteam.board.utils import _now_iso, _get_collector
+
         self.assertIsNotNone(_now_iso)
 
     def test_import_server(self):
         """Test importing server module."""
         from agentteam.board import serve, BoardHandler
+
         self.assertIsNotNone(serve)
         self.assertIsNotNone(BoardHandler)
 

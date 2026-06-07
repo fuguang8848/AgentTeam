@@ -58,11 +58,22 @@ class TestFromEnv:
         assert identity.agent_name == "claude-agent"
 
     def test_from_env_defaults(self, monkeypatch):
-        for key in ("AGENTTEAM_AGENT_ID", "AGENTTEAM_AGENT_NAME", "AGENTTEAM_AGENT_TYPE",
-                     "AGENTTEAM_TEAM_NAME", "AGENTTEAM_AGENT_LEADER", "AGENTTEAM_USER"):
+        for key in (
+            "AGENTTEAM_AGENT_ID",
+            "AGENTTEAM_AGENT_NAME",
+            "AGENTTEAM_AGENT_TYPE",
+            "AGENTTEAM_TEAM_NAME",
+            "AGENTTEAM_AGENT_LEADER",
+            "AGENTTEAM_USER",
+        ):
             monkeypatch.delenv(key, raising=False)
-        for key in ("CLAUDE_CODE_AGENT_ID", "CLAUDE_CODE_AGENT_NAME", "CLAUDE_CODE_AGENT_TYPE",
-                     "CLAUDE_CODE_TEAM_NAME", "CLAUDE_CODE_AGENT_LEADER"):
+        for key in (
+            "CLAUDE_CODE_AGENT_ID",
+            "CLAUDE_CODE_AGENT_NAME",
+            "CLAUDE_CODE_AGENT_TYPE",
+            "CLAUDE_CODE_TEAM_NAME",
+            "CLAUDE_CODE_AGENT_LEADER",
+        ):
             monkeypatch.delenv(key, raising=False)
 
         identity = AgentIdentity.from_env()
@@ -75,6 +86,7 @@ class TestFromEnv:
     def test_from_env_user_from_config(self, tmp_path, monkeypatch):
         monkeypatch.delenv("AGENTTEAM_USER", raising=False)
         from agentteam.config import AgentTeamConfig, save_config
+
         cfg = AgentTeamConfig(user="config-user")
         save_config(cfg)
 

@@ -130,12 +130,7 @@ class TestPreferenceExtractor:
         """测试更新偏好置信度"""
         extractor = PreferenceExtractor()
 
-        pref = Preference(
-            key="indent_size",
-            value=2,
-            confidence=0.5,
-            evidence=["第一次提到2空格"]
-        )
+        pref = Preference(key="indent_size", value=2, confidence=0.5, evidence=["第一次提到2空格"])
 
         updated = extractor.update_confidence(pref, "第二次提到2空格")
         assert updated.confidence > 0.5
@@ -215,8 +210,7 @@ class TestBehaviorAnalyzer:
 
         # 创建长消息
         messages = [
-            "这是一个非常详细的消息，包含了大量的解释和分析内容，"
-            "希望能够全面地描述问题的各个方面，以便获得最佳解答。"
+            "这是一个非常详细的消息，包含了大量的解释和分析内容，希望能够全面地描述问题的各个方面，以便获得最佳解答。"
         ] * 3
         result = analyzer.analyze_communication_style(messages)
 
@@ -231,10 +225,7 @@ class TestPreference:
     def test_preference_creation(self):
         """测试创建偏好"""
         pref = Preference(
-            key="code_style",
-            value={"indent": 2, "quote": "single"},
-            confidence=0.8,
-            source="conversation"
+            key="code_style", value={"indent": 2, "quote": "single"}, confidence=0.8, source="conversation"
         )
 
         assert pref.key == "code_style"
@@ -260,9 +251,7 @@ class TestBehavioralPattern:
     def test_pattern_creation(self):
         """测试创建行为模式"""
         pattern = BehavioralPattern(
-            pattern_type="working_hours",
-            data={"start": "09:00", "end": "18:00"},
-            confidence=0.85
+            pattern_type="working_hours", data={"start": "09:00", "end": "18:00"}, confidence=0.85
         )
 
         assert pattern.pattern_type == "working_hours"
@@ -271,10 +260,7 @@ class TestBehavioralPattern:
 
     def test_pattern_defaults(self):
         """测试模式默认值"""
-        pattern = BehavioralPattern(
-            pattern_type="test",
-            data={}
-        )
+        pattern = BehavioralPattern(pattern_type="test", data={})
 
         assert pattern.confidence == 0.5
         assert pattern.first_observed is not None
@@ -286,11 +272,7 @@ class TestUserProfile:
 
     def test_profile_creation(self):
         """测试创建用户画像"""
-        profile = UserProfile(
-            user_id="test_user",
-            name="测试用户",
-            identity="开发者"
-        )
+        profile = UserProfile(user_id="test_user", name="测试用户", identity="开发者")
 
         assert profile.user_id == "test_user"
         assert profile.name == "测试用户"
@@ -333,10 +315,7 @@ class TestUserProfileManager:
 
     def test_analyze_conversation_extract_preference(self, manager):
         """测试分析对话提取偏好"""
-        changes = manager.analyze_conversation(
-            user_message="我喜欢单引号",
-            assistant_response="好的，使用单引号。"
-        )
+        changes = manager.analyze_conversation(user_message="我喜欢单引号", assistant_response="好的，使用单引号。")
 
         # 应该提取到 quote_style 偏好
         pref_keys = [c.get("key") for c in changes]
@@ -345,16 +324,10 @@ class TestUserProfileManager:
     def test_analyze_conversation_update_existing(self, manager):
         """测试更新已存在的偏好"""
         # 第一次对话
-        manager.analyze_conversation(
-            user_message="我喜欢单引号",
-            session_context={"user_id": "test_user"}
-        )
+        manager.analyze_conversation(user_message="我喜欢单引号", session_context={"user_id": "test_user"})
 
         # 第二次对话（相同偏好）
-        changes = manager.analyze_conversation(
-            user_message="单引号确实更好",
-            session_context={"user_id": "test_user"}
-        )
+        changes = manager.analyze_conversation(user_message="单引号确实更好", session_context={"user_id": "test_user"})
 
         # 应该更新现有偏好而不是创建新的
         assert len(changes) >= 1
@@ -372,10 +345,7 @@ class TestUserProfileManager:
     def test_get_profile_existing_user(self, manager):
         """测试获取已存在用户画像"""
         # 创建偏好
-        manager.analyze_conversation(
-            user_message="我喜欢2空格缩进",
-            session_context={"user_id": "existing_user"}
-        )
+        manager.analyze_conversation(user_message="我喜欢2空格缩进", session_context={"user_id": "existing_user"})
 
         # 获取画像
         profile = manager.get_profile("existing_user")
@@ -386,12 +356,7 @@ class TestUserProfileManager:
     def test_update_profile_add_preference(self, manager):
         """测试更新画像添加偏好"""
         profile = manager.update_profile(
-            user_id="test_user",
-            changes=[{
-                "type": "preference",
-                "key": "language",
-                "value": "Chinese"
-            }]
+            user_id="test_user", changes=[{"type": "preference", "key": "language", "value": "Chinese"}]
         )
 
         assert "language" in profile.preferences
@@ -400,12 +365,7 @@ class TestUserProfileManager:
     def test_update_profile_identity(self, manager):
         """测试更新画像身份"""
         profile = manager.update_profile(
-            user_id="test_user",
-            changes=[{
-                "type": "identity",
-                "key": "identity",
-                "value": "后端开发工程师"
-            }]
+            user_id="test_user", changes=[{"type": "identity", "key": "identity", "value": "后端开发工程师"}]
         )
 
         assert profile.identity == "后端开发工程师"
@@ -413,12 +373,7 @@ class TestUserProfileManager:
     def test_update_profile_name(self, manager):
         """测试更新画像名称"""
         profile = manager.update_profile(
-            user_id="test_user",
-            changes=[{
-                "type": "name",
-                "key": "name",
-                "value": "张三"
-            }]
+            user_id="test_user", changes=[{"type": "name", "key": "name", "value": "张三"}]
         )
 
         assert profile.name == "张三"
@@ -427,15 +382,13 @@ class TestUserProfileManager:
         """测试更新画像项目"""
         profile = manager.update_profile(
             user_id="test_user",
-            changes=[{
-                "type": "project",
-                "project_name": "AgentTeam升级",
-                "value": {
-                    "name": "AgentTeam升级",
-                    "status": "active",
-                    "priority": "high"
+            changes=[
+                {
+                    "type": "project",
+                    "project_name": "AgentTeam升级",
+                    "value": {"name": "AgentTeam升级", "status": "active", "priority": "high"},
                 }
-            }]
+            ],
         )
 
         assert "AgentTeam升级" in profile.projects
@@ -452,10 +405,7 @@ class TestUserProfileManager:
     def test_get_context_for_prompt_with_preferences(self, manager):
         """测试生成带偏好的上下文字符串"""
         # 添加偏好
-        manager.analyze_conversation(
-            user_message="我喜欢单引号，2空格缩进",
-            session_context={"user_id": "pref_user"}
-        )
+        manager.analyze_conversation(user_message="我喜欢单引号，2空格缩进", session_context={"user_id": "pref_user"})
 
         context = manager.get_context_for_prompt("pref_user")
 
@@ -467,8 +417,7 @@ class TestUserProfileManager:
     def test_get_context_for_prompt_with_identity(self, manager):
         """测试生成带身份信息的上下文字符串"""
         manager.update_profile(
-            user_id="identity_user",
-            changes=[{"type": "identity", "key": "identity", "value": "开发者"}]
+            user_id="identity_user", changes=[{"type": "identity", "key": "identity", "value": "开发者"}]
         )
 
         context = manager.get_context_for_prompt("identity_user")
@@ -482,8 +431,8 @@ class TestUserProfileManager:
             user_id="save_test",
             changes=[
                 {"type": "name", "key": "name", "value": "测试用户"},
-                {"type": "preference", "key": "indent", "value": 4}
-            ]
+                {"type": "preference", "key": "indent", "value": 4},
+            ],
         )
 
         # 创建新的管理器实例（应该从文件加载）
@@ -522,18 +471,15 @@ class TestUserProfileManager:
     def test_merge_profiles(self, manager):
         """测试合并用户画像"""
         profile1 = UserProfile(
-            user_id="user1",
-            preferences={
-                "indent": Preference(key="indent", value=2, confidence=0.8)
-            }
+            user_id="user1", preferences={"indent": Preference(key="indent", value=2, confidence=0.8)}
         )
 
         profile2 = UserProfile(
             user_id="user2",
             preferences={
                 "indent": Preference(key="indent", value=4, confidence=0.9),
-                "quote": Preference(key="quote", value="single", confidence=0.7)
-            }
+                "quote": Preference(key="quote", value="single", confidence=0.7),
+            },
         )
 
         merged = manager.merge_profiles([profile1, profile2])
@@ -550,9 +496,7 @@ class TestUserProfileManager:
         user_id = "behavior_user"
         manager._conversation_times[user_id] = []
         for i in range(5):
-            manager._conversation_times[user_id].append(
-                datetime.now() - timedelta(hours=i)
-            )
+            manager._conversation_times[user_id].append(datetime.now() - timedelta(hours=i))
 
         changes = manager.detect_behavioral_changes(user_id)
 
@@ -562,10 +506,7 @@ class TestUserProfileManager:
     def test_profile_persistence_across_sessions(self, manager, temp_profile_dir):
         """测试画像在会话间持久化"""
         # 第一个会话：分析对话
-        manager.analyze_conversation(
-            user_message="我想要4空格缩进",
-            session_context={"user_id": "persistent_user"}
-        )
+        manager.analyze_conversation(user_message="我想要4空格缩进", session_context={"user_id": "persistent_user"})
 
         # 模拟新会话
         new_manager = UserProfileManager(profile_dir=str(temp_profile_dir))
@@ -583,10 +524,7 @@ class TestUserProfileManager:
         changes = manager.analyze_conversation(
             user_message="单引号更好",
             assistant_response="好的，我用单引号。",
-            session_context={
-                "user_id": "ctx_user",
-                "tool": "bash"
-            }
+            session_context={"user_id": "ctx_user", "tool": "bash"},
         )
 
         # 应该提取到偏好
@@ -607,20 +545,17 @@ class TestIntegration:
 
             # 1. 首次对话：提取偏好
             manager.analyze_conversation(
-                user_message="我喜欢单引号，2空格缩进",
-                session_context={"user_id": "journey_user"}
+                user_message="我喜欢单引号，2空格缩进", session_context={"user_id": "journey_user"}
             )
 
             # 2. 第二次对话：更新偏好
             manager.analyze_conversation(
-                user_message="单引号确实更好，而且请简洁点",
-                session_context={"user_id": "journey_user"}
+                user_message="单引号确实更好，而且请简洁点", session_context={"user_id": "journey_user"}
             )
 
             # 3. 更新身份
             manager.update_profile(
-                user_id="journey_user",
-                changes=[{"type": "identity", "key": "identity", "value": "Python开发者"}]
+                user_id="journey_user", changes=[{"type": "identity", "key": "identity", "value": "Python开发者"}]
             )
 
             # 4. 验证画像
@@ -646,16 +581,10 @@ class TestIntegration:
             manager = UserProfileManager(profile_dir=str(profile_dir))
 
             # 用户A的偏好
-            manager.analyze_conversation(
-                user_message="我喜欢单引号",
-                session_context={"user_id": "user_a"}
-            )
+            manager.analyze_conversation(user_message="我喜欢单引号", session_context={"user_id": "user_a"})
 
             # 用户B的偏好
-            manager.analyze_conversation(
-                user_message="双引号更规范",
-                session_context={"user_id": "user_b"}
-            )
+            manager.analyze_conversation(user_message="双引号更规范", session_context={"user_id": "user_b"})
 
             # 验证隔离
             profile_a = manager.get_profile("user_a")

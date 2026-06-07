@@ -87,9 +87,7 @@ class TestCostStoreSummary:
         assert summary.by_agent["a1"] == 4.0
         assert summary.by_agent["a2"] == 2.0
 
-    def test_summary_uses_cached_totals_without_rereading_event_files(
-        self, team_name, monkeypatch
-    ):
+    def test_summary_uses_cached_totals_without_rereading_event_files(self, team_name, monkeypatch):
         store = CostStore(team_name)
         store.report(agent_name="a1", input_tokens=100, output_tokens=50, cost_cents=1.0)
         store.report(agent_name="a2", input_tokens=200, output_tokens=100, cost_cents=2.0)

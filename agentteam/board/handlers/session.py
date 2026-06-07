@@ -55,15 +55,17 @@ class SessionMixin:
             session = registry.get_session(session_id)
 
             if session:
-                self._serve_json({
-                    "agentId": session.agent_id,
-                    "name": session.name,
-                    "role": session.role,
-                    "status": session.status,
-                    "createdAt": session.created_at,
-                    "endedAt": getattr(session, "ended_at", None),
-                    "workDir": getattr(session, "work_dir", ""),
-                })
+                self._serve_json(
+                    {
+                        "agentId": session.agent_id,
+                        "name": session.name,
+                        "role": session.role,
+                        "status": session.status,
+                        "createdAt": session.created_at,
+                        "endedAt": getattr(session, "ended_at", None),
+                        "workDir": getattr(session, "work_dir", ""),
+                    }
+                )
             else:
                 self.send_error(404, f"Session '{session_id}' not found")
 

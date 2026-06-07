@@ -28,13 +28,13 @@ class TestMemoryProviderAbstract:
     def test_abstract_methods_exist(self):
         """验证所有抽象方法都存在"""
         # 检查 prefetch 是抽象的
-        assert hasattr(MemoryProvider, 'prefetch')
+        assert hasattr(MemoryProvider, "prefetch")
         # 检查 sync_turn 是抽象的
-        assert hasattr(MemoryProvider, 'sync_turn')
+        assert hasattr(MemoryProvider, "sync_turn")
         # 检查 on_session_end 是抽象的
-        assert hasattr(MemoryProvider, 'on_session_end')
+        assert hasattr(MemoryProvider, "on_session_end")
         # 检查 on_pre_compress 是抽象的
-        assert hasattr(MemoryProvider, 'on_pre_compress')
+        assert hasattr(MemoryProvider, "on_pre_compress")
 
 
 class DummyMemoryProvider(MemoryProvider):
@@ -99,7 +99,7 @@ class TestMemoryProviderConcrete:
     def test_search_method_exists(self):
         """测试 search 方法存在"""
         provider = DummyMemoryProvider()
-        assert hasattr(provider, 'search')
+        assert hasattr(provider, "search")
         result = provider.search("test")
         assert isinstance(result, list)
 
@@ -122,12 +122,12 @@ class TestProviderRegistration:
     def test_fts5_provider_has_all_required_methods(self):
         """测试 FTS5 Provider 有所有必需方法"""
         provider = FTS5MemoryProvider()
-        assert hasattr(provider, 'name')
-        assert hasattr(provider, 'prefetch')
-        assert hasattr(provider, 'sync_turn')
-        assert hasattr(provider, 'on_session_end')
-        assert hasattr(provider, 'on_pre_compress')
-        assert hasattr(provider, 'search')
+        assert hasattr(provider, "name")
+        assert hasattr(provider, "prefetch")
+        assert hasattr(provider, "sync_turn")
+        assert hasattr(provider, "on_session_end")
+        assert hasattr(provider, "on_pre_compress")
+        assert hasattr(provider, "search")
 
     def test_fts5_provider_prefetch_returns_string(self):
         """测试 FTS5 Provider prefetch 返回字符串"""
@@ -145,10 +145,7 @@ class TestProviderRegistration:
     def test_fts5_provider_on_session_end(self):
         """测试 FTS5 Provider on_session_end"""
         provider = FTS5MemoryProvider()
-        messages = [
-            {"role": "user", "content": "Test message"},
-            {"role": "assistant", "content": "Test response"}
-        ]
+        messages = [{"role": "user", "content": "Test message"}, {"role": "assistant", "content": "Test response"}]
         result = provider.on_session_end(messages)
         # on_session_end 可能返回 None（基类默认实现）或 dict
         assert result is None or isinstance(result, dict)
@@ -158,7 +155,7 @@ class TestProviderRegistration:
         provider = FTS5MemoryProvider()
         messages = [
             {"role": "user", "content": "What is Python?"},
-            {"role": "assistant", "content": "Python is a language."}
+            {"role": "assistant", "content": "Python is a language."},
         ]
         result = provider.on_pre_compress(messages)
         assert isinstance(result, str)

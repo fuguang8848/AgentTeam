@@ -21,6 +21,7 @@ try:
         ObservableGauge,
         get_meter,
     )
+
     OTEL_METRICS_AVAILABLE = True
 except ImportError:
     OTEL_METRICS_AVAILABLE = False

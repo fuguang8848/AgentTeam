@@ -310,7 +310,7 @@ class TestRegisterProviderConfig:
             check_args=["--version"],
         )
         register_provider_config(config)
-        
+
         assert "custom-provider" in PROVIDER_CONFIGS
         # Cleanup
         unregister_provider_config("custom-provider")
@@ -318,16 +318,16 @@ class TestRegisterProviderConfig:
     def test_register_overwrites_existing(self):
         """Test register overwrites existing."""
         original = PROVIDER_CONFIGS.get("claude-code")
-        
+
         config = ProviderConfig(
             id="claude-code",
             name="Modified Claude",
             command="claude-modified",
         )
         register_provider_config(config)
-        
+
         assert PROVIDER_CONFIGS["claude-code"].name == "Modified Claude"
-        
+
         # Restore original
         if original:
             register_provider_config(original)
@@ -344,7 +344,7 @@ class TestUnregisterProviderConfig:
             command="temp",
         )
         register_provider_config(config)
-        
+
         result = unregister_provider_config("temp-provider")
         assert result is True
         assert "temp-provider" not in PROVIDER_CONFIGS
@@ -362,31 +362,32 @@ class TestClearAvailabilityCache:
         """Test clearing cache."""
         # First check to populate cache
         check_provider_availability("claude-code")
-        
+
         # Clear cache
         clear_availability_cache()
-        
+
         # Cache should be empty
         from agentteam.orchestrator.provider_availability import _cache
+
         assert len(_cache) == 0
 
     def test_clear_cache_forces_recheck(self):
         """Test clear cache forces recheck."""
         clear_availability_cache()
-        
+
         # First check
         result1 = check_provider_availability("claude-code")
-        
+
         # Second check (cached)
         result2 = check_provider_availability("claude-code")
-        
+
         # Timestamps should be same (cached)
         assert result1.last_checked == result2.last_checked
-        
+
         # Clear and recheck
         clear_availability_cache()
         result3 = check_provider_availability("claude-code")
-        
+
         # Timestamp should be different
         assert result3.last_checked != result1.last_checked
 
@@ -410,10 +411,10 @@ class TestProviderAvailabilityEdgeCases:
             command="/usr/bin/test",
         )
         register_provider_config(config)
-        
+
         result = check_provider_availability("absolute-test")
         assert result is not None
-        
+
         unregister_provider_config("absolute-test")
 
     def test_check_with_node_version(self):
@@ -425,18 +426,18 @@ class TestProviderAvailabilityEdgeCases:
             node_version="18",
         )
         register_provider_config(config)
-        
+
         result = check_provider_availability("node-test")
         assert result is not None
-        
+
         unregister_provider_config("node-test")
 
     def test_multiple_checks_same_provider(self):
         """Test multiple checks for same provider."""
         clear_availability_cache()
-        
+
         results = [check_provider_availability("claude-code") for _ in range(5)]
-        
+
         # All should return same result (cached)
         for result in results:
             assert result.id == "claude-code"
@@ -450,12 +451,12 @@ class TestProviderAvailabilityEdgeCases:
             check_args=["--version"],
         )
         register_provider_config(config)
-        
+
         clear_availability_cache()
         results = check_all_providers_availability()
-        
+
         # Should include new provider
         ids = [r.id for r in results]
         assert "new-provider" in ids
-        
+
         unregister_provider_config("new-provider")

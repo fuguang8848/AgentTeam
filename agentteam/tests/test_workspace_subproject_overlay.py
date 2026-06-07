@@ -17,7 +17,10 @@ def test_workspace_overlays_subproject_files_into_worktree(monkeypatch, tmp_path
     monkeypatch.setenv("AGENTTEAM_DATA_DIR", str(tmp_path / "data"))
     monkeypatch.setattr("agentteam.workspace.git.repo_root", lambda path: repo_root)
     monkeypatch.setattr("agentteam.workspace.git.current_branch", lambda repo: "main")
-    monkeypatch.setattr("agentteam.workspace.git.create_worktree", lambda repo, worktree_path, branch, base_ref='HEAD': Path(worktree_path).mkdir(parents=True, exist_ok=True))
+    monkeypatch.setattr(
+        "agentteam.workspace.git.create_worktree",
+        lambda repo, worktree_path, branch, base_ref="HEAD": Path(worktree_path).mkdir(parents=True, exist_ok=True),
+    )
 
     ws = WorkspaceManager(subproject)
     info = ws.create_workspace("demo", "worker", "id123")

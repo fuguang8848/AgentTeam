@@ -16,12 +16,7 @@ from pathlib import Path
 from typing import Optional
 
 
-def _deliver_to_running_agent(
-    agent_name: str,
-    team_name: str,
-    content: str,
-    from_agent: str
-) -> bool:
+def _deliver_to_running_agent(agent_name: str, team_name: str, content: str, from_agent: str) -> bool:
     """
     Try to deliver a message directly to a running OpenClaw SDK agent.
 
@@ -86,6 +81,7 @@ def _deliver_to_running_agent(
 
         if result.returncode != 0:
             import logging
+
             logger = logging.getLogger("agentteam")
             stderr = result.stderr.decode("utf-8", errors="replace") if result.stderr else ""
             logger.warning(f"Gateway sessions.send failed: {stderr}")
@@ -94,6 +90,7 @@ def _deliver_to_running_agent(
         # Broadcast task_assigned activity to board server
         # Use full path so tests can mock it via agentteam.cli.commands._broadcast_activity_to_board
         import agentteam.cli.commands as cli_commands
+
         cli_commands._broadcast_activity_to_board(
             agent_name=agent_name,
             team_name=team_name,
@@ -105,22 +102,19 @@ def _deliver_to_running_agent(
 
     except subprocess.TimeoutExpired:
         import logging
+
         logger = logging.getLogger("agentteam")
         logger.warning(f"Gateway sessions.send timed out for agent {agent_name}")
         return False
     except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
         import logging
+
         logger = logging.getLogger("agentteam")
         logger.warning(f"Failed to deliver message to agent {agent_name}: {e}")
         return False
 
 
-def _broadcast_activity_to_board(
-    agent_name: str,
-    team_name: str,
-    status: str,
-    message: str
-) -> None:
+def _broadcast_activity_to_board(agent_name: str, team_name: str, status: str, message: str) -> None:
     """
     Broadcast an activity event to the board server.
 

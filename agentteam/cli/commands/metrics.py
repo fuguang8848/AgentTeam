@@ -80,7 +80,9 @@ def cost_report(
         cost_cents=cost_cents,
         task_id=task_id,
     )
-    _output(_dump(event), lambda d: console.print(f"[green]OK[/green] Cost reported: ${d.get('costCents', 0) / 100:.4f}"))
+    _output(
+        _dump(event), lambda d: console.print(f"[green]OK[/green] Cost reported: ${d.get('costCents', 0) / 100:.4f}")
+    )
 
 
 @cost_app.command("show")
@@ -100,7 +102,12 @@ def cost_show(
     budget = config.budget_cents if config else 0.0
     rate = store.cost_rate()
 
-    data = {"summary": _dump(summary), "budget_cents": budget, "cost_rate_per_min": rate, "events": [_dump(e) for e in events]}
+    data = {
+        "summary": _dump(summary),
+        "budget_cents": budget,
+        "cost_rate_per_min": rate,
+        "events": [_dump(e) for e in events],
+    }
 
     def _human(d):
         s = d["summary"]
@@ -130,13 +137,17 @@ def cost_budget(
 
     if amount is None:
         budget = config.budget_cents
-        _output({"budget_cents": budget, "budget_dollars": budget / 100},
-                lambda d: console.print(f"Current budget: ${d['budget_dollars']:.2f}"))
+        _output(
+            {"budget_cents": budget, "budget_dollars": budget / 100},
+            lambda d: console.print(f"Current budget: ${d['budget_dollars']:.2f}"),
+        )
     else:
         budget_cents = int(amount * 100)
         TeamManager.update_team(team, budget_cents=budget_cents)
-        _output({"status": "updated", "budget_cents": budget_cents},
-                lambda d: console.print(f"[green]OK[/green] Budget set to ${d['budget_cents'] / 100:.2f}"))
+        _output(
+            {"status": "updated", "budget_cents": budget_cents},
+            lambda d: console.print(f"[green]OK[/green] Budget set to ${d['budget_cents'] / 100:.2f}"),
+        )
 
 
 # ============================================================================
@@ -302,8 +313,12 @@ def dag_check(
 
     blocked = [t.id for t in tasks if t.status == TaskStatus.blocked]
 
-    _output({"has_cycle": has_cycle, "blocked_tasks": blocked},
-            lambda d: console.print(f"[{'red' if d['has_cycle'] else 'green'}]{'Cycle detected!' if d['has_cycle'] else 'No cycles found'}[/] Blocked: {len(d['blocked_tasks'])}"))
+    _output(
+        {"has_cycle": has_cycle, "blocked_tasks": blocked},
+        lambda d: console.print(
+            f"[{'red' if d['has_cycle'] else 'green'}]{'Cycle detected!' if d['has_cycle'] else 'No cycles found'}[/] Blocked: {len(d['blocked_tasks'])}"
+        ),
+    )
 
 
 @dag_app.command("ready")

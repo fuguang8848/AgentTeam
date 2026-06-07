@@ -100,7 +100,9 @@ def alert_list(
         table.add_column("Message")
         table.add_column("Status")
         for alert in a:
-            table.add_row(alert.get("id", ""), alert.get("severity", ""), alert.get("message", "")[:50], alert.get("status", ""))
+            table.add_row(
+                alert.get("id", ""), alert.get("severity", ""), alert.get("message", "")[:50], alert.get("status", "")
+            )
         console.print(table)
 
     _output(alerts, _human)
@@ -117,8 +119,10 @@ def alert_acknowledge(
     manager = AlertManager(team)
     manager.acknowledge(alert_id)
 
-    _output({"status": "acknowledged", "alertId": alert_id},
-            lambda d: console.print(f"[green]Alert {d['alertId']} acknowledged[/green]"))
+    _output(
+        {"status": "acknowledged", "alertId": alert_id},
+        lambda d: console.print(f"[green]Alert {d['alertId']} acknowledged[/green]"),
+    )
 
 
 @alert_app.command("config")
@@ -132,8 +136,10 @@ def alert_config(
     manager = AlertManager(team)
     manager.configure(enabled=enable)
 
-    _output({"status": "configured", "enabled": enable},
-            lambda d: console.print(f"[green]Alerts {'enabled' if d['enabled'] else 'disabled'}[/green]"))
+    _output(
+        {"status": "configured", "enabled": enable},
+        lambda d: console.print(f"[green]Alerts {'enabled' if d['enabled'] else 'disabled'}[/green]"),
+    )
 
 
 # ============================================================================
@@ -164,7 +170,12 @@ def audit_query(
         table.add_column("Action")
         table.add_column("Details")
         for entry in e:
-            table.add_row(entry.get("timestamp", "")[:19], entry.get("agent", ""), entry.get("action", ""), str(entry.get("details", ""))[:40])
+            table.add_row(
+                entry.get("timestamp", "")[:19],
+                entry.get("agent", ""),
+                entry.get("action", ""),
+                str(entry.get("details", ""))[:40],
+            )
         console.print(table)
 
     _output(entries, _human)
@@ -253,7 +264,12 @@ def drift_list(
         table.add_column("Actual")
         table.add_column("Detected", style="dim")
         for rec in r:
-            table.add_row(rec.get("path", ""), str(rec.get("expected", ""))[:30], str(rec.get("actual", ""))[:30], rec.get("detected_at", "")[:19])
+            table.add_row(
+                rec.get("path", ""),
+                str(rec.get("expected", ""))[:30],
+                str(rec.get("actual", ""))[:30],
+                rec.get("detected_at", "")[:19],
+            )
         console.print(table)
 
     _output(records, _human)
@@ -270,8 +286,10 @@ def drift_ack(
     detector = DriftDetector(team)
     detector.acknowledge(path)
 
-    _output({"status": "acknowledged", "path": path},
-            lambda d: console.print(f"[green]Drift for {d['path']} acknowledged[/green]"))
+    _output(
+        {"status": "acknowledged", "path": path},
+        lambda d: console.print(f"[green]Drift for {d['path']} acknowledged[/green]"),
+    )
 
 
 @drift_app.command("record")
@@ -284,8 +302,7 @@ def drift_record(
     detector = DriftDetector(team)
     detector.record_baseline()
 
-    _output({"status": "recorded"},
-            lambda d: console.print("[green]Baseline recorded[/green]"))
+    _output({"status": "recorded"}, lambda d: console.print("[green]Baseline recorded[/green]"))
 
 
 @drift_app.command("scan")
@@ -323,8 +340,10 @@ def role_assign(
     manager = RoleManager(team)
     manager.assign(agent, role)
 
-    _output({"status": "assigned", "agent": agent, "role": role},
-            lambda d: console.print(f"[green]{d['agent']} assigned role '{d['role']}'[/green]"))
+    _output(
+        {"status": "assigned", "agent": agent, "role": role},
+        lambda d: console.print(f"[green]{d['agent']} assigned role '{d['role']}'[/green]"),
+    )
 
 
 @role_app.command("unassign")
@@ -339,8 +358,10 @@ def role_unassign(
     manager = RoleManager(team)
     manager.unassign(agent, role)
 
-    _output({"status": "unassigned", "agent": agent, "role": role},
-            lambda d: console.print(f"[green]Role '{d['role']}' removed from {d['agent']}[/green]"))
+    _output(
+        {"status": "unassigned", "agent": agent, "role": role},
+        lambda d: console.print(f"[green]Role '{d['role']}' removed from {d['agent']}[/green]"),
+    )
 
 
 @role_app.command("list")
@@ -405,8 +426,7 @@ def review_score(
     engine = ReviewEngine(team)
     score = engine.calculate_score(agent)
 
-    _output({"agent": agent, "score": score},
-            lambda d: console.print(f"Score for {d['agent']}: {d['score']:.2f}"))
+    _output({"agent": agent, "score": score}, lambda d: console.print(f"Score for {d['agent']}: {d['score']:.2f}"))
 
 
 @review_app.command("show")
@@ -446,7 +466,7 @@ def review_compare(
     def _human(c):
         console.print(f"\n[bold]Comparison: {c['agent1']} vs {c['agent2']}[/bold]")
         console.print(f"  Scores: {c['score1']:.2f} vs {c['score2']:.2f}")
-        winner = c['agent1'] if c['score1'] > c['score2'] else c['agent2']
+        winner = c["agent1"] if c["score1"] > c["score2"] else c["agent2"]
         console.print(f"  Winner: {winner}")
 
     _output(comparison, _human)

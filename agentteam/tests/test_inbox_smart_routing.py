@@ -44,14 +44,12 @@ class TestDeliverToRunningAgent:
 
         # Mock subprocess.run for Gateway API call
         mock_subprocess = MagicMock()
-        mock_subprocess.return_value = MagicMock(returncode=0, stdout=b'{"ok": true}', stderr=b'')
+        mock_subprocess.return_value = MagicMock(returncode=0, stdout=b'{"ok": true}', stderr=b"")
         monkeypatch.setattr("subprocess.run", mock_subprocess)
 
         # Mock activity broadcast
         mock_broadcast = MagicMock()
-        monkeypatch.setattr(
-            "agentteam.cli.commands._broadcast_activity_to_board", mock_broadcast
-        )
+        monkeypatch.setattr("agentteam.cli.commands._broadcast_activity_to_board", mock_broadcast)
 
         # Call the function
         result = _deliver_to_running_agent(

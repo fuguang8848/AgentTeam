@@ -62,7 +62,7 @@ async def run_with_retry(
     last_error = None
     current_delay = delay
     is_coro_func = asyncio.iscoroutinefunction(awaitable)
-    
+
     for attempt in range(max_retries + 1):
         try:
             if is_coro_func:
@@ -75,7 +75,7 @@ async def run_with_retry(
             if attempt < max_retries:
                 await asyncio.sleep(current_delay)
                 current_delay *= backoff
-    
+
     raise last_error
 
 
@@ -85,11 +85,11 @@ async def gather_with_concurrency(
 ) -> list:
     """带并发限制的 gather"""
     semaphore = asyncio.Semaphore(n)
-    
+
     async def bounded_await(awaitable):
         async with semaphore:
             return await awaitable
-    
+
     return await asyncio.gather(*[bounded_await(a) for a in awaitables])
 
 

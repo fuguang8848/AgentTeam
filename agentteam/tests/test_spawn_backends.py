@@ -70,9 +70,7 @@ def test_subprocess_backend_prepends_current_agentteam_bin_to_path(monkeypatch, 
     assert env["AGENTTEAM_BIN"] == str(agentteam_bin)
 
 
-def test_subprocess_backend_discards_output_and_preserves_exit_hook_and_registry(
-    monkeypatch, tmp_path
-):
+def test_subprocess_backend_discards_output_and_preserves_exit_hook_and_registry(monkeypatch, tmp_path):
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
     agentteam_bin = tmp_path / "venv" / "bin" / "agentteam"
     agentteam_bin.parent.mkdir(parents=True)
@@ -315,8 +313,7 @@ def test_tmux_backend_returns_error_when_command_missing(monkeypatch, tmp_path):
     )
 
     assert result == (
-        "Error: command 'nanobot' not found in PATH. "
-        "Install the agent CLI first or pass an executable path."
+        "Error: command 'nanobot' not found in PATH. Install the agent CLI first or pass an executable path."
     )
     assert run_calls == []
 
@@ -350,8 +347,7 @@ def test_subprocess_backend_returns_error_when_command_missing(monkeypatch, tmp_
     )
 
     assert result == (
-        "Error: command 'nanobot' not found in PATH. "
-        "Install the agent CLI first or pass an executable path."
+        "Error: command 'nanobot' not found in PATH. Install the agent CLI first or pass an executable path."
     )
     assert popen_called is False
 
@@ -425,13 +421,7 @@ def test_tmux_backend_confirms_claude_workspace_trust_prompt(monkeypatch):
         if args[:4] == ["tmux", "capture-pane", "-p", "-t"]:
             capture_count += 1
             if capture_count == 1:
-                return Result(
-                    stdout=(
-                        "Quick safety check\n"
-                        "Yes, I trust this folder\n"
-                        "Enter to confirm\n"
-                    )
-                )
+                return Result(stdout=("Quick safety check\nYes, I trust this folder\nEnter to confirm\n"))
             return Result(stdout="")
         return Result()
 
@@ -456,13 +446,7 @@ def test_tmux_backend_confirms_claude_skip_permissions_prompt(monkeypatch):
     def fake_run(args, **kwargs):
         run_calls.append(args)
         if args[:4] == ["tmux", "capture-pane", "-p", "-t"]:
-            return Result(
-                stdout=(
-                    "Dangerous permission mode\n"
-                    "Using --dangerously-skip-permissions\n"
-                    "Yes, I accept\n"
-                )
-            )
+            return Result(stdout=("Dangerous permission mode\nUsing --dangerously-skip-permissions\nYes, I accept\n"))
         return Result()
 
     monkeypatch.setattr("agentteam.spawn.tmux_backend.subprocess.run", fake_run)
@@ -487,12 +471,7 @@ def test_tmux_backend_confirms_codex_workspace_trust_prompt(monkeypatch):
     def fake_run(args, **kwargs):
         run_calls.append(args)
         if args[:4] == ["tmux", "capture-pane", "-p", "-t"]:
-            return Result(
-                stdout=(
-                    "Do you trust the contents of this directory?\n"
-                    "Press enter to continue\n"
-                )
-            )
+            return Result(stdout=("Do you trust the contents of this directory?\nPress enter to continue\n"))
         return Result()
 
     monkeypatch.setattr("agentteam.spawn.tmux_backend.subprocess.run", fake_run)
@@ -521,12 +500,7 @@ def test_dismiss_codex_update_prompt_sends_enter(monkeypatch):
             capture_count += 1
             if capture_count == 1:
                 return Result(
-                    stdout=(
-                        "Update available\n"
-                        "1 Update now\n"
-                        "3 Skip until next version\n"
-                        "Press enter to continue\n"
-                    )
+                    stdout=("Update available\n1 Update now\n3 Skip until next version\nPress enter to continue\n")
                 )
             return Result(stdout=">_ OpenAI Codex (v0.113.0)\n")
         return Result()
@@ -749,7 +723,7 @@ def test_tmux_backend_gemini_skip_permissions_and_prompt(monkeypatch, tmp_path):
 
     new_session = next(call for call in run_calls if call[:3] == ["tmux", "new-session", "-d"])
     full_cmd = new_session[-1]
-    assert "trap \"" in full_cmd and "gemini --yolo -p 'analyze this repo'" in full_cmd
+    assert 'trap "' in full_cmd and "gemini --yolo -p 'analyze this repo'" in full_cmd
 
 
 def test_subprocess_backend_gemini_skip_permissions_and_prompt(monkeypatch, tmp_path):
@@ -800,12 +774,7 @@ def test_tmux_backend_confirms_gemini_workspace_trust_prompt(monkeypatch):
     def fake_run(args, **kwargs):
         run_calls.append(args)
         if args[:4] == ["tmux", "capture-pane", "-p", "-t"]:
-            return Result(
-                stdout=(
-                    "Gemini CLI\n"
-                    "Trust folder: /tmp/demo\n"
-                )
-            )
+            return Result(stdout=("Gemini CLI\nTrust folder: /tmp/demo\n"))
         return Result()
 
     monkeypatch.setattr("agentteam.spawn.tmux_backend.subprocess.run", fake_run)
@@ -868,7 +837,7 @@ def test_tmux_backend_kimi_skip_permissions_workspace_and_prompt(monkeypatch, tm
 
     new_session = next(call for call in run_calls if call[:3] == ["tmux", "new-session", "-d"])
     full_cmd = new_session[-1]
-    assert "trap \"" in full_cmd and "kimi --yolo -w /tmp/demo --print -p 'fix the bug'" in full_cmd
+    assert 'trap "' in full_cmd and "kimi --yolo -w /tmp/demo --print -p 'fix the bug'" in full_cmd
 
 
 def test_subprocess_backend_kimi_skip_permissions_workspace_and_prompt(monkeypatch, tmp_path):
@@ -922,9 +891,7 @@ def test_resolve_agentteam_executable_ignores_unrelated_argv0(monkeypatch, tmp_p
     assert build_spawn_path("/usr/bin:/bin").startswith(f"{resolved_bin.parent}{PATH_SEP}")
 
 
-def test_resolve_agentteam_executable_ignores_relative_argv0_even_if_local_file_exists(
-    monkeypatch, tmp_path
-):
+def test_resolve_agentteam_executable_ignores_relative_argv0_even_if_local_file_exists(monkeypatch, tmp_path):
     local_shadow = tmp_path / "agentteam"
     local_shadow.write_text("#!/bin/sh\n")
     resolved_bin = tmp_path / "venv" / "bin" / "agentteam"
@@ -940,9 +907,7 @@ def test_resolve_agentteam_executable_ignores_relative_argv0_even_if_local_file_
     assert build_spawn_path("/usr/bin:/bin").startswith(f"{resolved_bin.parent}{PATH_SEP}")
 
 
-def test_resolve_agentteam_executable_accepts_relative_path_with_explicit_directory(
-    monkeypatch, tmp_path
-):
+def test_resolve_agentteam_executable_accepts_relative_path_with_explicit_directory(monkeypatch, tmp_path):
     relative_bin = tmp_path / ".venv" / "bin" / "agentteam"
     relative_bin.parent.mkdir(parents=True)
     relative_bin.write_text("#!/bin/sh\n")
@@ -1032,8 +997,10 @@ def test_inject_prompt_via_buffer_uses_load_and_paste(monkeypatch, tmp_path):
 
     monkeypatch.setattr("agentteam.spawn.tmux_backend.subprocess.run", fake_run)
     monkeypatch.setattr("agentteam.spawn.tmux_backend.time.sleep", lambda _: None)
-    monkeypatch.setattr("agentteam.spawn.tmux_backend.tempfile.NamedTemporaryFile",
-                        lambda **kw: open(tmp_path / "prompt.txt", kw.get("mode", "w")))
+    monkeypatch.setattr(
+        "agentteam.spawn.tmux_backend.tempfile.NamedTemporaryFile",
+        lambda **kw: open(tmp_path / "prompt.txt", kw.get("mode", "w")),
+    )
     # NamedTemporaryFile mock won't have .name → use real tempfile
     monkeypatch.undo()  # just use real functions
     monkeypatch.setattr("agentteam.spawn.tmux_backend.subprocess.run", fake_run)
@@ -1137,7 +1104,7 @@ def test_tmux_backend_qwen_skip_permissions_and_prompt(monkeypatch, tmp_path):
     assert "spawned" in result
     new_session = next(c for c in run_calls if c[:3] == ["tmux", "new-session", "-d"])
     full_cmd = new_session[-1]
-    assert "trap \"" in full_cmd and "qwen --dangerously-skip-permissions -p 'refactor this'" in full_cmd
+    assert 'trap "' in full_cmd and "qwen --dangerously-skip-permissions -p 'refactor this'" in full_cmd
 
 
 def test_tmux_backend_opencode_skip_permissions_and_prompt(monkeypatch, tmp_path):
@@ -1158,7 +1125,7 @@ def test_tmux_backend_opencode_skip_permissions_and_prompt(monkeypatch, tmp_path
     assert "spawned" in result
     new_session = next(c for c in run_calls if c[:3] == ["tmux", "new-session", "-d"])
     full_cmd = new_session[-1]
-    assert "trap \"" in full_cmd and "opencode --yolo -p 'fix the bug'" in full_cmd
+    assert 'trap "' in full_cmd and "opencode --yolo -p 'fix the bug'" in full_cmd
 
 
 def test_subprocess_backend_qwen_skip_permissions_and_prompt(monkeypatch, tmp_path):
@@ -1243,9 +1210,7 @@ def test_propagate_openclaw_gateway_token_reads_config(tmp_path, monkeypatch):
     config_dir = tmp_path / ".openclaw"
     config_dir.mkdir()
     config_file = config_dir / "openclaw.json"
-    config_file.write_text(json.dumps({
-        "gateway": {"auth": {"token": "test-secret-token"}}
-    }))
+    config_file.write_text(json.dumps({"gateway": {"auth": {"token": "test-secret-token"}}}))
     monkeypatch.setattr("agentteam.spawn.cli_env.Path.home", lambda: tmp_path)
 
     env = {}

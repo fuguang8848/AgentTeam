@@ -378,24 +378,26 @@ class TestUsageEstimatorPersistence:
     def test_save_and_load(self):
         """Test saving and loading."""
         import os
+
         with tempfile.TemporaryDirectory() as tmpdir:
             # 通过环境变量设置数据目录
             original_env = os.environ.get("AGENTTEAM_DATA_DIR")
             os.environ["AGENTTEAM_DATA_DIR"] = tmpdir
-            
+
             try:
                 estimator = UsageEstimator()
                 estimator.accumulate_usage("session-123", "test", "claude")
                 estimator.mark_session_ended("session-123")  # 结束会话以flush到历史
                 estimator._save_to_file()
-                
+
                 # Create new estimator and load
                 estimator2 = UsageEstimator()
                 estimator2._load_from_file()
-                
+
                 # Should have saved daily history data
                 from datetime import datetime, timezone
-                today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+
+                today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
                 assert today in estimator2._daily_history
                 assert estimator2._daily_history[today].tokens > 0
             finally:
@@ -451,7 +453,7 @@ class TestUsageEstimatorEdgeCases:
         estimator = UsageEstimator()
         estimator.accumulate_usage("session-1", "test", "claude")
         estimator.accumulate_usage("session-2", "test", "claude")
-        
+
         stats = estimator.get_provider_stats()
         # Should have one provider entry
         claude_stats = [s for s in stats if s.provider == "claude"]
@@ -478,28 +480,28 @@ class TestUsageEstimatorIntegration:
     def test_full_usage_workflow(self):
         """Test full usage workflow."""
         estimator = UsageEstimator()
-        
+
         # Accumulate usage
         estimator.accumulate_usage("session-1", "Hello World", "claude")
         estimator.accumulate_usage("session-2", "Another message", "codex")
-        
+
         # Record requests
         estimator.record_request("session-1", 100, 50, "claude")
         estimator.record_request("session-2", 200, 100, "codex")
-        
+
         # Get summary
         summary = estimator.get_summary()
         assert summary.total_tokens > 0
         assert summary.active_sessions >= 2
-        
+
         # Get provider stats
         stats = estimator.get_provider_stats()
         assert len(stats) >= 2
-        
+
         # End sessions
         estimator.mark_session_ended("session-1")
         estimator.mark_session_ended("session-2")
-        
+
         # Get final summary
         final_summary = estimator.get_summary()
         assert final_summary.active_sessions == 0
@@ -507,10 +509,10 @@ class TestUsageEstimatorIntegration:
     def test_daily_aggregation(self):
         """Test daily aggregation."""
         estimator = UsageEstimator()
-        
+
         # Accumulate usage
         estimator.accumulate_usage("session-1", "test", "claude")
-        
+
         # Get trend (should aggregate daily)
         trend = estimator.get_trend(days=7)
         assert isinstance(trend, TrendAnalysis)
@@ -529,9 +531,9 @@ class TestSingletonBehavior:
         """Test estimator state is shared."""
         estimator1 = get_usage_estimator()
         estimator2 = get_usage_estimator()
-        
+
         estimator1.accumulate_usage("session-test", "test", "claude")
-        
+
         # estimator2 should see the same state
         summary2 = estimator2.get_summary()
         assert summary2.total_tokens > 0

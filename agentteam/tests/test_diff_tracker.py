@@ -237,7 +237,7 @@ class TestDiffTracker:
 
     def test_tracker_get_snapshot(self):
         """Test getting a file snapshot."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("Hello World")
             f.flush()
             f.close()  # Windows: must close before other processes can read
@@ -263,7 +263,7 @@ class TestDiffTracker:
             old_env = os.environ.get("AGENTTEAM_DATA_DIR")
             os.environ["AGENTTEAM_DATA_DIR"] = tmpdir
             try:
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
                     f.write("New content")
                     f.flush()
                     f.close()  # Windows: must close before DiffTracker can read
@@ -321,7 +321,7 @@ class TestDiffTracker:
                 tracker = DiffTracker("test-team")
 
                 # Create some changes
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
                     f.write("Content")
                     f.flush()
                     f.close()  # Windows fix
@@ -339,7 +339,7 @@ class TestDiffTracker:
 
     def test_tracker_take_snapshot(self):
         """Test taking a file snapshot."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("Snapshot content")
             f.flush()
             f.close()  # Windows fix
@@ -356,8 +356,8 @@ class TestDiffTrackerEdgeCases:
 
     def test_tracker_binary_file(self):
         """Test tracking binary file."""
-        with tempfile.NamedTemporaryFile(mode='wb', suffix='.png', delete=False) as f:
-            f.write(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR')
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".png", delete=False) as f:
+            f.write(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR")
             f.flush()
             f.close()  # Windows fix
 
@@ -373,7 +373,7 @@ class TestDiffTrackerEdgeCases:
 
     def test_tracker_empty_file(self):
         """Test tracking empty file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             # Empty file
             f.flush()
             f.close()  # Windows fix

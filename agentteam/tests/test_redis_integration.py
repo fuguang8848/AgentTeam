@@ -27,6 +27,7 @@ class TestRedisTransportMailboxIntegration:
 
         def mock_get_transport(name, team_name, **kwargs):
             from agentteam.transport.redis import RedisTransport
+
             transport = RedisTransport(team_name)
             transport._client = mock_client
             return transport
@@ -35,6 +36,7 @@ class TestRedisTransportMailboxIntegration:
             with patch("agentteam.transport.redis.RedisTransport._connect"):
                 mailbox = MailboxManager("test-team")
                 from agentteam.transport.redis import RedisTransport
+
                 assert isinstance(mailbox._transport, RedisTransport)
 
         del os.environ["AGENTTEAM_TRANSPORT"]
@@ -54,6 +56,7 @@ class TestRedisTransportMailboxIntegration:
 
         with patch("agentteam.transport.redis.RedisTransport._connect"):
             from agentteam.transport.redis import RedisTransport
+
             transport = RedisTransport("test-team")
             transport._client = mock_client
 
@@ -85,11 +88,13 @@ class TestRedisTransportMailboxIntegration:
             to="bob",
             content="Test message",
         )
-        envelope = json.dumps({
-            "timestamp": 1000,
-            "uid": "abc",
-            "data": mock_msg.model_dump_json(),
-        }).encode("utf-8")
+        envelope = json.dumps(
+            {
+                "timestamp": 1000,
+                "uid": "abc",
+                "data": mock_msg.model_dump_json(),
+            }
+        ).encode("utf-8")
 
         mock_client = MagicMock()
         mock_client.ping.return_value = True
@@ -97,6 +102,7 @@ class TestRedisTransportMailboxIntegration:
 
         with patch("agentteam.transport.redis.RedisTransport._connect"):
             from agentteam.transport.redis import RedisTransport
+
             transport = RedisTransport("test-team")
             transport._client = mock_client
 
@@ -128,6 +134,7 @@ class TestRedisMixedMode:
 
         def mock_get_transport(name, team_name, **kwargs):
             from agentteam.transport.redis import RedisTransport
+
             transport = RedisTransport(team_name)
             transport._client = mock_client
             return transport
@@ -140,6 +147,7 @@ class TestRedisMixedMode:
 
                 assert task.id is not None
                 from agentteam.transport.redis import RedisTransport
+
                 assert isinstance(mailbox._transport, RedisTransport)
 
         del os.environ["AGENTTEAM_TRANSPORT"]
@@ -199,12 +207,14 @@ class TestRedisDeadLetterQueue:
         """Test retrieving dead letters."""
         from agentteam.transport.redis import RedisTransport
 
-        dead_entry = json.dumps({
-            "timestamp": 1000,
-            "uid": "abc",
-            "data": "malformed",
-            "error": "Invalid JSON",
-        }).encode("utf-8")
+        dead_entry = json.dumps(
+            {
+                "timestamp": 1000,
+                "uid": "abc",
+                "data": "malformed",
+                "error": "Invalid JSON",
+            }
+        ).encode("utf-8")
 
         mock_client = MagicMock()
         mock_client.ping.return_value = True
@@ -272,4 +282,5 @@ class TestRedisEnvironmentConfig:
         with patch("agentteam.transport.redis.RedisTransport._connect"):
             transport = get_transport("redis", "test-team")
             from agentteam.transport.redis import RedisTransport
+
             assert isinstance(transport, RedisTransport)

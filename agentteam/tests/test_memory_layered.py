@@ -64,6 +64,7 @@ class TestL2SessionMemory:
         mem = L2SessionMemory(ttl_hours=0)  # 0 hours = immediate expiry
         mem.add("Old fact", session_id="s1")
         import time
+
         time.sleep(0.01)
         removed = mem.cleanup()
         assert removed >= 0
@@ -93,10 +94,13 @@ class TestL4KnowledgeBase:
 
     def test_add_pattern(self, temp_mem_dir):
         kb = L4KnowledgeBase(storage_dir=temp_mem_dir)
-        kb.add_pattern("python_pattern", {
-            "description": "Pattern for Python projects",
-            "tags": ["python", "project"],
-        })
+        kb.add_pattern(
+            "python_pattern",
+            {
+                "description": "Pattern for Python projects",
+                "tags": ["python", "project"],
+            },
+        )
         pattern = kb.get_pattern("python_pattern")
         assert pattern is not None
         assert "Python projects" in pattern["description"]
@@ -114,10 +118,7 @@ class TestLayeredMemoryProvider:
         provider.set_session("session-123")
 
         # L1: 同步对话
-        provider.sync_turn(
-            "记住用户喜欢蓝色",
-            "好的，我记住您喜欢蓝色了"
-        )
+        provider.sync_turn("记住用户喜欢蓝色", "好的，我记住您喜欢蓝色了")
 
         # L2: 自动添加事实
         l2_entries = provider.l2.get_session("session-123")

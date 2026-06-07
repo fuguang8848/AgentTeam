@@ -67,7 +67,6 @@ class TestZeroTasks:
 
 
 class TestNormalCompletion:
-
     def test_all_tasks_completed(self, waiter, store):
         tasks = [
             _make_task("t1", TaskStatus.completed),
@@ -101,7 +100,6 @@ class TestNormalCompletion:
 
 
 class TestTimeout:
-
     def test_timeout_returns_status(self, store, mailbox):
         store.list_tasks.return_value = [_make_task("t1", TaskStatus.in_progress)]
         mailbox.receive.return_value = []
@@ -134,7 +132,6 @@ class TestTimeout:
 
 
 class TestInterrupt:
-
     def test_signal_interrupt(self, waiter, store, mailbox):
         store.list_tasks.return_value = [_make_task("t1", TaskStatus.pending)]
         mailbox.receive.return_value = []
@@ -162,7 +159,6 @@ class TestInterrupt:
 
 
 class TestProgressCallback:
-
     def test_progress_called_on_change(self, store, mailbox):
         pending = [_make_task("t1", TaskStatus.pending)]
         done = [_make_task("t1", TaskStatus.completed)]
@@ -202,7 +198,6 @@ class TestProgressCallback:
 
 
 class TestMessageDraining:
-
     def test_messages_received_count(self, store, mailbox):
         msg1 = _make_message("alice", "hi")
         msg2 = _make_message("bob", "yo")
@@ -256,7 +251,6 @@ class TestMessageDraining:
 
 
 class TestDeadAgentRecovery:
-
     def test_dead_agent_tasks_reset_to_pending(self, store, mailbox):
         in_progress_task = _make_task("t1", TaskStatus.in_progress, owner="dead-worker")
         done_task = _make_task("t1", TaskStatus.completed, owner="dead-worker")
@@ -283,13 +277,16 @@ class TestDeadAgentRecovery:
             on_agent_dead=dead_callback,
         )
 
-        with patch(
-            "agentteam.team.waiter.list_dead_agents",
-            return_value=["dead-worker"],
-            create=True,
-        ), patch(
-            "agentteam.spawn.registry.list_dead_agents",
-            return_value=["dead-worker"],
+        with (
+            patch(
+                "agentteam.team.waiter.list_dead_agents",
+                return_value=["dead-worker"],
+                create=True,
+            ),
+            patch(
+                "agentteam.spawn.registry.list_dead_agents",
+                return_value=["dead-worker"],
+            ),
         ):
             result = waiter.wait()
         assert result.status == "completed"
@@ -348,7 +345,6 @@ class TestDeadAgentRecovery:
 
 
 class TestWaitResult:
-
     def test_default_values(self):
         r = WaitResult(status="completed")
         assert r.elapsed == 0.0

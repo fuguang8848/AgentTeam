@@ -119,6 +119,7 @@ class TestPresenceManager:
 
         # Wait for expiry to occur (duration is 0.001 min = 60ms, wait 100ms)
         import time
+
         time.sleep(0.1)
 
         team = manager.get_team_presence()

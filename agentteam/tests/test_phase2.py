@@ -296,8 +296,13 @@ class TestSpawnWithRetry:
                 return "Agent spawned"
 
         result = spawn_with_retry(
-            FakeBackend(), max_retries=3, backoff_base=0.01,
-            command=["test"], agent_name="w1", agent_id="id", agent_type="gp",
+            FakeBackend(),
+            max_retries=3,
+            backoff_base=0.01,
+            command=["test"],
+            agent_name="w1",
+            agent_id="id",
+            agent_type="gp",
             team_name="t",
         )
         assert result == "Agent spawned"
@@ -316,8 +321,13 @@ class TestSpawnWithRetry:
                 return "Agent spawned"
 
         result = spawn_with_retry(
-            FlakyBackend(), max_retries=3, backoff_base=0.01,
-            command=["test"], agent_name="w1", agent_id="id", agent_type="gp",
+            FlakyBackend(),
+            max_retries=3,
+            backoff_base=0.01,
+            command=["test"],
+            agent_name="w1",
+            agent_id="id",
+            agent_type="gp",
             team_name="t",
         )
         assert result == "Agent spawned"
@@ -331,8 +341,13 @@ class TestSpawnWithRetry:
                 return "Error: crash"
 
         result = spawn_with_retry(
-            AlwaysFail(), max_retries=2, backoff_base=0.01,
-            command=["test"], agent_name="w1", agent_id="id", agent_type="gp",
+            AlwaysFail(),
+            max_retries=2,
+            backoff_base=0.01,
+            command=["test"],
+            agent_name="w1",
+            agent_id="id",
+            agent_type="gp",
             team_name="t",
         )
         assert result.startswith("Error")
@@ -354,8 +369,14 @@ class TestSpawnWithRetry:
 
         with patch("agentteam.spawn.time.sleep") as mock_sleep:
             spawn_with_retry(
-                TimingBackend(), max_retries=3, backoff_base=0.05, backoff_max=1.0,
-                command=["test"], agent_name="w1", agent_id="id", agent_type="gp",
+                TimingBackend(),
+                max_retries=3,
+                backoff_base=0.05,
+                backoff_max=1.0,
+                command=["test"],
+                agent_name="w1",
+                agent_id="id",
+                agent_type="gp",
                 team_name="t",
             )
         assert call_count == 3

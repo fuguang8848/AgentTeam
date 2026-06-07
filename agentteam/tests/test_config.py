@@ -1,9 +1,13 @@
 """Tests for agentteam.config — new AppConfig-based configuration."""
 
-
 from agentteam.config import (
-    AppConfig, DatabaseConfig, AgentConfig, LogConfig,
-    get_config, load_config, load_config_from_env
+    AppConfig,
+    DatabaseConfig,
+    AgentConfig,
+    LogConfig,
+    get_config,
+    load_config,
+    load_config_from_env,
 )
 
 

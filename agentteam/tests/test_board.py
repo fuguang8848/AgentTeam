@@ -170,9 +170,7 @@ def test_collect_team_normalizes_message_participants(monkeypatch, tmp_path: Pat
     assert direct["isBroadcast"] is False
 
     broadcast = next(
-        msg
-        for msg in data["messages"]
-        if msg.get("content") == "broadcast" and msg.get("to") == "alice_worker"
+        msg for msg in data["messages"] if msg.get("content") == "broadcast" and msg.get("to") == "alice_worker"
     )
     assert broadcast["fromKey"] == "leader"
     assert broadcast["toKey"] == "alice_worker"
@@ -247,8 +245,7 @@ def test_serve_team_reads_fresh_snapshot_without_cache(monkeypatch):
         (),
         {
             "collect_team": staticmethod(
-                lambda team_name: calls.__setitem__("count", calls["count"] + 1)
-                or {"team": {"name": team_name}}
+                lambda team_name: calls.__setitem__("count", calls["count"] + 1) or {"team": {"name": team_name}}
             )
         },
     )()
@@ -346,6 +343,7 @@ def test_board_ui_escapes_attacker_controlled_fields():
 
 
 # ========== P5 Web UI Enhancement Tests ==========
+
 
 class TestBoardHTTPEndpoints:
     """Test HTTP endpoints for the Web UI board server."""
@@ -445,11 +443,7 @@ class TestBoardHTTPEndpoints:
         )
 
         store = TaskStore("task-test-team")
-        task = store.create(
-            subject="Test task subject",
-            description="Test task description",
-            owner="worker1"
-        )
+        task = store.create(subject="Test task subject", description="Test task description", owner="worker1")
 
         assert task.id is not None
         assert task.subject == "Test task subject"
@@ -627,7 +621,7 @@ class TestBoardUIFeatures:
         """Test that index.html includes drag and drop functionality."""
         html = Path("agentteam/board/static/index.html").read_text(encoding="utf-8")
 
-        assert "draggable=\"true\"" in html
+        assert 'draggable="true"' in html
         assert "dragstart" in html or "dragging" in html
         assert "data-task-id" in html
         assert "data-task-status" in html
@@ -697,9 +691,7 @@ class TestBoardServerSecurity:
     def test_proxy_allows_github_raw_content(self, monkeypatch):
         """Test that proxy allows GitHub raw content URLs."""
         # This should not raise
-        result = _normalize_proxy_target(
-            "https://raw.githubusercontent.com/org/repo/main/README.md"
-        )
+        result = _normalize_proxy_target("https://raw.githubusercontent.com/org/repo/main/README.md")
         assert "raw.githubusercontent.com" in result
 
     def test_escape_html_prevents_xss(self):

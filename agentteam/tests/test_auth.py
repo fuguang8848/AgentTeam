@@ -18,32 +18,19 @@ class TestTokenPayload:
 
     def test_payload_creation(self):
         """Test creating a token payload."""
-        payload = TokenPayload(
-            user_id="user-1",
-            username="testuser",
-            role="admin",
-            expires_at=time.time() + 3600
-        )
+        payload = TokenPayload(user_id="user-1", username="testuser", role="admin", expires_at=time.time() + 3600)
         assert payload.user_id == "user-1"
         assert payload.username == "testuser"
         assert payload.role == "admin"
 
     def test_payload_is_expired_false(self):
         """Test that payload is not expired."""
-        payload = TokenPayload(
-            user_id="user-1",
-            username="testuser",
-            expires_at=time.time() + 3600
-        )
+        payload = TokenPayload(user_id="user-1", username="testuser", expires_at=time.time() + 3600)
         assert not payload.is_expired()
 
     def test_payload_is_expired_true(self):
         """Test that payload is expired."""
-        payload = TokenPayload(
-            user_id="user-1",
-            username="testuser",
-            expires_at=time.time() - 1
-        )
+        payload = TokenPayload(user_id="user-1", username="testuser", expires_at=time.time() - 1)
         assert payload.is_expired()
 
 

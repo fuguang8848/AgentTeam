@@ -47,19 +47,22 @@ class TestPrepareCommandSkipPermissions:
 
     def test_qwen_gets_dangerously_skip_permissions(self):
         result = self.adapter.prepare_command(
-            ["qwen"], skip_permissions=True,
+            ["qwen"],
+            skip_permissions=True,
         )
         assert "--dangerously-skip-permissions" in result.final_command
 
     def test_opencode_gets_yolo(self):
         result = self.adapter.prepare_command(
-            ["opencode"], skip_permissions=True,
+            ["opencode"],
+            skip_permissions=True,
         )
         assert "--yolo" in result.final_command
 
     def test_claude_unchanged(self):
         result = self.adapter.prepare_command(
-            ["claude"], skip_permissions=True,
+            ["claude"],
+            skip_permissions=True,
         )
         assert "--dangerously-skip-permissions" in result.final_command
 
@@ -71,7 +74,8 @@ class TestPrepareCommandPrompt:
 
     def test_qwen_prompt_via_flag(self):
         result = self.adapter.prepare_command(
-            ["qwen"], prompt="do work",
+            ["qwen"],
+            prompt="do work",
         )
         assert "-p" in result.final_command
         assert "do work" in result.final_command
@@ -79,7 +83,8 @@ class TestPrepareCommandPrompt:
 
     def test_opencode_prompt_via_flag(self):
         result = self.adapter.prepare_command(
-            ["opencode"], prompt="analyse this",
+            ["opencode"],
+            prompt="analyse this",
         )
         assert "-p" in result.final_command
         assert "analyse this" in result.final_command
@@ -87,28 +92,36 @@ class TestPrepareCommandPrompt:
 
     def test_claude_interactive_gets_post_launch_prompt(self):
         result = self.adapter.prepare_command(
-            ["claude"], prompt="hello", interactive=True,
+            ["claude"],
+            prompt="hello",
+            interactive=True,
         )
         assert result.post_launch_prompt == "hello"
         assert "-p" not in result.final_command
 
     def test_claude_noninteractive_gets_flag(self):
         result = self.adapter.prepare_command(
-            ["claude"], prompt="hello", interactive=False,
+            ["claude"],
+            prompt="hello",
+            interactive=False,
         )
         assert result.post_launch_prompt is None
         assert "-p" in result.final_command
 
     def test_codex_interactive_gets_post_launch_prompt(self):
         result = self.adapter.prepare_command(
-            ["codex"], prompt="hello", interactive=True,
+            ["codex"],
+            prompt="hello",
+            interactive=True,
         )
         assert result.post_launch_prompt == "hello"
         assert "hello" not in result.final_command
 
     def test_codex_exec_remains_noninteractive(self):
         result = self.adapter.prepare_command(
-            ["codex", "exec"], prompt="hello", interactive=True,
+            ["codex", "exec"],
+            prompt="hello",
+            interactive=True,
         )
         assert result.post_launch_prompt is None
         assert "hello" in result.final_command

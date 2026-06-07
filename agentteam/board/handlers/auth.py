@@ -73,11 +73,13 @@ class AuthMixin:
             # Attempt login
             token = auth_manager.login(username, password)
             if token:
-                self._serve_json({
-                    "success": True,
-                    "token": token,
-                    "expires_in": 86400,  # 24 hours
-                })
+                self._serve_json(
+                    {
+                        "success": True,
+                        "token": token,
+                        "expires_in": 86400,  # 24 hours
+                    }
+                )
             else:
                 self.send_error(401, "Invalid credentials")
 

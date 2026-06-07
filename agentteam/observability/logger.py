@@ -20,6 +20,7 @@ from typing import Any, Optional
 try:
     from rich.console import Console
     from rich.logging import RichHandler
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
@@ -29,6 +30,7 @@ from agentteam.utils.logger import get_logger as get_basic_logger
 # Try to get existing logger setup
 try:
     from agentteam.utils.logger import setup_logging, LoggerSetup
+
     LOGGER_UTILS_AVAILABLE = True
 except ImportError:
     LOGGER_UTILS_AVAILABLE = False
@@ -244,11 +246,7 @@ def setup_structured_logging(
         )
     else:
         handler = logging.StreamHandler(sys.stderr)
-        handler.setFormatter(
-            logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
-        )
+        handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 
     root_logger.addHandler(handler)
 

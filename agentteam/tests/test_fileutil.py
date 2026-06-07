@@ -12,7 +12,6 @@ from agentteam.fileutil import atomic_write_text, file_locked
 
 
 class TestAtomicWriteText:
-
     def test_creates_file(self, tmp_path: Path):
         target = tmp_path / "out.json"
         atomic_write_text(target, '{"ok": true}')
@@ -78,7 +77,6 @@ class TestAtomicWriteText:
 
 
 class TestFileLocked:
-
     def test_serialises_concurrent_updates(self, tmp_path: Path):
         """Two threads incrementing a shared counter never lose an update."""
         counter_path = tmp_path / "counter.json"

@@ -3,7 +3,6 @@
 We redirect all file-based state to tmp_path so tests never touch the real ~/.agentteam.
 """
 
-
 import pytest
 from pathlib import Path
 

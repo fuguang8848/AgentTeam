@@ -26,10 +26,11 @@ logger = logging.getLogger(__name__)
 # Tool Registry
 # =============================================================================
 
+
 def get_builtin_tools() -> list[MCPTool]:
     """
     Get all built-in MCP tools.
-    
+
     Returns:
         List of MCPTool definitions
     """
@@ -84,14 +85,14 @@ async def handle_search_mcp_tools(
 ) -> dict[str, Any]:
     """
     Handle search_mcp_tools tool calls.
-    
+
     This is a wrapper around the platform's search_mcp_tools functionality.
     In a real implementation, this would call the actual MCP gateway.
     """
     # Note: In production, this would call the actual MCP gateway
     # For now, return a mock response structure
     logger.info(f"Searching MCP tools for query: {query}")
-    
+
     return {
         "query": query,
         "results": [
@@ -137,12 +138,12 @@ list_mcp_servers = MCPTool(
 async def handle_list_mcp_servers() -> dict[str, Any]:
     """
     Handle list_mcp_servers tool calls.
-    
+
     Returns information about all registered MCP servers.
     """
     # Note: In production, this would call the actual MCP gateway
     logger.info("Listing MCP servers")
-    
+
     return {
         "servers": [
             {
@@ -209,16 +210,16 @@ async def handle_call_mcp_tool(
 ) -> dict[str, Any]:
     """
     Handle call_mcp_tool tool calls.
-    
+
     Invokes a tool on a registered MCP server.
     """
     logger.info(f"Calling MCP tool: {server_id}.{tool_name}")
-    
+
     # Validate server_id
     if server_id == "__builtin__":
         # Handle built-in tools
         return await _handle_builtin_tool(tool_name, arguments)
-    
+
     # In production, would route to actual MCP server
     return {
         "success": True,
@@ -233,19 +234,19 @@ async def _handle_builtin_tool(
     arguments: dict[str, Any],
 ) -> dict[str, Any]:
     """Handle built-in SpectrAI tools."""
-    
+
     if tool_name == "team_get_tasks":
         return {"tasks": [], "message": "Task listing is available via team interface"}
-    
+
     elif tool_name == "team_claim_task":
         return {"success": True, "message": "Task claimed"}
-    
+
     elif tool_name == "team_complete_task":
         return {"success": True, "message": "Task completed"}
-    
+
     elif tool_name == "team_report_idle":
         return {"success": True, "message": "Idle status reported"}
-    
+
     else:
         return {
             "success": False,
@@ -277,11 +278,11 @@ install_mcp = MCPTool(
             },
             "args": {
                 "type": "string",
-                "description": "Command arguments in JSON array format, e.g. '[\"-y\", \"some-mcp-package\"]'",
+                "description": 'Command arguments in JSON array format, e.g. \'["-y", "some-mcp-package"]\'',
             },
             "env_vars": {
                 "type": "string",
-                "description": "Environment variables in JSON object format, e.g. '{\"API_KEY\": \"xxx\"}'. API keys should be set here.",
+                "description": 'Environment variables in JSON object format, e.g. \'{"API_KEY": "xxx"}\'. API keys should be set here.',
             },
             "transport": {
                 "type": "string",
@@ -326,15 +327,15 @@ async def handle_install_mcp(
 ) -> dict[str, Any]:
     """
     Handle install_mcp tool calls.
-    
+
     Installs a new MCP server to the platform.
     """
     logger.info(f"Installing MCP server: {name}")
-    
+
     # Parse optional JSON arguments
     args_list = json.loads(args) if args else []
     env_dict = json.loads(env_vars) if env_vars else {}
-    
+
     return {
         "success": True,
         "server_id": f"mcp-{name.lower().replace(' ', '-')}",
@@ -422,11 +423,11 @@ async def handle_install_skill(
 ) -> dict[str, Any]:
     """
     Handle install_skill tool calls.
-    
+
     Installs a new skill to the platform.
     """
     logger.info(f"Installing skill: {name}")
-    
+
     # Determine installation method
     method = "unknown"
     if github_url:
@@ -437,7 +438,7 @@ async def handle_install_skill(
         method = "local"
     elif prompt_template:
         method = "prompt_template"
-    
+
     return {
         "success": True,
         "skill_name": name,
@@ -477,11 +478,11 @@ analyze_skill_repo = MCPTool(
 async def handle_analyze_skill_repo(github_url: str) -> dict[str, Any]:
     """
     Handle analyze_skill_repo tool calls.
-    
+
     Analyzes a GitHub repository to determine its type.
     """
     logger.info(f"Analyzing skill repo: {github_url}")
-    
+
     # In production, would fetch and analyze the repo
     return {
         "repo_type": "unknown",
@@ -525,11 +526,11 @@ async def handle_install_plugin(
 ) -> dict[str, Any]:
     """
     Handle install_plugin tool calls.
-    
+
     Installs a plugin to the Claude Code plugin marketplace.
     """
     logger.info(f"Installing plugin from: {github_url} (dry_run={dry_run})")
-    
+
     return {
         "success": True,
         "github_url": github_url,
@@ -576,11 +577,11 @@ async def handle_get_tool_info(
 ) -> dict[str, Any]:
     """
     Handle get_tool_info tool calls.
-    
+
     Returns detailed information about a specific tool.
     """
     logger.info(f"Getting tool info for: {tool_name}")
-    
+
     # Check built-in tools
     for tool in get_builtin_tools():
         if tool.name == tool_name:
@@ -594,7 +595,7 @@ async def handle_get_tool_info(
                 ),
                 "server_id": "__builtin__",
             }
-    
+
     return {
         "error": f"Tool '{tool_name}' not found",
         "hint": "Use list_mcp_servers or search_mcp_tools to discover available tools",
@@ -605,10 +606,11 @@ async def handle_get_tool_info(
 # Tool Handler Registration
 # =============================================================================
 
+
 def register_tool_handlers(server) -> None:
     """
     Register all built-in tool handlers with an MCP server.
-    
+
     Args:
         server: MCPServer instance
     """
@@ -622,6 +624,6 @@ def register_tool_handlers(server) -> None:
         "install_plugin": handle_install_plugin,
         "get_tool_info": handle_get_tool_info,
     }
-    
+
     for name, handler in handlers.items():
         server.register_tool_handler(name, handler)

@@ -35,17 +35,19 @@ class NotificationsMixin:
             }
 
             for n in notifications:
-                notification_list.append({
-                    "id": str(getattr(n, "id", "")),
-                    "type": getattr(n, "notification_type", "info"),
-                    "title": getattr(n, "title", ""),
-                    "message": getattr(n, "message", ""),
-                    "sessionId": getattr(n, "session_id", ""),
-                    "timestamp": getattr(n, "timestamp", ""),
-                    "unread": not getattr(n, "acknowledged", False),
-                    "icon": icon_map.get(getattr(n, "notification_type", "info"), "ℹ️"),
-                    "image_url": getattr(n, "image_url", None),
-                })
+                notification_list.append(
+                    {
+                        "id": str(getattr(n, "id", "")),
+                        "type": getattr(n, "notification_type", "info"),
+                        "title": getattr(n, "title", ""),
+                        "message": getattr(n, "message", ""),
+                        "sessionId": getattr(n, "session_id", ""),
+                        "timestamp": getattr(n, "timestamp", ""),
+                        "unread": not getattr(n, "acknowledged", False),
+                        "icon": icon_map.get(getattr(n, "notification_type", "info"), "ℹ️"),
+                        "image_url": getattr(n, "image_url", None),
+                    }
+                )
 
             self._serve_json({"notifications": notification_list})
 

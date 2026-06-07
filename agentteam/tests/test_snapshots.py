@@ -42,6 +42,7 @@ def team_with_data(team_name):
 
     # drop a message into the event log via mailbox
     from agentteam.team.mailbox import MailboxManager
+
     mb = MailboxManager(team_name)
     mb.send("leader", "leader", content="hello from leader")
 
@@ -89,6 +90,7 @@ class TestSnapshotCreate:
     def test_captures_inbox_messages(self, team_with_data):
         # send a message that stays in inbox (don't consume it)
         from agentteam.team.mailbox import MailboxManager
+
         mb = MailboxManager(team_with_data)
         mb.send("leader", "leader", content="pending msg")
 

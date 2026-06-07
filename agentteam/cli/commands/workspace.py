@@ -61,6 +61,7 @@ def workspace_list(
             console.print("[dim]No worktrees found[/dim]")
         else:
             from rich.table import Table
+
             table = Table(title="Worktrees")
             table.add_column("Branch", style="cyan")
             table.add_column("Path", style="dim")
@@ -89,11 +90,15 @@ def workspace_checkpoint(
 
     committed = ws_mgr.checkpoint(team, agent, message)
     if committed:
-        _output({"status": "checkpoint_created", "team": team, "agent": agent},
-                lambda d: console.print(f"[green]OK[/green] Checkpoint created for '{agent}'."))
+        _output(
+            {"status": "checkpoint_created", "team": team, "agent": agent},
+            lambda d: console.print(f"[green]OK[/green] Checkpoint created for '{agent}'."),
+        )
     else:
-        _output({"status": "no_changes", "team": team, "agent": agent},
-                lambda d: console.print(f"[dim]No changes to checkpoint for '{agent}'.[/dim]"))
+        _output(
+            {"status": "no_changes", "team": team, "agent": agent},
+            lambda d: console.print(f"[dim]No changes to checkpoint for '{agent}'.[/dim]"),
+        )
 
 
 @app.command("merge")
@@ -115,11 +120,15 @@ def workspace_merge(
     success, output = ws_mgr.merge_workspace(team, agent, target, cleanup_after=not no_cleanup)
 
     if success:
-        _output({"status": "merged", "team": team, "agent": agent, "output": output},
-                lambda d: console.print(f"[green]OK[/green] Workspace merged for '{agent}'"))
+        _output(
+            {"status": "merged", "team": team, "agent": agent, "output": output},
+            lambda d: console.print(f"[green]OK[/green] Workspace merged for '{agent}'"),
+        )
     else:
-        _output({"status": "merge_failed", "team": team, "agent": agent, "error": output},
-                lambda d: console.print(f"[red]Merge failed: {output}[/red]"))
+        _output(
+            {"status": "merge_failed", "team": team, "agent": agent, "error": output},
+            lambda d: console.print(f"[red]Merge failed: {output}[/red]"),
+        )
 
 
 @app.command("cleanup")
@@ -139,8 +148,10 @@ def workspace_cleanup(
 
     removed = ws_mgr.cleanup_worktrees(team, agent, force=force)
 
-    _output({"status": "cleaned", "team": team, "removed": removed},
-            lambda d: console.print(f"[green]Removed {d['removed']} worktree(s)[/green]"))
+    _output(
+        {"status": "cleaned", "team": team, "removed": removed},
+        lambda d: console.print(f"[green]Removed {d['removed']} worktree(s)[/green]"),
+    )
 
 
 @app.command("status")

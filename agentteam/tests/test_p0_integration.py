@@ -176,11 +176,13 @@ class TestEndToEndIntegration:
             assert completed.status == TaskStatus.completed
 
             # Send notification via transport
-            notification = json.dumps({
-                "type": "task_completed",
-                "task_id": task.id,
-                "status": "completed",
-            }).encode()
+            notification = json.dumps(
+                {
+                    "type": "task_completed",
+                    "task_id": task.id,
+                    "status": "completed",
+                }
+            ).encode()
             transport.deliver("e2e-user", notification)
 
             # Fetch notification (without consuming to avoid Windows file lock)

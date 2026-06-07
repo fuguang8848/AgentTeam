@@ -197,10 +197,12 @@ class TestProviderSelector:
     def test_add_provider(self):
         """Test adding a provider."""
         selector = ProviderSelector("test-team", providers={})
-        selector.add_provider(ProviderInfo(
-            name="claude-code",
-            adapter_type="claude",
-        ))
+        selector.add_provider(
+            ProviderInfo(
+                name="claude-code",
+                adapter_type="claude",
+            )
+        )
         assert len(selector.providers) == 1
         assert "claude-code" in selector.providers
 
@@ -214,11 +216,13 @@ class TestProviderSelector:
     def test_select_provider(self):
         """Test selecting a provider."""
         selector = ProviderSelector("test-team", providers={})
-        selector.add_provider(ProviderInfo(
-            name="claude-code",
-            adapter_type="claude",
-            priority=100,
-        ))
+        selector.add_provider(
+            ProviderInfo(
+                name="claude-code",
+                adapter_type="claude",
+                priority=100,
+            )
+        )
         result = selector.select(TaskType.general)
         assert result.success is True
         assert result.provider_name == "claude-code"
@@ -233,16 +237,20 @@ class TestProviderSelector:
     def test_select_by_priority(self):
         """Test selecting by priority."""
         selector = ProviderSelector("test-team", providers={})
-        selector.add_provider(ProviderInfo(
-            name="low-priority",
-            adapter_type="test",
-            priority=10,
-        ))
-        selector.add_provider(ProviderInfo(
-            name="high-priority",
-            adapter_type="test",
-            priority=100,
-        ))
+        selector.add_provider(
+            ProviderInfo(
+                name="low-priority",
+                adapter_type="test",
+                priority=10,
+            )
+        )
+        selector.add_provider(
+            ProviderInfo(
+                name="high-priority",
+                adapter_type="test",
+                priority=100,
+            )
+        )
         result = selector.select(TaskType.general)
         assert result.success is True
         assert result.provider_name == "high-priority"
@@ -250,47 +258,57 @@ class TestProviderSelector:
     def test_update_provider_status(self):
         """Test updating provider status."""
         selector = ProviderSelector("test-team", providers={})
-        selector.add_provider(ProviderInfo(
-            name="claude-code",
-            adapter_type="claude",
-        ))
+        selector.add_provider(
+            ProviderInfo(
+                name="claude-code",
+                adapter_type="claude",
+            )
+        )
         selector.update_provider_status("claude-code", ProviderStatus.unavailable)
         assert selector.providers["claude-code"].status == ProviderStatus.unavailable
 
     def test_record_success(self):
         """Test recording success."""
         selector = ProviderSelector("test-team", providers={})
-        selector.add_provider(ProviderInfo(
-            name="claude-code",
-            adapter_type="claude",
-            consecutive_failures=2,
-        ))
+        selector.add_provider(
+            ProviderInfo(
+                name="claude-code",
+                adapter_type="claude",
+                consecutive_failures=2,
+            )
+        )
         selector.record_success("claude-code")
         assert selector.providers["claude-code"].consecutive_failures == 0
 
     def test_record_failure(self):
         """Test recording failure."""
         selector = ProviderSelector("test-team", providers={})
-        selector.add_provider(ProviderInfo(
-            name="claude-code",
-            adapter_type="claude",
-        ))
+        selector.add_provider(
+            ProviderInfo(
+                name="claude-code",
+                adapter_type="claude",
+            )
+        )
         selector.record_failure("claude-code")
         assert selector.providers["claude-code"].consecutive_failures == 1
 
     def test_get_available_providers(self):
         """Test getting available providers."""
         selector = ProviderSelector("test-team", providers={})
-        selector.add_provider(ProviderInfo(
-            name="available",
-            adapter_type="test",
-            status=ProviderStatus.available,
-        ))
-        selector.add_provider(ProviderInfo(
-            name="unavailable",
-            adapter_type="test",
-            status=ProviderStatus.unavailable,
-        ))
+        selector.add_provider(
+            ProviderInfo(
+                name="available",
+                adapter_type="test",
+                status=ProviderStatus.available,
+            )
+        )
+        selector.add_provider(
+            ProviderInfo(
+                name="unavailable",
+                adapter_type="test",
+                status=ProviderStatus.unavailable,
+            )
+        )
         available = selector.get_available_providers()
         assert len(available) == 1
         assert available[0] == "available"
@@ -306,10 +324,12 @@ class TestProviderSelector:
     def test_set_quota_with_quota_info(self):
         """Test setting quota using QuotaInfo object."""
         selector = ProviderSelector("test-team", providers={})
-        selector.add_provider(ProviderInfo(
-            name="claude-code",
-            adapter_type="claude",
-        ))
+        selector.add_provider(
+            ProviderInfo(
+                name="claude-code",
+                adapter_type="claude",
+            )
+        )
         quota = QuotaInfo(
             provider_name="claude-code",
             quota_limit=1000,
@@ -339,29 +359,35 @@ class TestProviderSelector:
     def test_get_summary(self):
         """Test getting selector summary."""
         selector = ProviderSelector("test-team", providers={})
-        selector.add_provider(ProviderInfo(
-            name="claude-code",
-            adapter_type="claude",
-        ))
+        selector.add_provider(
+            ProviderInfo(
+                name="claude-code",
+                adapter_type="claude",
+            )
+        )
         summary = selector.get_summary()
         assert summary["totalProviders"] == 1
 
     def test_fallback(self):
         """Test fallback mechanism."""
         selector = ProviderSelector("test-team", providers={})
-        selector.add_provider(ProviderInfo(
-            name="claude-code",
-            adapter_type="claude",
-            priority=100,
-        ))
-        selector.add_provider(ProviderInfo(
-            name="codex",
-            adapter_type="codex",
-            priority=50,
-        ))
+        selector.add_provider(
+            ProviderInfo(
+                name="claude-code",
+                adapter_type="claude",
+                priority=100,
+            )
+        )
+        selector.add_provider(
+            ProviderInfo(
+                name="codex",
+                adapter_type="codex",
+                priority=50,
+            )
+        )
         # Make first provider unavailable
         selector.update_provider_status("claude-code", ProviderStatus.quota_exceeded)
-        
+
         # Should fallback to codex
         result = selector.select(TaskType.general)
         assert result.success is True
@@ -373,18 +399,22 @@ class TestProviderSelectorEdgeCases:
     def test_all_providers_unavailable(self):
         """Test all providers unavailable."""
         selector = ProviderSelector("test-team", providers={})
-        
-        selector.add_provider(ProviderInfo(
-            name="p1",
-            adapter_type="test",
-            status=ProviderStatus.unavailable,
-        ))
-        selector.add_provider(ProviderInfo(
-            name="p2",
-            adapter_type="test",
-            status=ProviderStatus.unavailable,
-        ))
-        
+
+        selector.add_provider(
+            ProviderInfo(
+                name="p1",
+                adapter_type="test",
+                status=ProviderStatus.unavailable,
+            )
+        )
+        selector.add_provider(
+            ProviderInfo(
+                name="p2",
+                adapter_type="test",
+                status=ProviderStatus.unavailable,
+            )
+        )
+
         result = selector.select(TaskType.general)
         assert result.success is False
 
@@ -392,7 +422,7 @@ class TestProviderSelectorEdgeCases:
         """Test concurrent selection."""
         selector = ProviderSelector("test-team", providers={})
         selector.add_provider(ProviderInfo(name="claude-code", adapter_type="claude"))
-        
+
         # Multiple selections should work
         results = [selector.select(TaskType.general) for _ in range(5)]
         assert all(r.success for r in results)
@@ -420,6 +450,7 @@ class TestFallbackChains:
     def test_default_fallback_chain(self):
         """Test default fallback chain exists."""
         from agentteam.orchestrator.provider_selector import FallbackChain
+
         chain = FallbackChain.default_chain()
         assert chain.name == "default"
         assert len(chain.providers) > 0
@@ -427,6 +458,7 @@ class TestFallbackChains:
     def test_code_generation_chain(self):
         """Test code generation fallback chain."""
         from agentteam.orchestrator.provider_selector import FallbackChain
+
         chain = FallbackChain.code_generation_chain()
         assert chain.task_type == "code_generation"
         assert "codex" in chain.providers

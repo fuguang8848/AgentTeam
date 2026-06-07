@@ -74,8 +74,7 @@ class TeamMixin:
                     description = description or tmpl.description
                     agents_data = [{"name": a.name, "type": a.type, "task": a.task} for a in tmpl.agents]
                     tasks_data = [
-                        {"subject": t.subject, "description": t.description}
-                        for t in getattr(tmpl, "tasks", [])
+                        {"subject": t.subject, "description": t.description} for t in getattr(tmpl, "tasks", [])
                     ]
                 except Exception:
                     pass
@@ -97,13 +96,15 @@ class TeamMixin:
                     task=agent_data.get("task"),
                 )
 
-            self._serve_json({
-                "status": "ok",
-                "team": team_name,
-                "description": description,
-                "member_count": len(agents_data) + 1,
-                "template": template_name,
-            })
+            self._serve_json(
+                {
+                    "status": "ok",
+                    "team": team_name,
+                    "description": description,
+                    "member_count": len(agents_data) + 1,
+                    "template": template_name,
+                }
+            )
 
         except Exception as e:
             self.send_error(400, str(e))
@@ -163,14 +164,16 @@ class TeamMixin:
                 task=task,
             )
 
-            self._serve_json({
-                "success": True,
-                "member": {
-                    "name": new_member.name,
-                    "agentId": new_member.agent_id,
-                    "agentType": new_member.agent_type,
-                },
-            })
+            self._serve_json(
+                {
+                    "success": True,
+                    "member": {
+                        "name": new_member.name,
+                        "agentId": new_member.agent_id,
+                        "agentType": new_member.agent_type,
+                    },
+                }
+            )
 
         except Exception as e:
             self.send_error(400, str(e))

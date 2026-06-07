@@ -128,16 +128,16 @@ class TestProviderCapabilityRegistry:
         """Test dynamically registering new capability."""
         # Save original state
         original_count = len(ProviderCapabilityRegistry.get_registered_ids())
-        
+
         cap = ProviderCapability(
             provider_id="test-provider-new",
             supports_streaming=True,
         )
         ProviderCapabilityRegistry.register(cap)
-        
+
         # Should be added
         assert "test-provider-new" in ProviderCapabilityRegistry.get_registered_ids()
-        
+
         # Cleanup
         ProviderCapabilityRegistry.unregister("test-provider-new")
         assert len(ProviderCapabilityRegistry.get_registered_ids()) == original_count
@@ -148,7 +148,7 @@ class TestProviderCapabilityRegistry:
         cap = ProviderCapability(provider_id="temp-provider")
         ProviderCapabilityRegistry.register(cap)
         assert ProviderCapabilityRegistry.has("temp-provider")
-        
+
         result = ProviderCapabilityRegistry.unregister("temp-provider")
         assert result is True
         assert not ProviderCapabilityRegistry.has("temp-provider")

@@ -74,17 +74,19 @@ class TasksMixin:
                 owner=owner,
             )
 
-            self._serve_json({
-                "status": "ok",
-                "task_id": task.id,
-                "task": {
-                    "id": task.id,
-                    "subject": task.subject,
-                    "description": task.description,
-                    "status": task.status,
-                    "owner": task.owner,
-                },
-            })
+            self._serve_json(
+                {
+                    "status": "ok",
+                    "task_id": task.id,
+                    "task": {
+                        "id": task.id,
+                        "subject": task.subject,
+                        "description": task.description,
+                        "status": task.status,
+                        "owner": task.owner,
+                    },
+                }
+            )
 
         except Exception as e:
             self.send_error(400, str(e))
@@ -124,16 +126,18 @@ class TasksMixin:
 
             store.save(task)
 
-            self._serve_json({
-                "status": "ok",
-                "task": {
-                    "id": task.id,
-                    "subject": task.subject,
-                    "description": task.description,
-                    "status": task.status,
-                    "owner": task.owner,
-                },
-            })
+            self._serve_json(
+                {
+                    "status": "ok",
+                    "task": {
+                        "id": task.id,
+                        "subject": task.subject,
+                        "description": task.description,
+                        "status": task.status,
+                        "owner": task.owner,
+                    },
+                }
+            )
 
         except Exception as e:
             self.send_error(400, str(e))
@@ -175,15 +179,17 @@ class TasksMixin:
                     store = TaskStore(team_name)
                     tasks = store.list()
                     for t in tasks:
-                        all_tasks.append({
-                            "id": t.id,
-                            "team": team_name,
-                            "subject": t.subject,
-                            "description": t.description,
-                            "status": t.status,
-                            "owner": t.owner,
-                            "createdAt": getattr(t, "created_at", ""),
-                        })
+                        all_tasks.append(
+                            {
+                                "id": t.id,
+                                "team": team_name,
+                                "subject": t.subject,
+                                "description": t.description,
+                                "status": t.status,
+                                "owner": t.owner,
+                                "createdAt": getattr(t, "created_at", ""),
+                            }
+                        )
                 except Exception:
                     pass
 

@@ -186,27 +186,32 @@ class TestTemplateModelFields:
 
     def test_agent_def_model_field(self):
         from agentteam.templates import AgentDef
+
         agent = AgentDef(name="test", model="opus")
         assert agent.model == "opus"
 
     def test_agent_def_model_tier_field(self):
         from agentteam.templates import AgentDef
+
         agent = AgentDef(name="test", model_tier="strong")
         assert agent.model_tier == "strong"
 
     def test_agent_def_model_tier_invalid(self):
         from agentteam.templates import AgentDef
+
         with pytest.raises(ValueError, match="Invalid model_tier"):
             AgentDef(name="test", model_tier="invalid")
 
     def test_agent_def_no_model(self):
         from agentteam.templates import AgentDef
+
         agent = AgentDef(name="test")
         assert agent.model is None
         assert agent.model_tier is None
 
     def test_template_def_model_fields(self):
         from agentteam.templates import AgentDef, TemplateDef
+
         tmpl = TemplateDef(
             name="test",
             model="sonnet-4.6",
@@ -218,6 +223,7 @@ class TestTemplateModelFields:
 
     def test_template_def_model_strategy_invalid(self):
         from agentteam.templates import AgentDef, TemplateDef
+
         with pytest.raises(ValueError, match="Invalid model_strategy"):
             TemplateDef(
                 name="test",
@@ -228,6 +234,7 @@ class TestTemplateModelFields:
     def test_template_toml_with_model(self, tmp_path):
         """TOML template with model fields parses correctly."""
         from agentteam.templates import _parse_toml
+
         toml_content = """
 [template]
 name = "test-model"
@@ -259,16 +266,19 @@ class TestConfigModelFields:
 
     def test_config_default_model(self):
         from agentteam.config import AgentTeamConfig
+
         cfg = AgentTeamConfig(default_model="opus")
         assert cfg.default_model == "opus"
 
     def test_config_model_tiers(self):
         from agentteam.config import AgentTeamConfig
+
         cfg = AgentTeamConfig(model_tiers={"strong": "my-opus"})
         assert cfg.model_tiers["strong"] == "my-opus"
 
     def test_config_defaults_empty(self):
         from agentteam.config import AgentTeamConfig
+
         cfg = AgentTeamConfig()
         assert cfg.default_model == ""
         assert cfg.model_tiers == {}
@@ -279,23 +289,27 @@ class TestIdentityModelField:
 
     def test_identity_model_field(self):
         from agentteam.identity import AgentIdentity
+
         identity = AgentIdentity(model="opus")
         assert identity.model == "opus"
 
     def test_identity_model_from_env(self, monkeypatch):
         from agentteam.identity import AgentIdentity
+
         monkeypatch.setenv("AGENTTEAM_MODEL", "sonnet-4.6")
         identity = AgentIdentity.from_env()
         assert identity.model == "sonnet-4.6"
 
     def test_identity_model_to_env(self):
         from agentteam.identity import AgentIdentity
+
         identity = AgentIdentity(model="opus")
         env = identity.to_env()
         assert env["AGENTTEAM_MODEL"] == "opus"
 
     def test_identity_no_model(self):
         from agentteam.identity import AgentIdentity
+
         identity = AgentIdentity()
         assert identity.model is None
         env = identity.to_env()
@@ -307,16 +321,19 @@ class TestTeamMemberModelField:
 
     def test_member_model_name(self):
         from agentteam.team.models import TeamMember
+
         member = TeamMember(name="test", model_name="opus")
         assert member.model_name == "opus"
 
     def test_member_model_name_default(self):
         from agentteam.team.models import TeamMember
+
         member = TeamMember(name="test")
         assert member.model_name == ""
 
     def test_member_model_name_serialization(self):
         from agentteam.team.models import TeamMember
+
         member = TeamMember(name="test", model_name="opus")
         data = json.loads(member.model_dump_json(by_alias=True))
         assert data["modelName"] == "opus"

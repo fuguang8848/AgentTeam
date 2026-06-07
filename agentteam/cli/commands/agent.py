@@ -167,11 +167,12 @@ def spawn_agent(
     repo_path = Path(repo or os.getcwd()).expanduser().resolve()
 
     from agentteam.workspace.manager import WorkspaceManager
+
     ws_mgr = WorkspaceManager(repo_path)
 
     if workspace and ws_mgr.is_git_repo():
         try:
-            ws_branch = f"agent-{_name.replace("/", "-")}"
+            ws_branch = f"agent-{_name.replace('/', '-')}"
             ws_mgr.create_worktree(ws_branch)
             cwd = ws_mgr.get_worktree_path(ws_branch)
         except Exception as e:
@@ -212,6 +213,7 @@ def spawn_agent(
 
     # Register in agent registry
     from agentteam.spawn.registry import register_agent
+
     register_agent(
         team=_team,
         name=_name,
@@ -374,7 +376,9 @@ def agent_info(
         "agentType": info.get("agent_type", "unknown"),
         "backend": info.get("backend", "unknown"),
         "status": "running" if is_alive else "stopped",
-        "startedAt": datetime.datetime.fromtimestamp(info["started_at"]).isoformat() if info.get("started_at") else None,
+        "startedAt": datetime.datetime.fromtimestamp(info["started_at"]).isoformat()
+        if info.get("started_at")
+        else None,
         "workspace": info.get("workspace", ""),
         "parent": info.get("parent", ""),
     }
@@ -457,14 +461,17 @@ def agent_restart(
 
     # Kill first
     from agentteam.spawn import get_backend
+
     be = get_backend(info.get("backend", "auto"))
     be.terminate(actual_team, name)
 
     # Respawn
     import subprocess
+
     cmd = ["openclaw"]  # Default command
     from agentteam.spawn.registry import register_agent
     import time
+
     new_id = uuid.uuid4().hex[:12]
     register_agent(
         team=actual_team,
@@ -496,6 +503,7 @@ def agent_pause(
         for t_dir in data_dir.iterdir():
             if t_dir.is_dir() and not t_dir.name.startswith("."):
                 from agentteam.spawn.registry import get_agent_info
+
                 info = get_agent_info(t_dir.name, name)
                 if info:
                     actual_team = t_dir.name
@@ -507,12 +515,14 @@ def agent_pause(
 
     # Get session key for SDK agents
     from agentteam.spawn.registry import get_agent_info
+
     info = get_agent_info(actual_team, name)
     session_key = info.get("session_key") if info else None
 
     if session_key:
         # SDK agent - send pause signal via gateway
         import json
+
         params = json.dumps({"key": session_key, "message": "pause"}, ensure_ascii=False)
         cmd = ["cmd", "/c", "openclaw", "gateway", "call", "sessions.send", "--params", params]
         result = subprocess.run(cmd, capture_output=True, timeout=10)
@@ -540,6 +550,7 @@ def agent_resume(
         for t_dir in data_dir.iterdir():
             if t_dir.is_dir() and not t_dir.name.startswith("."):
                 from agentteam.spawn.registry import get_agent_info
+
                 info = get_agent_info(t_dir.name, name)
                 if info:
                     actual_team = t_dir.name
@@ -550,11 +561,13 @@ def agent_resume(
         raise typer.Exit(1)
 
     from agentteam.spawn.registry import get_agent_info
+
     info = get_agent_info(actual_team, name)
     session_key = info.get("session_key") if info else None
 
     if session_key:
         import json
+
         params = json.dumps({"key": session_key, "message": "resume"}, ensure_ascii=False)
         cmd = ["cmd", "/c", "openclaw", "gateway", "call", "sessions.send", "--params", params]
         result = subprocess.run(cmd, capture_output=True, timeout=10)

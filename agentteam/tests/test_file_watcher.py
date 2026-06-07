@@ -206,9 +206,7 @@ class TestWatchDirectory:
             events.append(event)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            watcher = watch_directory(
-                tmpdir, handler, ignore_patterns=["*.log"]
-            )
+            watcher = watch_directory(tmpdir, handler, ignore_patterns=["*.log"])
             assert "*.log" in watcher.ignore_patterns
             watcher.stop()
 

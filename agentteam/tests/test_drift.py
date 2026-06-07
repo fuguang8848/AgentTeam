@@ -14,6 +14,7 @@ from agentteam.team.models import DriftAlert, TaskItem, TaskPriority, TaskStatus
 
 # ── Keyword extraction ──────────────────────────────────────────────
 
+
 class TestExtractKeywords:
     def test_english_text(self):
         kw = _extract_keywords("Build a REST API for user authentication")
@@ -57,6 +58,7 @@ class TestExtractKeywords:
 
 # ── Jaccard similarity ──────────────────────────────────────────────
 
+
 class TestJaccardSimilarity:
     def test_identical_sets(self):
         s = {"a", "b", "c"}
@@ -74,6 +76,7 @@ class TestJaccardSimilarity:
 
 
 # ── Semantic signal score ──────────────────────────────────────────
+
 
 class TestSemanticSignalScore:
     def test_perfect_match(self):
@@ -101,6 +104,7 @@ class TestSemanticSignalScore:
 
 
 # ── Drift detection ─────────────────────────────────────────────────
+
 
 class TestDetectDrift:
     def _make_task(self, subject="Build user API", description="REST API for authentication"):
@@ -162,6 +166,7 @@ class TestDetectDrift:
 
 # ── Full drift check ────────────────────────────────────────────────
 
+
 class TestCheckTaskDrift:
     def _make_task(self, subject="Implement search feature", description="Elasticsearch full-text search"):
         return TaskItem(
@@ -204,6 +209,7 @@ class TestCheckTaskDrift:
 
 
 # ── Integration: drift detection on task completion ─────────────────
+
 
 class TestDriftIntegration:
     """Test drift detection integrates with the task store flow."""

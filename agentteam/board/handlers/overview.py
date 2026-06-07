@@ -40,12 +40,14 @@ class OverviewMixin:
 
         except Exception as e:
             # Fallback to empty data
-            self._serve_json({
-                "total_tokens": 0,
-                "total_cost": 0.0,
-                "by_model": {},
-                "by_team": {},
-            })
+            self._serve_json(
+                {
+                    "total_tokens": 0,
+                    "total_cost": 0.0,
+                    "by_model": {},
+                    "by_team": {},
+                }
+            )
 
     def handle_get_usage_trend(self) -> None:
         """Handle GET /api/usage/trend.
@@ -61,10 +63,12 @@ class OverviewMixin:
 
         except Exception as e:
             # Fallback to empty data
-            self._serve_json({
-                "trend": [],
-                "period": "daily",
-            })
+            self._serve_json(
+                {
+                    "trend": [],
+                    "period": "daily",
+                }
+            )
 
     def handle_get_provider_stats(self) -> None:
         """Handle GET /api/usage/providers.
@@ -80,11 +84,13 @@ class OverviewMixin:
 
         except Exception as e:
             # Fallback to empty data
-            self._serve_json({
-                "providers": [],
-                "total_calls": 0,
-                "total_cost": 0.0,
-            })
+            self._serve_json(
+                {
+                    "providers": [],
+                    "total_calls": 0,
+                    "total_cost": 0.0,
+                }
+            )
 
     def handle_get_profiler_stats(self) -> None:
         """Handle GET /api/profiler/stats.
@@ -97,17 +103,21 @@ class OverviewMixin:
             profiler = get_profiler()
             stats = profiler.get_stats()
 
-            self._serve_json({
-                "profiles": stats,
-                "count": len(stats),
-            })
+            self._serve_json(
+                {
+                    "profiles": stats,
+                    "count": len(stats),
+                }
+            )
 
         except Exception as e:
             # Fallback to empty data
-            self._serve_json({
-                "profiles": [],
-                "count": 0,
-            })
+            self._serve_json(
+                {
+                    "profiles": [],
+                    "count": 0,
+                }
+            )
 
     def handle_get_concurrency_limits(self) -> None:
         """Handle GET /api/concurrency/limits.
@@ -126,8 +136,10 @@ class OverviewMixin:
             self._serve_json(limits)
 
         except Exception as e:
-            self._serve_json({
-                "max_agents": 10,
-                "max_parallel_tasks": 5,
-                "max_queue_size": 100,
-            })
+            self._serve_json(
+                {
+                    "max_agents": 10,
+                    "max_parallel_tasks": 5,
+                    "max_queue_size": 100,
+                }
+            )

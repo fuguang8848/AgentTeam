@@ -6,16 +6,16 @@ metrics collection, and structured logging.
 
 Usage:
     from agentteam.observability import tracer, meter, get_logger
-    
+
     # Tracing
     with tracer.start_as_current_span("my_operation") as span:
         span.set_attribute("key", "value")
         # do work
-    
+
     # Metrics
     counter = meter.create_counter("requests_total")
     counter.add(1, {"route": "/api"})
-    
+
     # Logging
     logger = get_logger(__name__)
     logger.info("Operation completed", extra={"duration_ms": 123})

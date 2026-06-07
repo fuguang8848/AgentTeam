@@ -17,7 +17,7 @@ from .types import AgentState
 class CTAgent:
     """
     Team Agent - 运行在 OpenClaw Session 中的智能体
-    
+
     属性:
         name: Agent 名称，必须唯一
         agent_type: Agent 类型，如 "coder", "reviewer", "leader"
@@ -29,7 +29,7 @@ class CTAgent:
         updated_at: 更新时间戳
         metadata: 额外元数据
     """
-    
+
     name: str
     agent_type: str  # "coder", "reviewer", "leader", etc.
     session_key: str
@@ -39,7 +39,7 @@ class CTAgent:
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
     metadata: dict = field(default_factory=dict)
-    
+
     def to_dict(self) -> dict:
         """转换为字典"""
         return {
@@ -71,35 +71,35 @@ class CTAgent:
             updated_at=data.get("updated_at", time.time()),
             metadata=data.get("metadata", {}),
         )
-    
+
     def update_state(self, state: AgentState) -> None:
         """更新状态并记录时间戳"""
         self.state = state
         self.updated_at = time.time()
-    
+
     def assign_task(self, task_id: str) -> None:
         """分配任务"""
         self.task_id = task_id
         self.state = AgentState.RUNNING
         self.updated_at = time.time()
-    
+
     def complete_task(self) -> None:
         """完成任务"""
         self.task_id = None
         self.state = AgentState.COMPLETED
         self.updated_at = time.time()
-    
+
     def fail(self, error: Optional[str] = None) -> None:
         """标记失败"""
         self.state = AgentState.FAILED
         if error:
             self.metadata["error"] = error
         self.updated_at = time.time()
-    
+
     def is_active(self) -> bool:
         """检查是否处于活跃状态"""
         return self.state in (AgentState.RUNNING, AgentState.WAITING)
-    
+
     def is_done(self) -> bool:
         """检查是否已结束"""
         return self.state in (AgentState.COMPLETED, AgentState.FAILED, AgentState.TERMINATED)

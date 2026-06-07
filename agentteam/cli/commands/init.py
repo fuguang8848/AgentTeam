@@ -20,6 +20,7 @@ from typing import Optional
 try:
     import questionary
     from questionary import Choice, prompt
+
     QUESTIONARY_AVAILABLE = True
 except ImportError:
     QUESTIONARY_AVAILABLE = False
@@ -99,7 +100,7 @@ version: "{__version__}"
 # Agent Backend Configuration
 backend:
   type: "{backend}"
-  {"custom_path: \"" + custom_backend_path + "\"" if custom_backend_path and backend == "custom" else ""}
+  {'custom_path: "' + custom_backend_path + '"' if custom_backend_path and backend == "custom" else ""}
 
 # Database Configuration
 database:
@@ -148,19 +149,19 @@ def show_success_summary(
     table = Table(title="✓ Setup Complete!", show_header=False, box=None)
     table.add_column("Key", style="bold cyan")
     table.add_column("Value", style="green")
-    
+
     table.add_row("Backend", backend)
     table.add_row("Database", database_path)
     table.add_row("Transport", transport)
     table.add_row("Config File", config_path)
-    
+
     panel = Panel(
         table,
         title="[bold green]AgentTeam Initialization Successful[/bold green]",
         border_style="green",
     )
     console.print(panel)
-    
+
     console.print("\n[bold]Next steps:[/bold]")
     console.print("  1. Run [cyan]agentteam team create[/cyan] to create your first team")
     console.print("  2. Run [cyan]agentteam board serve[/cyan] to start the dashboard")
@@ -171,7 +172,7 @@ def run_wizard_questionary() -> Optional[dict]:
     """Run the interactive wizard using questionary."""
     if not QUESTIONARY_AVAILABLE:
         return None
-    
+
     questions = [
         {
             "type": "confirm",
@@ -183,10 +184,7 @@ def run_wizard_questionary() -> Optional[dict]:
             "type": "select",
             "name": "backend",
             "message": "Select your agent backend:",
-            "choices": [
-                Choice(title=f"{b['name']} - {b['desc']}", value=b['id'])
-                for b in BACKEND_OPTIONS
-            ],
+            "choices": [Choice(title=f"{b['name']} - {b['desc']}", value=b["id"]) for b in BACKEND_OPTIONS],
             "default": "claude-code",
         },
         {
@@ -205,10 +203,7 @@ def run_wizard_questionary() -> Optional[dict]:
             "type": "select",
             "name": "transport",
             "message": "Select transport backend:",
-            "choices": [
-                Choice(title=f"{t['name']} - {t['desc']}", value=t['id'])
-                for t in TRANSPORT_OPTIONS
-            ],
+            "choices": [Choice(title=f"{t['name']} - {t['desc']}", value=t["id"]) for t in TRANSPORT_OPTIONS],
             "default": "file",
         },
         {
@@ -218,68 +213,69 @@ def run_wizard_questionary() -> Optional[dict]:
             "default": True,
         },
     ]
-    
+
     answers = prompt(questions)
     return answers
 
 
 def run_wizard_manual() -> Optional[dict]:
     """Run the interactive wizard using rich prompts (fallback)."""
-    console.print(Panel.fit(
-        "[bold green]AgentTeam Init Wizard[/bold green]\n"
-        "Follow the prompts to configure your environment.",
-        border_style="green",
-    ))
+    console.print(
+        Panel.fit(
+            "[bold green]AgentTeam Init Wizard[/bold green]\nFollow the prompts to configure your environment.",
+            border_style="green",
+        )
+    )
     console.print()
-    
+
     # Step 0: Welcome
     proceed = console.input("[bold cyan]Proceed with setup?[/bold cyan] [Y/n]: ").strip().lower()
     if proceed == "n":
         console.print("[yellow]Setup cancelled.[/yellow]")
         return None
-    
+
     # Step 1: Backend selection
     console.print("\n[bold]Step 1: Select Backend[/bold]")
     for i, b in enumerate(BACKEND_OPTIONS, 1):
         console.print(f"  {i}. {b['name']} - {b['desc']}")
-    
+
     backend_choice = console.input("Enter choice [1-4] (default: 1): ").strip()
     if not backend_choice:
         backend_choice = "1"
-    
+
     try:
         backend_idx = int(backend_choice) - 1
         backend = BACKEND_OPTIONS[backend_idx]["id"]
     except (ValueError, IndexError):
         backend = "claude-code"
-    
+
     # Custom backend path
     custom_backend_path = None
     if backend == "custom":
         custom_backend_path = console.input("  Enter custom backend path: ").strip()
-    
+
     # Step 2: Database path
     console.print("\n[bold]Step 2: Database Path[/bold]")
     default_db = get_default_data_dir() / "data.db"
     database_path = console.input(f"Enter path [{default_db}]: ").strip()
     if not database_path:
         database_path = str(default_db)
-    
+
     # Step 3: Transport selection
     console.print("\n[bold]Step 3: Select Transport[/bold]")
     for i, t in enumerate(TRANSPORT_OPTIONS, 1):
         console.print(f"  {i}. {t['name']} - {t['desc']}")
-    
+
     transport_choice = console.input("Enter choice [1-3] (default: 1): ").strip()
     if not transport_choice:
         transport_choice = "1"
-    
+
     try:
         transport_idx = int(transport_choice) - 1
         transport = TRANSPORT_OPTIONS[transport_idx]["id"]
     except (ValueError, IndexError):
         transport = "file"
-    
+
     # Step 4: Confirm and write
     console.print("\n[bold]Step 4: Summary[/bold]")
     console.print(f"  Backend: {backend}")
@@ -287,12 +283,12 @@ def run_wizard_manual() -> Optional[dict]:
         console.print(f"  Custom Backend Path: {custom_backend_path}")
     console.print(f"  Database: {database_path}")
     console.print(f"  Transport: {transport}")
-    
+
     confirm = console.input("\nWrite config? [Y/n]: ").strip().lower()
     if confirm == "n":
         console.print("[yellow]Setup cancelled.[/yellow]")
         return None
-    
+
     return {
         "backend": backend,
         "custom_backend": custom_backend_path,
@@ -335,26 +331,27 @@ def init(
 ) -> None:
     """
     Initialize AgentTeam with interactive setup wizard.
-    
+
     This command guides you through 5 steps:
     1. Python version check
     2. Backend selection
     3. Database configuration
     4. Transport selection
     5. Config file generation
-    
+
     Examples:
         agentteam init                    # Interactive wizard
         agentteam init --non-interactive # Use all defaults
         agentteam init -b claude-code   # Pre-select backend
     """
-    console.print(Panel.fit(
-        f"[bold green]AgentTeam v{__version__} - Setup Wizard[/bold green]\n"
-        "Let's configure your environment!",
-        border_style="bright_blue",
-    ))
+    console.print(
+        Panel.fit(
+            f"[bold green]AgentTeam v{__version__} - Setup Wizard[/bold green]\nLet's configure your environment!",
+            border_style="bright_blue",
+        )
+    )
     console.print()
-    
+
     # Step 0: Check Python version
     console.print("[bold]Step 0: System Check[/bold]")
     python_ok, python_msg = check_python_version()
@@ -366,7 +363,7 @@ def init(
         console.print("  Please upgrade Python and try again.")
         raise typer.Exit(code=1)
     console.print()
-    
+
     # Step 1: Backend
     if backend is None:
         if non_interactive:
@@ -376,36 +373,36 @@ def init(
                 result = run_wizard_questionary()
             else:
                 result = run_wizard_manual()
-            
+
             if result is None:
                 raise typer.Exit()
-            
+
             backend = result.get("backend", "claude-code")
             custom_backend = result.get("custom_backend")
             database_path = result.get("database_path")
             transport = result.get("transport", "file")
-    
+
     # Validate backend
     valid_backends = [b["id"] for b in BACKEND_OPTIONS]
     if backend not in valid_backends:
         console.print(f"[red]Invalid backend: {backend}[/red]")
         console.print(f"Valid options: {', '.join(valid_backends)}")
         raise typer.Exit(code=1)
-    
+
     # Step 2: Database path
     if database_path is None:
         database_path = str(get_default_data_dir() / "data.db")
-    
+
     # Step 3: Transport
     if transport is None:
         transport = "file"
-    
+
     valid_transports = [t["id"] for t in TRANSPORT_OPTIONS]
     if transport not in valid_transports:
         console.print(f"[red]Invalid transport: {transport}[/red]")
         console.print(f"Valid options: {', '.join(valid_transports)}")
         raise typer.Exit(code=1)
-    
+
     # Step 4: Show summary
     console.print("[bold]Step 4: Configuration Summary[/bold]")
     table = Table(show_header=False, box=None)
@@ -418,17 +415,17 @@ def init(
     table.add_row("Transport", transport)
     console.print(table)
     console.print()
-    
+
     # Step 5: Write config
     console.print("[bold]Step 5: Writing Config[/bold]")
-    
+
     config_content = generate_config_content(
         backend=backend,
         database_path=database_path,
         transport=transport,
         custom_backend_path=custom_backend if backend == "custom" else None,
     )
-    
+
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -436,13 +433,13 @@ def init(
     ) as progress:
         progress.add_task("Writing config file...", total=None)
         success, result = write_config(config_content)
-    
+
     if success:
         console.print(f"  [green]✓ Config written to: {result}[/green]")
     else:
         console.print(f"  [red]✗ Failed to write config: {result}[/red]")
         raise typer.Exit(code=1)
-    
+
     # Show success summary
     console.print()
     show_success_summary(

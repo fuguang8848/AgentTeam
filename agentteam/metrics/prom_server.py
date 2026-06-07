@@ -6,10 +6,10 @@ Implements the Prometheus text format for metrics exposition.
 
 Usage:
     from agentteam.metrics.prom_server import MetricsServer
-    
+
     server = MetricsServer(port=9090)
     server.start()
-    
+
     # Or use CLI:
     # agentteam metrics serve --port 9090
 """
@@ -23,6 +23,7 @@ from typing import Any, Optional
 
 try:
     from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
     PROMETHEUS_CLIENT_AVAILABLE = True
 except ImportError:
     PROMETHEUS_CLIENT_AVAILABLE = False
@@ -71,7 +72,9 @@ class MetricsCollector:
                 self._histograms[key] = {
                     "sum": 0,
                     "count": 0,
-                    "buckets": {b: 0 for b in (buckets or [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0])},
+                    "buckets": {
+                        b: 0 for b in (buckets or [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0])
+                    },
                 }
             self._histograms[key]["sum"] += value
             self._histograms[key]["count"] += 1

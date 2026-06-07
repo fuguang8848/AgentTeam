@@ -139,7 +139,13 @@ def inbox_receive(
             )
         console.print(table)
 
-    _output([{"from_agent": m.from_agent, "type": str(m.type), "content": m.content, "timestamp": m.timestamp} for m in messages], _human)
+    _output(
+        [
+            {"from_agent": m.from_agent, "type": str(m.type), "content": m.content, "timestamp": m.timestamp}
+            for m in messages
+        ],
+        _human,
+    )
 
 
 @app.command("peek")

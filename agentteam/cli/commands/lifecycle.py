@@ -65,7 +65,10 @@ def lifecycle_approve_shutdown(
 
     lifecycle = LifecycleManager(team)
     lifecycle.approve_shutdown(agent)
-    _output({"status": "shutdown_approved", "agent": agent}, lambda d: console.print(f"[green]Shutdown approved for {agent}[/green]"))
+    _output(
+        {"status": "shutdown_approved", "agent": agent},
+        lambda d: console.print(f"[green]Shutdown approved for {agent}[/green]"),
+    )
 
 
 @app.command("reject-shutdown")
@@ -79,7 +82,10 @@ def lifecycle_reject_shutdown(
 
     lifecycle = LifecycleManager(team)
     lifecycle.reject_shutdown(agent, reason=reason)
-    _output({"status": "shutdown_rejected", "agent": agent}, lambda d: console.print(f"[yellow]Shutdown rejected for {agent}[/yellow]"))
+    _output(
+        {"status": "shutdown_rejected", "agent": agent},
+        lambda d: console.print(f"[yellow]Shutdown rejected for {agent}[/yellow]"),
+    )
 
 
 @app.command("idle")
@@ -93,7 +99,10 @@ def lifecycle_idle(
     identity = AgentIdentity.from_env()
     lifecycle = LifecycleManager(team)
     lifecycle.mark_idle(identity.agent_name)
-    _output({"status": "idle", "agent": identity.agent_name}, lambda d: console.print(f"[green]Agent {identity.agent_name} marked idle[/green]"))
+    _output(
+        {"status": "idle", "agent": identity.agent_name},
+        lambda d: console.print(f"[green]Agent {identity.agent_name} marked idle[/green]"),
+    )
 
 
 @app.command("on-exit")
@@ -108,7 +117,10 @@ def lifecycle_on_exit(
     identity = AgentIdentity.from_env()
     lifecycle = LifecycleManager(team)
     lifecycle.on_exit(identity.agent_name, cleanup=cleanup)
-    _output({"status": "exited", "agent": identity.agent_name}, lambda d: console.print(f"[dim]Agent {identity.agent_name} exited[/dim]"))
+    _output(
+        {"status": "exited", "agent": identity.agent_name},
+        lambda d: console.print(f"[dim]Agent {identity.agent_name} exited[/dim]"),
+    )
 
 
 @app.command("check-zombies")
@@ -122,10 +134,12 @@ def lifecycle_check_zombies(
     zombies = lifecycle.check_zombies()
 
     if zombies:
+
         def _human(z):
             console.print("[yellow]Zombie processes found:[/yellow]")
             for z_name, z_pid in z:
                 console.print(f"  - {z_name} (PID: {z_pid})")
+
         _output({"zombies": zombies, "count": len(zombies)}, _human)
     else:
         _output({"zombies": [], "count": 0}, lambda d: console.print("[green]No zombie processes found[/green]"))
@@ -142,8 +156,10 @@ def lifecycle_terminate_children(
     lifecycle = LifecycleManager(team)
     terminated = lifecycle.terminate_children(agent)
 
-    _output({"status": "terminated", "parent": agent, "count": len(terminated)}, 
-            lambda d: console.print(f"[green]Terminated {d['count']} child agents of {d['parent']}[/green]"))
+    _output(
+        {"status": "terminated", "parent": agent, "count": len(terminated)},
+        lambda d: console.print(f"[green]Terminated {d['count']} child agents of {d['parent']}[/green]"),
+    )
 
 
 @app.command("terminate-tree")
@@ -158,8 +174,10 @@ def lifecycle_terminate_tree(
     lifecycle = LifecycleManager(team)
     terminated = lifecycle.terminate_tree(agent, force=force)
 
-    _output({"status": "terminated", "root": agent, "count": len(terminated)},
-            lambda d: console.print(f"[green]Terminated {d['count']} agents in tree rooted at {d['root']}[/green]"))
+    _output(
+        {"status": "terminated", "root": agent, "count": len(terminated)},
+        lambda d: console.print(f"[green]Terminated {d['count']} agents in tree rooted at {d['root']}[/green]"),
+    )
 
 
 @app.command("list-children")
@@ -219,8 +237,10 @@ def lifecycle_register_child(
     lifecycle = LifecycleManager(team)
     lifecycle.register_child(actual_parent, child)
 
-    _output({"status": "registered", "parent": actual_parent, "child": child},
-            lambda d: console.print(f"[green]Registered {d['child']} as child of {d['parent']}[/green]"))
+    _output(
+        {"status": "registered", "parent": actual_parent, "child": child},
+        lambda d: console.print(f"[green]Registered {d['child']} as child of {d['parent']}[/green]"),
+    )
 
 
 if __name__ == "__main__":
