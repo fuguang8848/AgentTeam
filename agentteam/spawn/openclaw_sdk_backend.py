@@ -290,6 +290,11 @@ class OpenClawSDKBackend(SpawnBackend):
         2. 发送任务消息（包含 agentteam 协作协议）
         3. Agent 在 Session 中运行，可以访问所有工具
         4. Agent 完成后通过 inbox 发送结果
+
+        环境变量注入（env 参数）：
+        - tmux_backend：直接传递给子进程（ subprocess.Popen(env=) ）
+        - openclaw_sdk_backend：通过任务消息注入，Agent 执行 export 命令
+          （适用于 AGENTMEMORY_BASE_DIR / AGENTMEMORY_NAMESPACE 等配置）
         """
         try:
             with self._lock:
@@ -302,7 +307,7 @@ class OpenClawSDKBackend(SpawnBackend):
                 session_key = create_data["key"]
                 session_id = create_data["sessionId"]
 
-                # Step 2: 构建任务消息（注入协作协议）
+                # Step 2: 构建任务消息（注入协作协议 + 环境变量）
                 task = self._build_task_message(
                     agent_name=agent_name,
                     agent_id=agent_id,
@@ -311,6 +316,7 @@ class OpenClawSDKBackend(SpawnBackend):
                     prompt=prompt or "Complete your assigned task",
                     cwd=cwd,
                     on_ready=on_ready,
+                    env=env,
                 )
 
                 # Step 3: 发送任务到 Session
@@ -376,12 +382,31 @@ class OpenClawSDKBackend(SpawnBackend):
         prompt: str,
         cwd: str | None = None,
         on_ready: str | None = None,
+        env: dict[str, str] | None = None,
     ) -> str:
         """构建包含 agentteam 协作协议的任务消息"""
 
+        # Build environment variables section (injected for SDK backend)
+        env_section = []
+        if env:
+            # Escape double quotes in values to prevent prompt injection
+            safe_vars = []
+            for k, v in env.items():
+                safe_v = v.replace('"', '\\"').replace("$", "\\$").replace("`", "\\`")
+                safe_vars.append(f'export {k}="{safe_v}"')
+            if safe_vars:
+                env_section = [
+                    "",
+                    "## Environment Setup",
+                    "```bash",
+                    *safe_vars,
+                    "```",
+                    "",
+                ]
+
         lines = [
             f"You are **{agent_name}** ({agent_type}), an agent on team **{team_name}**.",
-            "",
+            *env_section,
             "## Your Task",
             prompt,
             "",
