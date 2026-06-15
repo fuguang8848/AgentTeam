@@ -1,0 +1,44 @@
+# AgentTeam Docker Compose Configuration
+# For local development and testing
+
+services:
+  agentteam:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - AGENTEAM_HOME=/app
+      # Optional: Redis for message transport
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      # Mount local agentteam data directory for persistence
+      - ./data:/app/data
+      # Mount tmp for worktrees
+      - ./tmp:/app/tmp
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # Optional: Redis for message transport (not required for file-based transport)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Optional: Redis Commander for debugging
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis

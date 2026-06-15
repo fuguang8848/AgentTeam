@@ -19,10 +19,10 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-v0.5.1--openclaw-blue?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/version-v0.8.0--openclaw-blue?style=for-the-badge" alt="Version">
   <img src="https://img.shields.io/badge/python-≥3.10-blue?style=for-the-badge&logo=python" alt="Python">
   <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/tests-595%2B-brightgreen?style=for-the-badge" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-943%2B-brightgreen?style=for-the-badge" alt="Tests">
 </p>
 
 <p align="center">
@@ -51,7 +51,7 @@
 | **Reliability** | **Retry + Structured Logs + Alerts** | None |
 | **Security** | **API Auth + Token Isolation** | Usually none |
 | **Observability** | **Audit Logs + Drift Detection** | None |
-| **Quality** | **595+ tests, P0-P25 verified** | Ad-hoc |
+| **Quality** | **943+ tests, P0-P37 verified** | Ad-hoc |
 | **Infrastructure** | Filesystem (no Redis needed) | Redis/message queues required |
 
 ---
@@ -164,7 +164,7 @@ agentteam board serve --port 8080
 
 ## 📊 版本对比
 
-| 功能 | 上游 v0.3.0 | **AgentTeam v0.5.1** |
+| 功能 | 上游 v0.3.0 | **AgentTeam v0.8.0** |
 |------|-------------|-------------------------------|
 | Web UI 看板 | ❌ | ✅ |
 | API 认证 | ❌ | ✅ |

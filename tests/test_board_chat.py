@@ -1,6 +1,7 @@
 """
 Tests for the /api/chat endpoint
 """
+
 import json
 import pytest
 from unittest.mock import patch, MagicMock
@@ -22,7 +23,7 @@ class TestChatEndpoint:
     def test_chat_endpoint_exists(self, handler):
         """Test that chat endpoint exists in the handler"""
         # The endpoint is defined in do_POST, verify it exists
-        assert hasattr(handler, 'do_POST')
+        assert hasattr(handler, "do_POST")
 
     def test_chat_simple_message(self, handler):
         """Test chat with a simple message"""
@@ -106,10 +107,6 @@ class TestSimpleResponseGenerator:
         from agentteam.board.server import _generate_simple_response
 
         # Should return one of the default responses
-        responses = [
-            "收到！",
-            "好的，我明白了",
-            "我理解了"
-        ]
+        responses = ["收到了", "好的，继续", "我明白了"]
         response = _generate_simple_response("random unrelated message")
         assert any(r in response for r in responses)
