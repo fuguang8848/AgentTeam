@@ -218,6 +218,11 @@ def serve(host="0.0.0.0", port=8080, interval=2.0, default_team=""):
     ThreadingHTTPServer((host, port), H).serve_forever()
 
 
+# 2026-06-18 fix: 8080 DOWN, board.py CLI imports run_server but function is serve.
+# Alias preserves backward compat without changing board.py.
+run_server = serve
+
+
 if __name__ == "__main__":
     import argparse
 

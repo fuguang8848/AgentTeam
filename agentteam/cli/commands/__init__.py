@@ -34,6 +34,32 @@ from agentteam.cli.commands.session import app as session_app
 # Re-export helper functions for backward compatibility
 from agentteam.cli.commands.helpers import _deliver_to_running_agent, _broadcast_activity_to_board
 
+# Top-level app: combines all sub-apps for legacy `from agentteam.cli.commands import app`
+# (Python prefers this package over the commands.py shim, so we must expose app here.)
+# 2026-06-18 fix: 8080 DOWN, ImportError: cannot import name 'app' from 'agentteam.cli.commands'
+import typer
+app = typer.Typer(name="agentteam", help="Framework-agnostic multi-agent CLI", no_args_is_help=True)
+for _name, _sub in [
+    ("init", init_app),
+    ("team", team_app),
+    ("agent", agent_app),
+    ("task", task_app),
+    ("message", message_app),
+    ("board", board_app),
+    ("config", config_app),
+    ("lifecycle", lifecycle_app),
+    ("workspace", workspace_app),
+    ("template", template_app),
+    ("metrics", metrics_app),
+    ("session", session_app),
+    ("alert", alert_app),
+    ("audit", audit_app),
+    ("drift", drift_app),
+    ("role", role_app),
+    ("review", review_app),
+]:
+    app.add_typer(_sub, name=_name)
+
 __all__ = [
     # Main apps
     "init_app",
