@@ -1,5 +1,10 @@
 # 🦞 AgentTeam
 
+> **V 6/19 18:38 README 修真** (SOP #34 跨仓 L1 对比):
+> - 失实 1: version v0.8.0-openclaw — 实际 `__version__ = "0.7.6"`
+> - 失实 2: tests 943+ — 实际 93 test files / 2129 test functions
+
+
 [English](README.md) ·
 [简体中文](README_CN.md) ·
 [繁體中文](README_TW.md) ·
@@ -19,10 +24,10 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-v0.8.0--openclaw-blue?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/version-v0.7.6-blue?style=for-the-badge" alt="Version">
   <img src="https://img.shields.io/badge/python-≥3.10-blue?style=for-the-badge&logo=python" alt="Python">
   <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/tests-943%2B-brightgreen?style=for-the-badge" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-2129%2B-brightgreen?style=for-the-badge" alt="Tests">
 </p>
 
 <p align="center">
