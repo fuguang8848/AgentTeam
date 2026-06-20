@@ -1,0 +1,12 @@
+user: v
+data_dir: /home/fuguang/.agentteam/data
+workspace: auto
+default_backend: tmux
+skip_permissions: true
+default_team: ""
+transport: file
+debug: false
+spawn_ready_timeout: 30.0
+spawn_prompt_delay: 2.0
+default_model: ""
+model_tiers: {}

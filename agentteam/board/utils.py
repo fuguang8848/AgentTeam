@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import random
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -56,8 +57,6 @@ def _generate_simple_response(message: str) -> str:
         return "我可以帮你管理团队。使用命令：\\n/members - 查看团队成员 \\n/status - 查看团队状态 \\n/tasks - 查看任务列表"
 
     # Default response
-    import random
-
     default_responses = ["收到了", "好的，继续", "我明白了"]
     return random.choice(default_responses)
 

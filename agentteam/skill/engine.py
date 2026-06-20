@@ -15,6 +15,7 @@ SkillEngine - 技能引擎
 
 import logging
 import re
+import threading
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -53,6 +54,24 @@ class SkillVariable:
 
 
 @dataclass
+class SkillVersion:
+    """技能版本"""
+    version: str  # 版本号 (semver)
+    skill_id: str  # 关联的技能 ID
+    prompt_template: Optional[str] = None
+    system_prompt_addition: Optional[str] = None
+    input_variables: Optional[List[SkillVariable]] = None
+    changelog: Optional[str] = None  # 版本变更说明
+    created_at: Optional[str] = None
+    created_by: Optional[str] = None
+    tags: Optional[List[str]] = None  # 灰度发布标签
+
+    def __post_init__(self):
+        if self.created_at is None:
+            self.created_at = datetime.now().isoformat()
+
+
+@dataclass
 class Skill:
     """技能定义"""
 
@@ -77,9 +96,9 @@ class Skill:
     is_installed: bool = True  # 是否已安装
     is_enabled: bool = True  # 是否启用
     source: SkillSource = SkillSource.BUILTIN  # 来源
-    version: Optional[str] = None  # 版本
+    version: Optional[str] = None  # 当前激活版本
     author: Optional[str] = None  # 作者
-    tags: Optional[List[str]] = None  # 标签
+    tags: Optional[List[str]] = None  # 标签（用于灰度发布）
     created_at: Optional[str] = None  # 创建时间
     updated_at: Optional[str] = None  # 更新时间
 
@@ -88,6 +107,327 @@ class Skill:
             self.created_at = datetime.now().isoformat()
         if self.updated_at is None:
             self.updated_at = datetime.now().isoformat()
+
+    def to_version(self, changelog: str = "", created_by: Optional[str] = None) -> SkillVersion:
+        """将此技能转换为版本快照"""
+        return SkillVersion(
+            version=self.version or "1.0.0",
+            skill_id=self.id,
+            prompt_template=self.prompt_template,
+            system_prompt_addition=self.system_prompt_addition,
+            input_variables=self.input_variables,
+            changelog=changelog,
+            created_at=datetime.now().isoformat(),
+            created_by=created_by,
+            tags=self.tags.copy() if self.tags else None,
+        )
+
+
+class SkillVersionManager:
+    """
+    技能版本管理器
+
+    管理技能的多版本控制，支持：
+    - 技能版本记录
+    - 基于 tag 的灰度发布
+    - 技能回滚到指定版本
+
+    使用示例：
+        # 发布新版本
+        version_manager.publish_version(skill, "1.1.0", changelog="新增功能")
+
+        # 基于 tag 灰度发布
+        version_manager.publish_with_tag(skill, "1.2.0", tags=["beta", "premium"])
+
+        # 查询版本
+        versions = version_manager.get_versions("skill-id")
+
+        # 回滚
+        rolled_back_skill = version_manager.rollback_to_version("skill-id", "1.0.0")
+
+        # 灰度发布控制
+        active_skill = version_manager.get_active_skill("skill-id", user_tags=["premium"])
+    """
+
+    def __init__(self):
+        self._versions: Dict[str, List[SkillVersion]] = {}  # skill_id -> versions
+        self._current_versions: Dict[str, str] = {}  # skill_id -> current_version
+        self._tag_index: Dict[str, Dict[str, str]] = {}  # tag -> {skill_id: version}
+        self._lock = threading.RLock()
+
+    def publish_version(
+        self,
+        skill: Skill,
+        version: str,
+        changelog: str = "",
+        created_by: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+    ) -> SkillVersion:
+        """
+        发布新版本
+
+        Args:
+            skill: 技能实例
+            version: 版本号
+            changelog: 变更说明
+            created_by: 创建者
+            tags: 发布标签
+
+        Returns:
+            SkillVersion: 新发布的版本
+        """
+        with self._lock:
+            # 创建版本快照
+            skill_version = SkillVersion(
+                version=version,
+                skill_id=skill.id,
+                prompt_template=skill.prompt_template,
+                system_prompt_addition=skill.system_prompt_addition,
+                input_variables=skill.input_variables,
+                changelog=changelog,
+                created_at=datetime.now().isoformat(),
+                created_by=created_by,
+                tags=tags or [],
+            )
+
+            # 存储版本
+            if skill.id not in self._versions:
+                self._versions[skill.id] = []
+            self._versions[skill.id].append(skill_version)
+
+            # 更新当前版本
+            self._current_versions[skill.id] = version
+
+            # 更新 tag 索引
+            if tags:
+                for tag in tags:
+                    if tag not in self._tag_index:
+                        self._tag_index[tag] = {}
+                    self._tag_index[tag][skill.id] = version
+
+            logger.info(f"Published skill {skill.id} version {version}")
+            return skill_version
+
+    def publish_with_tag(
+        self,
+        skill: Skill,
+        version: str,
+        tags: List[str],
+        changelog: str = "",
+        created_by: Optional[str] = None,
+    ) -> SkillVersion:
+        """
+        带 tag 发布（灰度发布）
+
+        Args:
+            skill: 技能实例
+            version: 版本号
+            tags: 灰度发布标签列表
+            changelog: 变更说明
+            created_by: 创建者
+
+        Returns:
+            SkillVersion: 新发布的版本
+        """
+        return self.publish_version(
+            skill=skill,
+            version=version,
+            changelog=changelog,
+            created_by=created_by,
+            tags=tags,
+        )
+
+    def get_versions(self, skill_id: str) -> List[SkillVersion]:
+        """
+        获取技能的所有版本
+
+        Args:
+            skill_id: 技能 ID
+
+        Returns:
+            版本列表（按时间倒序）
+        """
+        with self._lock:
+            versions = self._versions.get(skill_id, [])
+            return sorted(versions, key=lambda v: v.created_at or "", reverse=True)
+
+    def get_version(self, skill_id: str, version: str) -> Optional[SkillVersion]:
+        """
+        获取指定版本
+
+        Args:
+            skill_id: 技能 ID
+            version: 版本号
+
+        Returns:
+            SkillVersion 或 None
+        """
+        with self._lock:
+            versions = self._versions.get(skill_id, [])
+            for v in versions:
+                if v.version == version:
+                    return v
+            return None
+
+    def get_current_version(self, skill_id: str) -> Optional[SkillVersion]:
+        """
+        获取技能的当前版本
+
+        Args:
+            skill_id: 技能 ID
+
+        Returns:
+            SkillVersion 或 None
+        """
+        with self._lock:
+            current_ver = self._current_versions.get(skill_id)
+            if current_ver:
+                return self.get_version(skill_id, current_ver)
+            return None
+
+    def get_active_skill(
+        self,
+        skill: Skill,
+        user_tags: Optional[List[str]] = None,
+    ) -> Skill:
+        """
+        获取激活的技能（考虑灰度发布）
+
+        Args:
+            skill: 当前技能实例
+            user_tags: 用户标签列表
+
+        Returns:
+            如果有匹配 tag 的灰度版本，返回灰度版本；否则返回原技能
+        """
+        with self._lock:
+            if not user_tags:
+                return skill
+
+            # 检查是否有带 tag 的版本匹配
+            for tag in user_tags:
+                if tag in self._tag_index:
+                    version = self._tag_index[tag].get(skill.id)
+                    if version:
+                        v = self.get_version(skill.id, version)
+                        if v:
+                            # 使用灰度版本更新技能
+                            updated_skill = Skill(
+                                id=skill.id,
+                                name=skill.name,
+                                description=skill.description,
+                                category=skill.category,
+                                slash_command=skill.slash_command,
+                                type=skill.type,
+                                compatible_providers=skill.compatible_providers,
+                                prompt_template=v.prompt_template,
+                                system_prompt_addition=v.system_prompt_addition,
+                                input_variables=v.input_variables,
+                                native_config=skill.native_config,
+                                required_mcps=skill.required_mcps,
+                                is_installed=skill.is_installed,
+                                is_enabled=skill.is_enabled,
+                                source=skill.source,
+                                version=v.version,
+                                author=skill.author,
+                                tags=v.tags,
+                            )
+                            return updated_skill
+
+            return skill
+
+    def rollback_to_version(
+        self,
+        skill_id: str,
+        target_version: str,
+    ) -> Optional[Skill]:
+        """
+        回滚技能到指定版本
+
+        Args:
+            skill_id: 技能 ID
+            target_version: 目标版本号
+
+        Returns:
+            回滚后的 Skill 或 None
+        """
+        with self._lock:
+            version = self.get_version(skill_id, target_version)
+            if not version:
+                logger.warning(f"Version {target_version} not found for skill {skill_id}")
+                return None
+
+            # 注意：这里需要从技能注册表获取基础技能信息
+            # 回滚只恢复模板相关字段
+            # BUILTIN_SKILLS 在同一模块中定义，直接引用
+
+            # 查找原始技能定义
+            original_skill = None
+            for s in BUILTIN_SKILLS:
+                if s.id == skill_id:
+                    original_skill = s
+                    break
+
+            if original_skill is None:
+                logger.error(f"Original skill {skill_id} not found")
+                return None
+
+            # 创建回滚后的技能
+            rolled_back = Skill(
+                id=original_skill.id,
+                name=original_skill.name,
+                description=original_skill.description,
+                category=original_skill.category,
+                slash_command=original_skill.slash_command,
+                type=original_skill.type,
+                compatible_providers=original_skill.compatible_providers,
+                prompt_template=version.prompt_template,
+                system_prompt_addition=version.system_prompt_addition,
+                input_variables=version.input_variables,
+                native_config=original_skill.native_config,
+                required_mcps=original_skill.required_mcps,
+                is_installed=original_skill.is_installed,
+                is_enabled=original_skill.is_enabled,
+                source=original_skill.source,
+                version=version.version,
+                author=original_skill.author,
+                tags=version.tags,
+                created_at=original_skill.created_at,
+                updated_at=datetime.now().isoformat(),
+            )
+
+            # 更新当前版本
+            self._current_versions[skill_id] = target_version
+
+            logger.info(f"Rolled back skill {skill_id} to version {target_version}")
+            return rolled_back
+
+    def list_versions_by_tag(self, tag: str) -> Dict[str, str]:
+        """
+        列出指定 tag 关联的所有技能版本
+
+        Args:
+            tag: 标签
+
+        Returns:
+            {skill_id: version}
+        """
+        with self._lock:
+            return self._tag_index.get(tag, {}).copy()
+
+    def get_stats(self) -> Dict[str, Any]:
+        """获取版本管理统计"""
+        with self._lock:
+            total_versions = sum(len(vs) for vs in self._versions.values())
+            return {
+                "total_skills": len(self._versions),
+                "total_versions": total_versions,
+                "current_versions": len(self._current_versions),
+                "active_tags": len(self._tag_index),
+                "skills_with_versions": {
+                    sid: len(vs) for sid, vs in self._versions.items()
+                },
+            }
 
 
 class SkillEngine:
