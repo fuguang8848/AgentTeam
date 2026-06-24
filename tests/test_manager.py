@@ -4,6 +4,7 @@ import pytest
 
 from agentteam.team.manager import TeamManager
 from agentteam.team.models import get_data_dir
+from agentteam.exceptions import TeamAlreadyExistsError, AgentNotFoundError, AgentError, TeamNotFoundError
 
 
 class TestCreateTeam:
@@ -38,7 +39,7 @@ class TestCreateTeam:
 
     def test_create_duplicate_raises(self, team_name):
         TeamManager.create_team(name=team_name, leader_name="a", leader_id="1")
-        with pytest.raises(ValueError, match="already exists"):
+        with pytest.raises(TeamAlreadyExistsError, match="already exists"):
             TeamManager.create_team(name=team_name, leader_name="b", leader_id="2")
 
     def test_rejects_path_traversal_team_name(self):
@@ -86,11 +87,11 @@ class TestAddMember:
     def test_add_duplicate_raises(self, team_name):
         TeamManager.create_team(name=team_name, leader_name="lead", leader_id="1")
         TeamManager.add_member(team_name, "worker", agent_id="2")
-        with pytest.raises(ValueError, match="already in team"):
+        with pytest.raises(AgentError, match="already in team"):
             TeamManager.add_member(team_name, "worker", agent_id="3")
 
     def test_add_to_nonexistent_team(self):
-        with pytest.raises(ValueError, match="not found"):
+        with pytest.raises(TeamNotFoundError, match="not found"):
             TeamManager.add_member("nope", "worker", agent_id="x")
 
     def test_add_member_rejects_invalid_name(self, team_name):

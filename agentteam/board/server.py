@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from agentteam.board.utils import _fetch_proxy_content, _normalize_proxy_target
+
 import ipaddress
 import json
 import threading
@@ -218,8 +220,8 @@ def serve(host="0.0.0.0", port=8080, interval=2.0, default_team=""):
     ThreadingHTTPServer((host, port), H).serve_forever()
 
 
-# 2026-06-18 fix: 8080 DOWN, board.py CLI imports run_server but function is serve.
-# Alias preserves backward compat without changing board.py.
+# Backward compatibility alias: board.py CLI expects run_server, actual function is serve.
+# This alias ensures CLI commands work without depending on internal implementation naming.
 run_server = serve
 
 

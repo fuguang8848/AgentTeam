@@ -49,7 +49,11 @@ class TaskState(Enum):
 
 
 class MessageType(Enum):
-    """Message Type - 消息类型枚举"""
+    """Message Type - 消息类型枚举
+
+    Extended with Socratic questioning, blind spot reporting, and rule genealogy
+    for deeper philosophical collaboration (Plato's Cave, Socratic Elenchus, Nietzschean Genealogy).
+    """
 
     TEXT = "text"
     TASK = "task"
@@ -57,6 +61,12 @@ class MessageType(Enum):
     SYSTEM = "system"
     BROADCAST = "broadcast"
     DIRECT = "direct"
+    # ── 苏格拉底产婆术 (Socratic Elenchus) ──────────────────────────
+    SOCRATIC_QUESTION = "socratic_question"  # 诘问：质疑对方论点的漏洞
+    # ── 柏拉图洞穴 allegory (Plato's Cave Allegory) ─────────────────
+    BLIND_SPOT_REPORT = "blind_spot_report"   # 全局视角汇报：汇报执行结果的"盲区"
+    # ── 尼采系谱学 (Nietzschean Genealogy) ─────────────────────────
+    GENEALOGY_TRACE = "genealogy_trace"       # 安全规则来源追踪：何时创建、何人创建、何原因
 
     @classmethod
     def from_string(cls, value: str) -> "MessageType":

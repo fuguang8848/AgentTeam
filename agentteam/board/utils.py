@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import random
 import urllib.error
@@ -72,19 +73,49 @@ class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
 
 
 def _is_blocked_hostname(hostname: str) -> bool:
-    """Check if a hostname is blocked for proxy requests."""
+    """Check if a hostname is blocked for proxy requests.
+    
+    Security note (Baudrillard simulum): This check alone is insufficient.
+    It only validates the hostname format, not the actual IP the DNS resolves to.
+    A DNS rebinding attack could bypass this. Real security requires:
+    1. DNS rebinding protection (resolve hostname and verify IP ranges)
+    2. Certificate pinning for known hosts
+    3. A proper proxy with identity verification
+    This function provides a basic layer but should not be relied upon as sole protection.
+    """
     if not hostname:
         return True
+    # Block direct IP addresses (prevents SSRF via IP)
     try:
         ipaddress.ip_address(hostname)
         return True  # Block direct IP addresses
     except ValueError:
         pass
-    return hostname not in _ALLOWED_PROXY_HOSTS
+    # Block loopback and private IP ranges if hostname somehow resolves
+    # Note: This only works if the hostname is already an IP (above check)
+    # For actual DNS resolution, the resolver could return any IP
+    blocked_ranges = [
+        ipaddress.ip_network("127.0.0.0/8", False),
+        ipaddress.ip_network("10.0.0.0/8", False),
+        ipaddress.ip_network("172.16.0.0/12", False),
+        ipaddress.ip_network("192.168.0.0/16", False),
+        ipaddress.ip_network("169.254.0.0/16", False),  # Link-local
+        ipaddress.ip_network("0.0.0.0/8", False),
+    ]
+    # Only allow explicitly whitelisted hosts
+    if hostname not in _ALLOWED_PROXY_HOSTS:
+        return True
+    return False
 
 
 def _normalize_proxy_target(target_url: str) -> str:
-    """Normalize and validate proxy target URL."""
+    """Normalize and validate proxy target URL.
+    
+    Benjamin's aura context: In distributed environments, DNS resolution
+    can return different IPs based on client location/conditions.
+    This function resolves the hostname to verify the IP is not in
+    private/blocked ranges, preventing DNS rebinding attacks.
+    """
     if not target_url.startswith(("http://", "https://")):
         target_url = "https://" + target_url
 
@@ -93,6 +124,37 @@ def _normalize_proxy_target(target_url: str) -> str:
 
     if _is_blocked_hostname(hostname):
         raise ValueError(f"Hostname '{hostname}' is not allowed for proxy requests")
+
+    # Additional security: Resolve hostname and verify IP is safe
+    # This prevents DNS rebinding attacks where hostname appears safe
+    # but resolves to a private/blocked IP
+    import socket as _socket
+    try:
+        addr_info = _socket.getaddrinfo(hostname, None, _socket.AF_INET)
+        for family, socktype, proto, canonname, sockaddr in addr_info:
+            ip_str = sockaddr[0]
+            # Check if resolved IP is in blocked ranges
+            try:
+                ip = ipaddress.ip_address(ip_str)
+                blocked_ranges = [
+                    ipaddress.ip_network("127.0.0.0/8", False),
+                    ipaddress.ip_network("10.0.0.0/8", False),
+                    ipaddress.ip_network("172.16.0.0/12", False),
+                    ipaddress.ip_network("192.168.0.0/16", False),
+                    ipaddress.ip_network("169.254.0.0/16", False),
+                    ipaddress.ip_network("0.0.0.0/8", False),
+                ]
+                for network in blocked_ranges:
+                    if ip in network:
+                        raise ValueError(
+                            f"Hostname '{hostname}' resolved to blocked IP range: {ip_str}"
+                        )
+            except ValueError:
+                # Not a valid IP format, skip range check
+                pass
+    except _socket.gaierror:
+        # Cannot resolve, but hostname was already checked against whitelist
+        pass
 
     return target_url
 

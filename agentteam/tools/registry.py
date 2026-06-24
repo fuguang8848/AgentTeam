@@ -6,7 +6,9 @@ NEVER hardcode sensitive information!
 """
 
 import json
-from typing import Any, Callable, Dict, Optional
+import os
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
 
 
 class ToolRegistry:
@@ -77,6 +79,73 @@ class ToolRegistry:
             "func": func,
             "skill_path": skill_path,
         }
+
+    def discover_tools(self, paths: List[str]) -> int:
+        """Discover and register tools from JSON spec files
+
+        Scans the given paths recursively for JSON files and registers
+        any tool definitions found. Each JSON file should contain a
+        tool spec with the following fields:
+            - name: Tool name (required)
+            - description: Tool description (required)
+            - category: Tool category (required)
+            - schema: JSON schema for tool arguments (required)
+            - skill_path: Path to skill directory (optional)
+
+        Args:
+            paths: List of directory paths to scan for JSON spec files
+
+        Returns:
+            Number of tools successfully registered
+        """
+        discovered = 0
+
+        for base_path in paths:
+            path = Path(base_path)
+            if not path.exists():
+                continue
+
+            if path.is_file():
+                if path.suffix == ".json":
+                    if self._register_from_spec(path):
+                        discovered += 1
+            else:
+                for json_file in path.rglob("*.json"):
+                    if self._register_from_spec(json_file):
+                        discovered += 1
+
+        return discovered
+
+    def _register_from_spec(self, spec_path: Path) -> bool:
+        """Register a tool from a JSON spec file
+
+        Args:
+            spec_path: Path to the JSON spec file
+
+        Returns:
+            True if tool was registered successfully, False otherwise
+        """
+        try:
+            with open(spec_path, encoding="utf-8") as f:
+                spec = json.load(f)
+
+            required_fields = ["name", "description", "category", "schema"]
+            for field in required_fields:
+                if field not in spec:
+                    return False
+
+            self.register(
+                name=spec["name"],
+                description=spec["description"],
+                category=spec["category"],
+                schema=spec["schema"],
+                func=spec.get("func"),
+                skill_path=spec.get("skill_path"),
+            )
+            return True
+
+        except (json.JSONDecodeError, OSError):
+            return False
 
     def get(self, name: str) -> Optional[Dict[str, Any]]:
         """Get tool by name"""

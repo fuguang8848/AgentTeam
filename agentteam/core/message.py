@@ -18,6 +18,13 @@ from .types import MessageType
 class CTMessage:
     """
     Team Message - 团队消息
+
+    Extended with philosophical collaboration fields:
+    - blind_spot_report: 柏拉图洞穴 — agent 执行结果中未看到的"盲区"
+    - genealogy_trace:   尼采系谱学 — 安全规则的来源追踪
+
+    收到 SOCRATIC_QUESTION 类型的消息时，agent 应通过诘问
+    迫使对方发现自己的矛盾（苏格拉底产婆术）。
     """
 
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -28,6 +35,10 @@ class CTMessage:
     timestamp: float = field(default_factory=time.time)
     read: bool = False
     metadata: dict = field(default_factory=dict)
+    # ── 柏拉图洞穴 allegory — 全局视角汇报 ─────────────────────
+    blind_spot_report: Optional[str] = None   # 本次执行中我未看到的全局盲区
+    # ── 尼采系谱学 — 安全规则来源追踪 ─────────────────────────
+    genealogy_trace: Optional[dict] = None   # {rule_id, created_at, created_by, reason, parent_rule_id}
 
     def to_dict(self) -> dict:
         """转换为字典"""
@@ -40,6 +51,8 @@ class CTMessage:
             "timestamp": self.timestamp,
             "read": self.read,
             "metadata": self.metadata,
+            "blind_spot_report": self.blind_spot_report,
+            "genealogy_trace": self.genealogy_trace,
         }
 
     @classmethod
@@ -57,6 +70,8 @@ class CTMessage:
             timestamp=data.get("timestamp", time.time()),
             read=data.get("read", False),
             metadata=data.get("metadata", {}),
+            blind_spot_report=data.get("blind_spot_report"),
+            genealogy_trace=data.get("genealogy_trace"),
         )
 
     def mark_read(self) -> None:
@@ -89,14 +104,23 @@ class CTInbox:
         content: str,
         message_type: MessageType = MessageType.TEXT,
         metadata: Optional[dict] = None,
+        blind_spot_report: Optional[str] = None,
+        genealogy_trace: Optional[dict] = None,
     ) -> CTMessage:
-        """发送消息的便捷方法"""
+        """发送消息的便捷方法
+
+        接受柏拉图洞穴 allegory 和尼采系谱学字段：
+        - blind_spot_report: 发送方汇报自己在全局视角下的盲区
+        - genealogy_trace: 安全规则的来源追踪数据
+        """
         message = CTMessage(
             from_agent=from_agent,
             to_agent=to_agent,
             content=content,
             message_type=message_type,
             metadata=metadata or {},
+            blind_spot_report=blind_spot_report,
+            genealogy_trace=genealogy_trace,
         )
         self.send(message)
         return message
@@ -107,14 +131,18 @@ class CTInbox:
         content: str,
         message_type: MessageType = MessageType.BROADCAST,
         metadata: Optional[dict] = None,
+        blind_spot_report: Optional[str] = None,
+        genealogy_trace: Optional[dict] = None,
     ) -> CTMessage:
-        """广播消息"""
+        """广播消息，支持柏拉图洞穴盲区汇报和尼采系谱学追踪"""
         return self.send_message(
             from_agent=from_agent,
             to_agent="__broadcast__",
             content=content,
             message_type=message_type,
             metadata=metadata,
+            blind_spot_report=blind_spot_report,
+            genealogy_trace=genealogy_trace,
         )
 
     def receive(self, agent_name: str, mark_read: bool = True) -> Optional[CTMessage]:
@@ -132,7 +160,7 @@ class CTInbox:
         unread_only: bool = False,
         message_type: Optional[MessageType] = None,
     ) -> List[CTMessage]:
-        """获取消息列表"""
+        """获取消息列表，支持按消息类型过滤（包括新增的 SOCRATIC_QUESTION、BLIND_SPOT_REPORT、GENEALOGY_TRACE）"""
         result = self.messages
 
         if agent_name:

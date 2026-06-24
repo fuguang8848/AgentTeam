@@ -12,9 +12,12 @@ Key features:
 
 from __future__ import annotations
 
+import json
 import logging
+import os
+import shutil
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
@@ -268,7 +271,7 @@ class SupervisorEngine:
     Inspired by SpectrAI supervisorPrompt.ts design.
     """
 
-    def __init__(self, team_name: str, rules: List[DecompositionRule] = None):
+    def __init__(self, team_name: str, rules: List[DecompositionRule] = None, storage_dir: str = None):
         self.team_name = team_name
         self.provider_selector = get_provider_selector(team_name)
         self.router = get_router(team_name)
@@ -276,6 +279,213 @@ class SupervisorEngine:
         self._active_plans: Dict[str, TaskPlan] = {}
         self._execution_results: Dict[str, ExecutionResult] = {}
         self._verification_results: Dict[str, VerificationResult] = {}
+
+        # Plan persistence settings
+        self._storage_dir = storage_dir or os.path.join(
+            os.path.expanduser("~/.agentteam"), "plans", team_name
+        )
+        self._version = "1.0"
+        self._ensure_storage_dir()
+
+    def _ensure_storage_dir(self):
+        """Ensure the storage directory exists."""
+        os.makedirs(self._storage_dir, exist_ok=True)
+
+    def _get_plan_path(self, plan_id: str) -> str:
+        """Get the file path for a plan."""
+        return os.path.join(self._storage_dir, f"{plan_id}.json")
+
+    def _get_plan_metadata_path(self, plan_id: str) -> str:
+        """Get the metadata file path for incremental saves."""
+        return os.path.join(self._storage_dir, f"{plan_id}.meta.json")
+
+    def _save_plan(self, plan_id: str, plan: TaskPlan) -> bool:
+        """Save a plan to disk with atomic write and version control.
+
+        Uses write-to-temp-then-rename for atomicity.
+        Stores incremental metadata for quick listing.
+
+        Args:
+            plan_id: ID of the plan to save
+            plan: TaskPlan object to save
+
+        Returns:
+            True if save succeeded, False otherwise
+        """
+        plan_path = self._get_plan_path(plan_id)
+        temp_path = f"{plan_path}.tmp.{os.getpid()}"
+
+        try:
+            # Serialize plan data
+            plan_data = self._serialize_plan(plan)
+
+            # Atomic write: write to temp file, then rename
+            with open(temp_path, 'w', encoding='utf-8') as f:
+                json.dump(plan_data, f, indent=2, ensure_ascii=False)
+            shutil.move(temp_path, plan_path)
+
+            # Save metadata for quick listing (incremental save)
+            meta_data = {
+                "version": self._version,
+                "plan_id": plan_id,
+                "goal": plan.goal,
+                "pattern": plan.decomposition_pattern,
+                "created_at": plan.created_at,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "task_count": len(plan.tasks),
+                "completed_tasks": sum(1 for t in plan.tasks if t.status == TaskStatus.completed),
+            }
+            meta_path = self._get_plan_metadata_path(plan_id)
+            meta_temp = f"{meta_path}.tmp.{os.getpid()}"
+            with open(meta_temp, 'w', encoding='utf-8') as f:
+                json.dump(meta_data, f, indent=2, ensure_ascii=False)
+            shutil.move(meta_temp, meta_path)
+
+            logger.debug(f"Saved plan {plan_id} to {plan_path}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to save plan {plan_id}: {e}")
+            # Clean up temp file if it exists
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            return False
+
+    def _load_plan(self, plan_id: str) -> Optional[TaskPlan]:
+        """Load a plan from disk.
+
+        Args:
+            plan_id: ID of the plan to load
+
+        Returns:
+            TaskPlan object if found, None otherwise
+        """
+        plan_path = self._get_plan_path(plan_id)
+        if not os.path.exists(plan_path):
+            return None
+
+        try:
+            with open(plan_path, 'r', encoding='utf-8') as f:
+                plan_data = json.load(f)
+
+            return self._deserialize_plan(plan_data)
+
+        except Exception as e:
+            logger.error(f"Failed to load plan {plan_id}: {e}")
+            return None
+
+    def _list_plans(self, status: str = None) -> List[Dict[str, Any]]:
+        """List all saved plans, optionally filtered by execution status.
+
+        Uses metadata files for fast listing (no full deserialization).
+
+        Args:
+            status: Optional execution status filter (pending/running/completed/failed)
+
+        Returns:
+            List of plan metadata dicts
+        """
+        if not os.path.exists(self._storage_dir):
+            return []
+
+        plans = []
+        for filename in os.listdir(self._storage_dir):
+            if not filename.endswith('.meta.json'):
+                continue
+
+            meta_path = os.path.join(self._storage_dir, filename)
+            try:
+                with open(meta_path, 'r', encoding='utf-8') as f:
+                    meta_data = json.load(f)
+
+                # Apply status filter if specified
+                if status:
+                    plan_id = meta_data.get('plan_id', '')
+                    execution = self._execution_results.get(plan_id)
+                    if not execution or execution.status != status:
+                        continue
+
+                plans.append(meta_data)
+
+            except Exception as e:
+                logger.warning(f"Failed to read metadata {meta_path}: {e}")
+                continue
+
+        # Sort by updated_at descending (most recent first)
+        plans.sort(key=lambda x: x.get('updated_at', ''), reverse=True)
+        return plans
+
+    def _serialize_plan(self, plan: TaskPlan) -> Dict[str, Any]:
+        """Serialize a TaskPlan to a dict for JSON storage."""
+        return {
+            "version": self._version,
+            "plan_id": plan.id,
+            "goal": plan.goal,
+            "created_at": plan.created_at,
+            "tasks": [asdict(t) for t in plan.tasks],
+            "execution_order": plan.execution_order,
+            "provider_assignments": plan.provider_assignments,
+            "decomposition_pattern": plan.decomposition_pattern,
+            "estimated_duration": plan.estimated_duration,
+        }
+
+    def _deserialize_plan(self, data: Dict[str, Any]) -> TaskPlan:
+        """Deserialize a dict back to a TaskPlan."""
+        from agentteam.team.models import TaskItem, TaskPriority, TaskStatus
+
+        # Convert task dicts back to TaskItem objects
+        tasks = []
+        for t_data in data.get("tasks", []):
+            # Handle status enum
+            status_val = t_data.get("status")
+            if isinstance(status_val, str):
+                try:
+                    t_data["status"] = TaskStatus(status_val)
+                except ValueError:
+                    t_data["status"] = TaskStatus.pending
+
+            priority_val = t_data.get("priority")
+            if isinstance(priority_val, str):
+                try:
+                    t_data["priority"] = TaskPriority(priority_val)
+                except ValueError:
+                    t_data["priority"] = TaskPriority.medium
+
+            tasks.append(TaskItem(**t_data))
+
+        return TaskPlan(
+            id=data["plan_id"],
+            goal=data["goal"],
+            created_at=data["created_at"],
+            tasks=tasks,
+            execution_order=data.get("execution_order", []),
+            provider_assignments=data.get("provider_assignments", {}),
+            decomposition_pattern=data.get("decomposition_pattern", "general"),
+            estimated_duration=data.get("estimated_duration", 0),
+        )
+
+    def load_all_plans(self) -> int:
+        """Load all saved plans from disk into memory.
+
+        Returns:
+            Number of plans loaded
+        """
+        if not os.path.exists(self._storage_dir):
+            return 0
+
+        count = 0
+        for filename in os.listdir(self._storage_dir):
+            if not filename.endswith('.json') or filename.endswith('.meta.json'):
+                continue
+
+            plan_id = filename[:-5]  # Remove .json extension
+            plan = self._load_plan(plan_id)
+            if plan:
+                self._active_plans[plan_id] = plan
+                count += 1
+
+        logger.info(f"Loaded {count} plans from {self._storage_dir}")
+        return count
 
     def plan(self, goal: str) -> TaskPlan:
         """LLM-driven task decomposition.
@@ -324,6 +534,7 @@ class SupervisorEngine:
         )
 
         self._active_plans[plan_id] = plan
+        self._save_plan(plan_id, plan)
         logger.info(f"Created plan {plan_id} with {len(tasks)} tasks, pattern: {pattern.value}")
         return plan
 
@@ -456,6 +667,9 @@ class SupervisorEngine:
 
         result.status = "completed"
         result.completed_at = datetime.now(timezone.utc).isoformat()
+
+        # Save plan after execution (incremental update with completed status)
+        self._save_plan(plan_id, plan)
 
         logger.info(f"Plan {plan_id} execution completed")
         return result

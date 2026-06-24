@@ -12,6 +12,19 @@ from agentteam.workspace.manager import WorkspaceManager, _load_registry
 
 
 def _registry_repo_root(team_name: str) -> str | None:
+    """Get the repo_root from workspace registry.
+    
+    Benjamin's Aura Loss Warning: This function reads from a LOCAL file path.
+    In a distributed environment where multiple agents run on different machines,
+    each machine has its own local registry file. This means:
+    1. The repo_root stored in the registry is machine-specific
+    2. Worktrees created on machine A are not visible to machine B
+    3. The "shared" context is actually fragmented across machines
+    
+    This is a fundamental architectural limitation - the registry's "aura" of
+    shared state is actually a simulation (Baudrillard) that only works when
+    all agents share the same filesystem (e.g., same machine or shared NFS).
+    """
     path = ensure_within_root(
         get_data_dir() / "workspaces",
         validate_identifier(team_name, "team name"),

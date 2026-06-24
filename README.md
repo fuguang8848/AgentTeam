@@ -1,10 +1,5 @@
 # 🦞 AgentTeam
 
-> **V 6/19 18:38 README 修真** (SOP #34 跨仓 L1 对比):
-> - 失实 1: version v0.8.0-openclaw — 实际 `__version__ = "0.7.6"`
-> - 失实 2: tests 943+ — 实际 93 test files / 2129 test functions
-
-
 [English](README.md) ·
 [简体中文](README_CN.md) ·
 [繁體中文](README_TW.md) ·

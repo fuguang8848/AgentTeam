@@ -56,6 +56,19 @@ from agentteam.core import (
     get_team,
 )
 
+from agentteam.orchestrator.circuit_breaker import (
+    CircuitBreaker,
+    CircuitState,
+    CircuitOpenError,
+    get_circuit_breaker,
+    list_circuit_breakers,
+)
+
+from agentteam.team.snapshot import SnapshotManager
+from agentteam.team.dag import topological_sort, CycleDetectedError
+from agentteam.team.roles import assign_role, get_agent_roles, suggest_role, AgentRole
+from agentteam.async_core import AsyncExecutor
+
 # Orchestrator module (P6, P9)
 from agentteam.orchestrator import (
     FallbackChain,
@@ -268,5 +281,5 @@ __all__ = [
     # Insights module (P16)
     "InsightsEngine",
     # Skill module (P13)
-    "SkillEngine",
+    "SkillEngine", "SnapshotManager", "topological_sort", "CycleDetectedError", "assign_role", "get_agent_roles", "suggest_role", "AgentRole", "AsyncExecutor", "CircuitBreaker", "CircuitState", "CircuitOpenError", "get_circuit_breaker", "list_circuit_breakers"
 ]

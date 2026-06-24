@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Dict, List
 
 from .types import AgentState
 
@@ -103,6 +103,108 @@ class CTAgent:
     def is_done(self) -> bool:
         """检查是否已结束"""
         return self.state in (AgentState.COMPLETED, AgentState.FAILED, AgentState.TERMINATED)
+
+
+@dataclass
+class AgentHierarchy:
+    """
+    Agent 层级关系 - 建模 agent 之间的层级结构
+
+    属性:
+        root: 根节点 agent 名称（顶级 leader）
+        parent_map: 子 agent 到父 agent 的映射 (child_name -> parent_name)
+        children_map: 父 agent 到子 agents 的映射 (parent_name -> List[child_name])
+        level_map: agent 到层级的映射 (agent_name -> level), level 0 为根
+    """
+
+    root: Optional[str] = None
+    parent_map: Dict[str, str] = field(default_factory=dict)
+    children_map: Dict[str, List[str]] = field(default_factory=dict)
+    level_map: Dict[str, int] = field(default_factory=dict)
+
+    def add_node(self, agent_name: str, parent_name: Optional[str] = None) -> None:
+        """添加节点到层级结构"""
+        if parent_name is None:
+            # 根节点
+            if self.root is None:
+                self.root = agent_name
+            self.level_map[agent_name] = 0
+        else:
+            self.parent_map[agent_name] = parent_name
+            if parent_name not in self.children_map:
+                self.children_map[parent_name] = []
+            self.children_map[parent_name].append(agent_name)
+            # 计算层级
+            self.level_map[agent_name] = self.level_map.get(parent_name, 0) + 1
+
+    def get_parent(self, agent_name: str) -> Optional[str]:
+        """获取父节点"""
+        return self.parent_map.get(agent_name)
+
+    def get_children(self, agent_name: str) -> List[str]:
+        """获取子节点"""
+        return self.children_map.get(agent_name, [])
+
+    def get_siblings(self, agent_name: str) -> List[str]:
+        """获取同级节点（兄弟节点）"""
+        parent = self.get_parent(agent_name)
+        if parent is None:
+            return []
+        siblings = self.get_children(parent)
+        return [s for s in siblings if s != agent_name]
+
+    def get_ancestors(self, agent_name: str) -> List[str]:
+        """获取所有祖先节点（从父到根）"""
+        ancestors = []
+        current = agent_name
+        while True:
+            parent = self.get_parent(current)
+            if parent is None:
+                break
+            ancestors.append(parent)
+            current = parent
+        return ancestors
+
+    def get_descendants(self, agent_name: str) -> List[str]:
+        """获取所有后代节点"""
+        descendants = []
+        stack = self.get_children(agent_name)
+        while stack:
+            child = stack.pop()
+            descendants.append(child)
+            stack.extend(self.get_children(child))
+        return descendants
+
+    def get_level(self, agent_name: str) -> int:
+        """获取节点层级"""
+        return self.level_map.get(agent_name, 0)
+
+    def is_root(self, agent_name: str) -> bool:
+        """是否为根节点"""
+        return self.root == agent_name
+
+    def is_leaf(self, agent_name: str) -> bool:
+        """是否为叶子节点"""
+        return agent_name not in self.children_map
+
+    def to_dict(self) -> dict:
+        """转换为字典"""
+        return {
+            "root": self.root,
+            "parent_map": self.parent_map,
+            "children_map": self.children_map,
+            "level_map": self.level_map,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AgentHierarchy":
+        """从字典创建"""
+        return cls(
+            root=data.get("root"),
+            parent_map=data.get("parent_map", {}),
+            children_map=data.get("children_map", {}),
+            level_map=data.get("level_map", {}),
+        )
 
 
 # Backwards compatibility alias

@@ -18,7 +18,8 @@ from agentteam.notification import NotificationManager
 
 if TYPE_CHECKING:
     from agentteam.parser.types import ActivityEvent, ActivityEventType
-    from agentteam.parser.output_parser import OutputParser
+
+from agentteam.parser.output_parser import OutputParser
 
 logger = logging.getLogger(__name__)
 
